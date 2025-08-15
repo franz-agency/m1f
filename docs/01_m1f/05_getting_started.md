@@ -3,6 +3,8 @@
 This guide will walk you through installing m1f and creating your first bundles
 using a real-world example.
 
+> **📦 Already installed?** Update with: `cd m1f && git pull && source ./scripts/install.sh`
+
 ## Installation (3 Simple Steps)
 
 ### For Users

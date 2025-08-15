@@ -146,10 +146,43 @@ class SelectolaxScraper(WebScraperBase):
                     normalized_canonical = self._normalize_url(canonical_url)
 
                     if normalized_url != normalized_canonical:
-                        logger.info(
-                            f"Skipping {url} - canonical URL differs: {canonical_url}"
-                        )
-                        return None  # Return None to indicate skip, not an error
+                        # Check if we should respect the canonical URL
+                        should_skip = True
+
+                        # Check allowed paths (single or multiple)
+                        allowed_paths_list = []
+                        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+                            allowed_paths_list = self.config.allowed_paths
+                        elif self.config.allowed_path:
+                            allowed_paths_list = [self.config.allowed_path]
+                        
+                        if allowed_paths_list:
+                            # Parse URLs to check paths
+                            current_parsed = urlparse(normalized_url)
+                            canonical_parsed = urlparse(normalized_canonical)
+
+                            # If current URL is within any allowed_path but canonical is outside all,
+                            # don't skip - the user explicitly wants content from allowed_path
+                            current_in_allowed = any(
+                                current_parsed.path.startswith(allowed_path)
+                                for allowed_path in allowed_paths_list
+                            )
+                            canonical_in_allowed = any(
+                                canonical_parsed.path.startswith(allowed_path)
+                                for allowed_path in allowed_paths_list
+                            )
+                            
+                            if current_in_allowed and not canonical_in_allowed:
+                                should_skip = False
+                                logger.info(
+                                    f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_paths {allowed_paths_list}"
+                                )
+
+                        if should_skip:
+                            logger.info(
+                                f"Skipping {url} - canonical URL differs: {canonical_url}"
+                            )
+                            return None  # Return None to indicate skip, not an error
 
             # 3. Content duplicate check
             if self.config.check_content_duplicates:
@@ -242,10 +275,8 @@ class SelectolaxScraper(WebScraperBase):
         parsed_start = urlparse(start_url)
         base_domain = parsed_start.netloc
 
-        # Store the base path for subdirectory restriction
-        base_path = parsed_start.path.rstrip("/")
-        if base_path:
-            logger.info(f"Restricting crawl to subdirectory: {base_path}")
+        # Initialize allowed paths configuration
+        self._initialize_allowed_paths(start_url)
 
         # Initialize queue with start URL
         queue = asyncio.Queue()
@@ -279,7 +310,7 @@ class SelectolaxScraper(WebScraperBase):
                         return None
 
                     # Extract links if not at max depth
-                    if depth < self.config.max_depth:
+                    if self.config.max_depth == -1 or depth < self.config.max_depth:
                         html_parser = HTMLParser(page.content)
 
                         for link in html_parser.css("a[href]"):
@@ -300,21 +331,13 @@ class SelectolaxScraper(WebScraperBase):
                             elif parsed_url.netloc != base_domain:
                                 continue
 
-                            # Check subdirectory restriction
-                            if base_path:
-                                if (
-                                    not parsed_url.path.startswith(base_path + "/")
-                                    and parsed_url.path != base_path
-                                ):
-                                    continue
+                            # Check path restriction using base class method
+                            if not self._is_path_allowed(absolute_url, start_url):
+                                continue
 
-                            # Skip if matches exclude pattern
-                            if self.config.exclude_patterns:
-                                if any(
-                                    re.match(pattern, absolute_url)
-                                    for pattern in self.config.exclude_patterns
-                                ):
-                                    continue
+                            # Skip if URL should be excluded
+                            if self._should_exclude_url(absolute_url):
+                                continue
 
                             # Normalize URL
                             normalized_url = self._normalize_url(absolute_url)
@@ -344,8 +367,11 @@ class SelectolaxScraper(WebScraperBase):
                 try:
                     url, depth = queue.get_nowait()
 
-                    # Check max pages limit
-                    if pages_scraped >= self.config.max_pages:
+                    # Check max pages limit (skip if -1 for unlimited)
+                    if (
+                        self.config.max_pages != -1
+                        and pages_scraped >= self.config.max_pages
+                    ):
                         break
 
                     # Create task
@@ -368,8 +394,11 @@ class SelectolaxScraper(WebScraperBase):
                         pages_scraped += 1
                         yield page
 
-                        # Check if we've hit the page limit
-                        if pages_scraped >= self.config.max_pages:
+                        # Check if we've hit the page limit (skip if -1 for unlimited)
+                        if (
+                            self.config.max_pages != -1
+                            and pages_scraped >= self.config.max_pages
+                        ):
                             # Cancel remaining tasks
                             for t in tasks:
                                 t.cancel()

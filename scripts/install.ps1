@@ -78,13 +78,38 @@ function Write-ColorOutput {
 }
 
 # Get script and project paths
-$scriptPath = $PSScriptRoot
+# Handle both dot-sourced and executed cases
+if ($null -eq $PSScriptRoot -or $PSScriptRoot -eq "") {
+    # Script is being dot-sourced or run in an unusual way
+    # Try to detect based on current location
+    if ((Test-Path ".\scripts\install.ps1") -and (Test-Path ".\requirements.txt")) {
+        # Being run from project root as '. .\scripts\install.ps1'
+        $scriptPath = Join-Path (Get-Location) "scripts"
+    } elseif ((Test-Path "..\scripts\install.ps1") -and (Test-Path "..\requirements.txt")) {
+        # Being run from scripts directory as '. .\install.ps1'
+        $scriptPath = Get-Location
+    } else {
+        Write-ColorOutput "Error: Cannot determine script location when dot-sourced." -Color Red
+        Write-ColorOutput "Please run from project root as: . .\scripts\install.ps1" -Color Yellow
+        return
+    }
+} else {
+    # Script is being executed normally
+    $scriptPath = $PSScriptRoot
+}
 $projectRoot = Split-Path $scriptPath -Parent
-$binDir = Join-Path $projectRoot "bin"
+$venvBinDir = Join-Path $projectRoot ".venv\Scripts"
+$oldBinDir = Join-Path $projectRoot "bin"
 
 Write-ColorOutput "m1f Installation" -Color $colors.Blue
 Write-ColorOutput "================" -Color $colors.Blue
 Write-Host
+
+# Check if this is an upgrade from an old installation
+if ((Test-Path ".venv") -and (Test-Path "bin") -and (Test-Path "bin\m1f")) {
+    Write-ColorOutput "[UPGRADE] Detected: Migrating to Python entry points system" -Color $colors.Yellow
+    Write-Host
+}
 
 # Check execution policy
 $executionPolicy = Get-ExecutionPolicy -Scope CurrentUser
@@ -93,12 +118,12 @@ if ($executionPolicy -eq "Restricted") {
     Write-ColorOutput "Updating execution policy for current user..." -Color $colors.Yellow
     try {
         Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-        Write-ColorOutput "✓ Execution policy updated" -Color $colors.Green
+        Write-ColorOutput "[OK] Execution policy updated" -Color $colors.Green
     } catch {
         Write-ColorOutput "Error: Could not update execution policy. Please run as administrator or run:" -Color $colors.Red
         Write-ColorOutput "  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" -Color $colors.Blue
         Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
-        exit 1
+        if ($null -eq $PSScriptRoot -or $PSScriptRoot -eq "") { return } else { exit 1 }
     }
 }
 
@@ -124,7 +149,7 @@ if (Get-Command python -ErrorAction SilentlyContinue) {
     Write-ColorOutput "Error: Python is not installed. Please install Python 3.10 or higher." -Color $colors.Red
     Write-ColorOutput "Download from: https://www.python.org/downloads/" -Color $colors.Yellow
     Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
-    exit 1
+    if ($null -eq $PSScriptRoot -or $PSScriptRoot -eq "") { return } else { exit 1 }
 }
 
 # Check Python version is 3.10+
@@ -137,10 +162,10 @@ try {
     if ($major -lt 3 -or ($major -eq 3 -and $minor -lt 10)) {
         Write-ColorOutput "Error: Python 3.10 or higher is required. Found Python $versionOutput" -Color $colors.Red
         Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
-        exit 1
+        if ($null -eq $PSScriptRoot -or $PSScriptRoot -eq "") { return } else { exit 1 }
     }
     
-    Write-ColorOutput "✓ Python $versionOutput found" -Color $colors.Green
+    Write-ColorOutput "[OK] Python $versionOutput found" -Color $colors.Green
 } catch {
     Write-ColorOutput "Error: Could not determine Python version" -Color $colors.Red
     Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
@@ -157,7 +182,7 @@ if (Test-Path ".venv") {
     Write-ColorOutput "Virtual environment already exists." -Color $colors.Yellow
 } else {
     & $pythonCmd -m venv .venv
-    Write-ColorOutput "✓ Virtual environment created" -Color $colors.Green
+    Write-ColorOutput "[OK] Virtual environment created" -Color $colors.Green
 }
 
 # Step 2: Activate virtual environment and install dependencies
@@ -174,26 +199,40 @@ python -m pip install --upgrade pip --quiet
 # Install requirements
 if (Test-Path "requirements.txt") {
     pip install -r requirements.txt --quiet
-    Write-ColorOutput "✓ Dependencies installed" -Color $colors.Green
+    Write-ColorOutput "[OK] Dependencies installed" -Color $colors.Green
 } else {
-    Write-ColorOutput "Error: requirements.txt not found" -Color $colors.Red
+    Write-ColorOutput "Error: requirements.txt not found at $projectRoot\requirements.txt" -Color $colors.Red
+    Write-ColorOutput "PROJECT_ROOT is set to: $projectRoot" -Color $colors.Yellow
+    Write-ColorOutput "Current directory is: $(Get-Location)" -Color $colors.Yellow
     Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
-    exit 1
+    if ($null -eq $PSScriptRoot -or $PSScriptRoot -eq "") { return } else { exit 1 }
 }
+
+# Install m1f package in editable mode (creates all entry points)
+Write-ColorOutput "Installing m1f package with all tools..." -Color $colors.Green
+pip install -e tools\ --quiet
+Write-ColorOutput "[OK] m1f package installed with all entry points" -Color $colors.Green
+
+# Create .pth file for Windows compatibility
+# This ensures that modules in tools/ root are found on Windows
+$pthFile = Join-Path $projectRoot ".venv\Lib\site-packages\m1f_tools.pth"
+$toolsPath = Join-Path $projectRoot "tools"
+Set-Content -Path $pthFile -Value $toolsPath -Encoding ASCII
+Write-ColorOutput "[OK] Created .pth file for Windows module resolution" -Color $colors.Green
 
 # Step 3: Test m1f installation
 Write-Host
 Write-ColorOutput "Step 3: Testing m1f installation..." -Color $colors.Green
 try {
     $null = & python -m tools.m1f --version 2>&1
-    Write-ColorOutput "✓ m1f is working correctly" -Color $colors.Green
+    Write-ColorOutput "[OK] m1f is working correctly" -Color $colors.Green
     
     # Create symlink for main documentation if needed
     $m1fDocPath = Join-Path $projectRoot "m1f\m1f\87_m1f_only_docs.txt"
     $m1fLinkPath = Join-Path $projectRoot "m1f\m1f.txt"
     if ((Test-Path $m1fDocPath) -and !(Test-Path $m1fLinkPath)) {
         New-Item -ItemType SymbolicLink -Path $m1fLinkPath -Target "m1f\87_m1f_only_docs.txt" -Force | Out-Null
-        Write-ColorOutput "✓ Created m1f.txt symlink to main documentation" -Color $colors.Green
+        Write-ColorOutput "[OK] Created m1f.txt symlink to main documentation" -Color $colors.Green
     }
 } catch {
     Write-ColorOutput "Warning: Could not verify m1f installation" -Color $colors.Yellow
@@ -213,22 +252,31 @@ if (!(Test-Path $PROFILE)) {
 # Check if functions already exist
 $profileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
 if ($profileContent -match "# m1f tools functions") {
-    Write-ColorOutput "m1f functions already exist in profile" -Color $colors.Yellow
+    # Check if we need to update from old bin path to new venv path
+    if ($profileContent -match [regex]::Escape($oldBinDir)) {
+        Write-ColorOutput "[UPDATE] PowerShell profile from old paths to new entry points..." -Color $colors.Yellow
+        $profileContent = $profileContent -replace [regex]::Escape($oldBinDir), $venvBinDir
+        Set-Content $PROFILE $profileContent
+        Write-ColorOutput "[OK] Updated PowerShell profile to use Python entry points" -Color $colors.Green
+    } else {
+        Write-ColorOutput "m1f functions already exist in profile" -Color $colors.Yellow
+    }
 } else {
     # Add functions to profile
     $functionsContent = @"
 
 # m1f tools functions (added by m1f setup script)
-# Dot-source the m1f aliases file
+# Add m1f entry points to PATH
+`$env:PATH = "$venvBinDir;`$env:PATH"
+
+# Dot-source the m1f aliases file if it exists (for backward compatibility)
 if (Test-Path "$projectRoot\scripts\m1f_aliases.ps1") {
     . "$projectRoot\scripts\m1f_aliases.ps1"
-} else {
-    Write-Warning "m1f aliases file not found at: $projectRoot\scripts\m1f_aliases.ps1 (check your PowerShell profile at: `$PROFILE)"
 }
 
 "@
     Add-Content $PROFILE $functionsContent
-    Write-ColorOutput "✓ PowerShell functions added to profile" -Color $colors.Green
+    Write-ColorOutput "[OK] PowerShell functions added to profile" -Color $colors.Green
 }
 
 # Step 5: Create batch files for Command Prompt (optional)
@@ -241,22 +289,25 @@ if (!(Test-Path $batchDir)) {
     New-Item -ItemType Directory -Path $batchDir | Out-Null
 }
 
-# Create batch files
+# Create batch files (now using Python entry points)
 $commands = @{
     "m1f.bat" = "m1f"
-    "m1f-s1f.bat" = "m1f-s1f"
+    "s1f.bat" = "s1f"
+    "m1f-s1f.bat" = "m1f-s1f"  # Alias for backward compatibility
     "m1f-html2md.bat" = "m1f-html2md"
     "m1f-scrape.bat" = "m1f-scrape"
+    "m1f-research.bat" = "m1f-research"
     "m1f-token-counter.bat" = "m1f-token-counter"
-    "m1f-update.bat" = "m1f auto-bundle"
-    "m1f-init.bat" = "python `"%~dp0..\tools\m1f_init.py`" %*"
-    "m1f-claude.bat" = "python `"%~dp0..\tools\m1f_claude.py`" %*"
+    "m1f-update.bat" = "m1f-update"
+    "m1f-init.bat" = "m1f-init"
+    "m1f-claude.bat" = "m1f-claude"
     "m1f-help.bat" = '@echo off
 echo m1f Tools - Available Commands:
 echo   m1f               - Main m1f tool for combining files
 echo   m1f-s1f           - Split combined files back to original structure
 echo   m1f-html2md       - Convert HTML to Markdown
 echo   m1f-scrape        - Download websites for offline viewing
+echo   m1f-research      - AI-powered research and content analysis
 echo   m1f-token-counter - Count tokens in files
 echo   m1f-update        - Update m1f bundle files
 echo   m1f-init          - Initialize m1f for your project
@@ -296,13 +347,13 @@ foreach ($file in $commands.Keys) {
     Set-Content -Path $filePath -Value $content -Encoding ASCII
 }
 
-Write-ColorOutput "✓ Batch files created in $batchDir" -Color $colors.Green
+Write-ColorOutput "[OK] Batch files created in $batchDir" -Color $colors.Green
 
 # Installation complete
 Write-Host
-Write-ColorOutput "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -Color $colors.Green
-Write-ColorOutput "✨ Installation complete!" -Color $colors.Green
-Write-ColorOutput "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -Color $colors.Green
+Write-ColorOutput "============================================================" -Color $colors.Green
+Write-ColorOutput "[SUCCESS] Installation complete!" -Color $colors.Green
+Write-ColorOutput "============================================================" -Color $colors.Green
 Write-Host
 
 Write-ColorOutput "Available commands in PowerShell:" -Color $colors.Yellow
@@ -310,6 +361,7 @@ Write-Host "  • m1f               - Main m1f tool for combining files"
 Write-Host "  • m1f-s1f           - Split combined files back to original structure"
 Write-Host "  • m1f-html2md       - Convert HTML to Markdown"
 Write-Host "  • m1f-scrape        - Download websites for offline viewing"
+Write-Host "  • m1f-research      - AI-powered research and content analysis"
 Write-Host "  • m1f-token-counter - Count tokens in files"
 Write-Host "  • m1f-update        - Regenerate m1f bundles"
 Write-Host "  • m1f-init          - Initialize m1f for your project"
@@ -323,7 +375,7 @@ Write-ColorOutput "  Add $batchDir to your PATH environment variable" -Color $co
 Write-Host
 
 Write-ColorOutput "Next step:" -Color $colors.Yellow
-Write-ColorOutput "  Restart PowerShell or run: . `$PROFILE" -Color $colors.Blue
+Write-ColorOutput "  Restart PowerShell or run: . `"`$PROFILE`"" -Color $colors.Blue
 Write-Host
 
 Write-ColorOutput "Test installation:" -Color $colors.Yellow

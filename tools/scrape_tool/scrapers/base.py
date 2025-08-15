@@ -16,7 +16,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, AsyncGenerator, Set
+from typing import List, Dict, Optional, AsyncGenerator, Set, Tuple
 from pathlib import Path
 import logging
 from urllib.parse import urlparse, urljoin
@@ -32,8 +32,10 @@ class ScraperConfig:
     """Configuration for web scrapers."""
 
     max_depth: int = 10
-    max_pages: int = 1000
+    max_pages: int = 10000
     allowed_domains: Optional[List[str]] = None
+    allowed_path: Optional[str] = None
+    allowed_paths: Optional[List[str]] = None
     exclude_patterns: Optional[List[str]] = None
     respect_robots_txt: bool = True
     concurrent_requests: int = 5
@@ -48,11 +50,14 @@ class ScraperConfig:
     ignore_get_params: bool = False
     check_canonical: bool = True
     check_content_duplicates: bool = True
+    check_ssrf: bool = True
 
     def __post_init__(self):
         """Initialize mutable defaults."""
         if self.allowed_domains is None:
             self.allowed_domains = []
+        if self.allowed_paths is None:
+            self.allowed_paths = []
         if self.exclude_patterns is None:
             self.exclude_patterns = []
         if self.custom_headers is None:
@@ -73,6 +78,10 @@ class ScrapedPage:
     normalized_url: Optional[str] = None
     canonical_url: Optional[str] = None
     content_checksum: Optional[str] = None
+    file_type: str = "html"  # 'html', 'image', 'pdf', 'css', 'js', etc.
+    file_size: Optional[int] = None  # File size in bytes
+    is_binary: bool = False  # True for binary files like images, PDFs
+    binary_content: Optional[bytes] = None  # Binary content for non-HTML files
 
     def __post_init__(self):
         """Initialize mutable defaults."""
@@ -96,6 +105,7 @@ class WebScraperBase(ABC):
         self._robots_parsers: Dict[str, RobotFileParser] = {}
         self._robots_fetch_lock = asyncio.Lock()
         self._checksum_callback = None  # Callback to check if checksum exists
+        self._allowed_path_configs: List[Tuple[Optional[str], str]] = []  # List of (domain, path) tuples
 
     @abstractmethod
     async def scrape_url(self, url: str) -> ScrapedPage:
@@ -137,6 +147,8 @@ class WebScraperBase(ABC):
         import ipaddress
 
         try:
+            # Set a timeout for DNS resolution to avoid hanging
+            socket.setdefaulttimeout(2.0)
             # Get IP address from hostname
             ip = socket.gethostbyname(hostname)
             ip_obj = ipaddress.ip_address(ip)
@@ -164,8 +176,10 @@ class WebScraperBase(ABC):
             return False
 
         except (socket.gaierror, ValueError):
-            # If we can't resolve the hostname, err on the side of caution
-            return True
+            # If we can't resolve the hostname, it's likely a normal website
+            # with DNS issues or a domain that doesn't exist anymore
+            # Don't treat this as a private IP
+            return False
 
     async def validate_url(self, url: str) -> bool:
         """Validate if a URL should be scraped based on configuration and robots.txt.
@@ -188,8 +202,8 @@ class WebScraperBase(ABC):
             # Extract hostname (remove port if present)
             hostname = parsed.hostname or parsed.netloc.split(":")[0]
 
-            # Check for SSRF - block private IPs
-            if self._is_private_ip(hostname):
+            # Check for SSRF - block private IPs (if enabled)
+            if self.config.check_ssrf and self._is_private_ip(hostname):
                 logger.warning(f"Blocked URL {url} - private IP address detected")
                 return False
 
@@ -203,12 +217,9 @@ class WebScraperBase(ABC):
                 if not domain_allowed:
                     return False
 
-            # Check exclude patterns
-            if self.config.exclude_patterns:
-                for pattern in self.config.exclude_patterns:
-                    if pattern in url:
-                        logger.debug(f"URL {url} excluded by pattern: {pattern}")
-                        return False
+            # Check if URL should be excluded
+            if self._should_exclude_url(url):
+                return False
 
             return True
 
@@ -305,6 +316,318 @@ class WebScraperBase(ABC):
             callback: Function that takes a checksum string and returns bool
         """
         self._checksum_callback = callback
+
+    def _initialize_allowed_paths(self, start_url: str) -> None:
+        """Initialize allowed path configurations based on config and start URL.
+        
+        Args:
+            start_url: The starting URL for crawling
+        """
+        self._allowed_path_configs.clear()
+        start_parsed = urlparse(start_url)
+        
+        # Get list of allowed paths (new multiple paths or fallback to single path)
+        allowed_paths_list = None
+        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths is not None:
+            # If allowed_paths is explicitly set, use it (even if empty list)
+            allowed_paths_list = self.config.allowed_paths
+        elif self.config.allowed_path:
+            allowed_paths_list = [self.config.allowed_path]
+        
+        # Process allowed paths if we have any (not None and not empty)
+        if allowed_paths_list is not None and len(allowed_paths_list) > 0:
+            for allowed_path in allowed_paths_list:
+                # Check if allowed_path is a full URL or just a path
+                if allowed_path.startswith(("http://", "https://")):
+                    # It's a full URL - extract domain and path
+                    parsed_allowed = urlparse(allowed_path)
+                    path_config = (parsed_allowed.netloc, parsed_allowed.path.rstrip("/"))
+                    self._allowed_path_configs.append(path_config)
+                    logger.info(f"Restricting crawl to URL: {parsed_allowed.netloc}{parsed_allowed.path.rstrip('/')}")
+                else:
+                    # It's just a path
+                    path_config = (None, allowed_path.rstrip("/"))
+                    self._allowed_path_configs.append(path_config)
+                    logger.info(f"Restricting crawl to allowed path: {allowed_path.rstrip('/')}")
+        else:
+            # Use the start URL's path if no allowed paths specified
+            # This applies when allowed_paths is None or empty list []
+            base_path = start_parsed.path.rstrip("/")
+            # Extract directory path (remove file name if present)
+            if base_path and '/' in base_path:
+                # If path ends with a file (has extension), use parent directory
+                if '.' in base_path.split('/')[-1]:
+                    base_path = '/'.join(base_path.split('/')[:-1])
+            if base_path:
+                self._allowed_path_configs.append((None, base_path))
+                logger.info(f"Restricting crawl to subdirectory: {base_path}")
+
+    def _should_exclude_url(self, url: str) -> bool:
+        """Check if URL should be excluded based on patterns.
+        
+        Args:
+            url: URL to check for exclusion
+            
+        Returns:
+            True if URL should be excluded, False otherwise
+        """
+        import re
+        from urllib.parse import urlparse
+        
+        # Check exclude_patterns (regex-based for flexibility)
+        if self.config.exclude_patterns:
+            for pattern in self.config.exclude_patterns:
+                try:
+                    # Try as regex first
+                    if re.search(pattern, url):
+                        logger.debug(f"URL {url} excluded by regex pattern: {pattern}")
+                        return True
+                except re.error:
+                    # Fall back to substring matching if not valid regex
+                    if pattern in url:
+                        logger.debug(f"URL {url} excluded by substring pattern: {pattern}")
+                        return True
+        
+        # Check excluded_paths (path-only matching)
+        if hasattr(self.config, 'excluded_paths') and self.config.excluded_paths:
+            parsed = urlparse(url)
+            for excluded in self.config.excluded_paths:
+                if excluded in parsed.path:
+                    logger.debug(f"URL {url} excluded by path: {excluded}")
+                    return True
+        
+        return False
+    
+    def _is_path_allowed(self, url: str, start_url: str) -> bool:
+        """Check if URL path matches any allowed path configuration.
+        
+        Args:
+            url: URL to check
+            start_url: The starting URL (always allowed)
+            
+        Returns:
+            True if URL is allowed, False otherwise
+        """
+        # Always allow the start URL
+        if url == start_url:
+            return True
+            
+        # If no allowed path configs, allow all paths
+        if not self._allowed_path_configs:
+            return True
+            
+        url_parsed = urlparse(url)
+        
+        # Check if URL matches any of the allowed path configurations
+        for allowed_domain_config, allowed_path_config in self._allowed_path_configs:
+            # If a domain is specified in the config, check it matches
+            if allowed_domain_config and url_parsed.netloc != allowed_domain_config:
+                continue  # Try next config
+            
+            # Check if the path is allowed
+            if (url_parsed.path.startswith(allowed_path_config + "/") or 
+                url_parsed.path == allowed_path_config):
+                return True
+        
+        return False
+    
+    def _is_url_allowed(self, url: str) -> bool:
+        """Check if URL is allowed based on domain and path restrictions.
+        
+        Args:
+            url: URL to check
+            
+        Returns:
+            True if URL is allowed, False otherwise
+        """
+        parsed = urlparse(url)
+        
+        # Check allowed domains if configured
+        if hasattr(self.config, 'allowed_domains') and self.config.allowed_domains:
+            if parsed.netloc not in self.config.allowed_domains:
+                return False
+        
+        # Check allowed paths (new multiple paths logic)
+        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+            path_allowed = any(
+                parsed.path.startswith(allowed_path) 
+                for allowed_path in self.config.allowed_paths
+            )
+            if not path_allowed:
+                return False
+        # Fallback to old single path for backward compatibility
+        elif hasattr(self.config, 'allowed_path') and self.config.allowed_path:
+            if not parsed.path.startswith(self.config.allowed_path):
+                return False
+        
+        return True
+
+    async def download_binary_file(self, url: str, max_size: Optional[int] = None) -> Optional[ScrapedPage]:
+        """Download binary content from URL with security checks.
+        
+        Args:
+            url: URL to download
+            max_size: Maximum file size in bytes
+            
+        Returns:
+            ScrapedPage with binary content or None if download fails
+        """
+        import aiohttp
+        import mimetypes
+        from pathlib import Path
+        
+        # Security: For assets, we allow external domains (CDNs, etc.)
+        # Assets like images, CSS, JS often come from CDNs and should be allowed
+        # Path restrictions don't apply to assets - only to crawled HTML pages
+        parsed = urlparse(url)
+        
+        # Check if external assets are allowed
+        if hasattr(self.config, 'download_external_assets') and not self.config.download_external_assets:
+            # If external assets are disabled, check if it's from allowed domains
+            if hasattr(self.config, 'allowed_domains') and self.config.allowed_domains:
+                if parsed.netloc not in self.config.allowed_domains:
+                    logger.debug(f"External asset blocked (download_external_assets=False): {url}")
+                    return None
+        
+        # Security: Check for SSRF if enabled (this is always important)
+        if self.config.check_ssrf:
+            if self._is_private_ip(parsed.netloc.split(':')[0]):
+                logger.warning(f"SSRF protection: Blocked private IP for {url}")
+                return None
+        
+        try:
+            # Determine file type from URL
+            parsed_url = urlparse(url)
+            path = parsed_url.path.lower()
+            file_extension = Path(path).suffix
+            mime_type, _ = mimetypes.guess_type(path)
+            
+            # Determine file type category
+            file_type = "unknown"
+            if file_extension in [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico"]:
+                file_type = "image"
+            elif file_extension == ".pdf":
+                file_type = "pdf"
+            elif file_extension == ".css":
+                file_type = "css"
+            elif file_extension == ".js":
+                file_type = "js"
+            elif file_extension in [".woff", ".woff2", ".ttf", ".eot"]:
+                file_type = "font"
+            elif file_extension in [".mp4", ".webm", ".mp3", ".wav", ".ogg"]:
+                file_type = "media"
+            elif file_extension in [".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"]:
+                file_type = "document"
+            elif file_extension in [".zip", ".tar", ".gz", ".rar", ".7z"]:
+                file_type = "archive"
+            elif file_extension in [".md", ".txt", ".csv", ".json", ".xml"]:
+                file_type = "text"
+            
+            async with aiohttp.ClientSession() as session:
+                headers = {"User-Agent": self.config.user_agent} if self.config.user_agent else {}
+                async with session.get(url, headers=headers, timeout=self.config.timeout) as response:
+                    if response.status != 200:
+                        logger.warning(f"Failed to download {url}: HTTP {response.status}")
+                        return None
+                    
+                    # Security: Validate Content-Type header
+                    content_type_header = response.headers.get('content-type', '').lower()
+                    
+                    # Block potentially dangerous content types
+                    dangerous_content_types = [
+                        'application/x-executable',
+                        'application/x-msdownload', 
+                        'application/x-msdos-program',
+                        'application/x-sh',
+                        'application/x-shellscript',
+                        'application/x-httpd-php',
+                        'application/x-httpd-cgi',
+                    ]
+                    
+                    for dangerous_type in dangerous_content_types:
+                        if dangerous_type in content_type_header:
+                            logger.warning(f"Blocked dangerous content type {content_type_header}: {url}")
+                            return None
+                    
+                    # Check content length
+                    content_length = response.headers.get('content-length')
+                    if content_length and max_size:
+                        if int(content_length) > max_size:
+                            logger.warning(f"File {url} too large: {content_length} bytes (max: {max_size})")
+                            return None
+                    
+                    # Read content with size limit - read in chunks to prevent memory exhaustion
+                    chunks = []
+                    total_size = 0
+                    chunk_size = 8192  # 8KB chunks
+                    
+                    async for chunk in response.content.iter_chunked(chunk_size):
+                        total_size += len(chunk)
+                        if max_size and total_size > max_size:
+                            logger.warning(f"Downloaded file {url} exceeds size limit: {total_size} bytes")
+                            return None
+                        chunks.append(chunk)
+                    
+                    content = b''.join(chunks)
+                    
+                    # Validate file content
+                    from ..file_validator import FileValidator
+                    validation_result = FileValidator.validate_file(
+                        content, file_extension, content_type_header
+                    )
+                    
+                    if not validation_result['valid']:
+                        logger.error(f"File validation failed for {url}: {validation_result['error']}")
+                        # Still return the file but mark it as potentially invalid
+                        # User can decide what to do with invalid files
+                    
+                    if validation_result.get('warnings'):
+                        for warning in validation_result['warnings']:
+                            logger.warning(f"File validation warning for {url}: {warning}")
+                    
+                    # Create ScrapedPage for binary content
+                    page = ScrapedPage(
+                        url=url,
+                        content="",  # Empty for binary files
+                        title=Path(parsed_url.path).name if parsed_url.path else "download",
+                        metadata={
+                            "mime_type": mime_type or "application/octet-stream",
+                            "validation": validation_result
+                        },
+                        status_code=response.status,
+                        headers=dict(response.headers),
+                        file_type=file_type,
+                        file_size=len(content),
+                        is_binary=True,
+                        binary_content=content
+                    )
+                    
+                    return page
+                    
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout downloading {url}")
+            return None
+        except Exception as e:
+            logger.error(f"Error downloading {url}: {e}")
+            return None
+
+    def is_asset_url(self, url: str, allowed_extensions: list[str]) -> bool:
+        """Check if URL points to an asset file based on extension.
+        
+        Args:
+            url: URL to check
+            allowed_extensions: List of allowed file extensions (with dots)
+            
+        Returns:
+            True if URL is for an allowed asset type
+        """
+        parsed_url = urlparse(url)
+        path = parsed_url.path.lower()
+        
+        for ext in allowed_extensions:
+            if path.endswith(ext.lower()):
+                return True
+        return False
 
     async def __aenter__(self):
         """Async context manager entry."""

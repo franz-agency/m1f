@@ -58,19 +58,27 @@ A powerful, modular tool for converting HTML content to Markdown format,
 optimized for processing entire websites and integration with m1f.
 """
 
+# Get version from package metadata
 try:
-    from .._version import __version__, __version_info__
-except ImportError:
-    # Fallback when running as standalone script
-    __version__ = "3.3.0"
-    __version_info__ = (3, 3, 0)
+    from importlib.metadata import version
+
+    __version__ = version("m1f")
+    __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
+except Exception:
+    # During development, version might not be available
+    __version__ = "dev"
+    __version_info__ = (0, 0, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 
-from .api import Html2mdConverter
-from .config import Config, ConversionOptions
-from .core import HTMLParser, MarkdownConverter
-from .utils import convert_html, adjust_internal_links, extract_title_from_html
+from html2md_tool.api import Html2mdConverter
+from html2md_tool.config import Config, ConversionOptions
+from html2md_tool.core import HTMLParser, MarkdownConverter
+from html2md_tool.utils import (
+    convert_html,
+    adjust_internal_links,
+    extract_title_from_html,
+)
 
 # Alias for backward compatibility
 HTML2MDConverter = Html2mdConverter
@@ -94,7 +102,7 @@ __all__ = [
 
 """Module execution entry point for mf1-html2md."""
 
-from .cli import main
+from html2md_tool.cli import main
 
 if __name__ == "__main__":
     main()
@@ -125,6 +133,9 @@ from typing import List, Dict, Set, Tuple
 import json
 import sys
 
+from m1f.file_operations import safe_exists, safe_open
+from shared.colors import success, error, warning, info
+
 
 class HTMLAnalyzer:
     """Analyze HTML files to identify patterns for preprocessing."""
@@ -146,7 +157,7 @@ class HTMLAnalyzer:
     def analyze_file(self, file_path: Path) -> Dict:
         """Analyze a single HTML file."""
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with safe_open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 html = f.read()
         except Exception as e:
             return {"error": str(e)}
@@ -329,13 +340,13 @@ def main():
     analyzer = HTMLAnalyzer()
 
     # Analyze all files
-    print(f"Analyzing {len(args.files)} files...")
+    info(f"Analyzing {len(args.files)} files...")
     for file_path in args.files:
         path = Path(file_path)
-        if path.exists() and path.suffix.lower() in [".html", ".htm"]:
+        if safe_exists(path) and path.suffix.lower() in [".html", ".htm"]:
             result = analyzer.analyze_file(path)
             if "error" in result:
-                print(f"Error analyzing {path}: {result['error']}")
+                error(f"Error analyzing {path}: {result['error']}")
 
     # Get suggestions
     config = analyzer.suggest_config()
@@ -343,27 +354,27 @@ def main():
     # Show report if requested
     if args.report:
         report = analyzer.get_report()
-        print("\n=== Analysis Report ===")
+        info("\n=== Analysis Report ===")
         print(json.dumps(report, indent=2))
 
     # Show suggested configuration
-    print("\n=== Suggested Preprocessing Configuration ===")
+    info("\n=== Suggested Preprocessing Configuration ===")
     print(json.dumps(config, indent=2))
 
     # Save to file if requested
     if args.output:
-        with open(args.output, "w") as f:
+        with safe_open(args.output, "w") as f:
             json.dump(config, f, indent=2)
-        print(f"\nConfiguration saved to: {args.output}")
+        success(f"\nConfiguration saved to: {args.output}")
 
-    print(
+    info(
         "\nTo use this configuration, create a preprocessing config in your conversion script."
     )
-    print("Example usage in Python:")
-    print("```python")
-    print("from tools.mf1-html2md.preprocessors import PreprocessingConfig")
-    print("config = PreprocessingConfig(**<loaded_json>)")
-    print("```")
+    info("Example usage in Python:")
+    info("```python")
+    info("from tools.mf1-html2md.preprocessors import PreprocessingConfig")
+    info("config = PreprocessingConfig(**<loaded_json>)")
+    info("```")
 
 
 if __name__ == "__main__":
@@ -387,23 +398,45 @@ if __name__ == "__main__":
 """High-level API for HTML to Markdown conversion."""
 
 import asyncio
+import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from rich.console import Console
+# Import safe file operations
+from m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_open,
+    safe_read_text,
+    safe_write_text,
+)
+
 from rich.progress import Progress
 
-from .config import (
+# Use unified colorama module
+from shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
+
+from html2md_tool.config import (
     Config,
     ConversionOptions,
     OutputFormat,
     ExtractorConfig,
     ProcessorConfig,
 )
-from .core import HTMLParser, MarkdownConverter
-from .extractors import BaseExtractor, DefaultExtractor, load_extractor
-from .utils import configure_logging, get_logger
+from html2md_tool.core import HTMLParser, MarkdownConverter
+from html2md_tool.extractors import BaseExtractor, DefaultExtractor, load_extractor
+from html2md_tool.utils import configure_logging, get_logger
 
 logger = get_logger(__name__)
 
@@ -438,7 +471,7 @@ class Html2mdConverter:
         elif isinstance(config, dict):
             self.config = Config(**config)
         elif isinstance(config, (Path, str)):
-            from .config import load_config
+            from html2md_tool.config import load_config
 
             self.config = load_config(Path(config))
         else:
@@ -456,7 +489,7 @@ class Html2mdConverter:
         self._converter = MarkdownConverter(
             getattr(self.config, "processor", ProcessorConfig())
         )
-        self._console = Console()
+        # Console no longer needed with unified colorama
 
         # Initialize extractor
         if extractor is None:
@@ -489,14 +522,31 @@ class Html2mdConverter:
 
         # Apply preprocessing if configured
         if hasattr(self.config, "preprocessing") and self.config.preprocessing:
-            from .preprocessors import preprocess_html
+            from html2md_tool.preprocessors import preprocess_html
 
             html_content = preprocess_html(html_content, self.config.preprocessing)
 
         # Parse HTML
         parsed = self._parser.parse(html_content, base_url)
 
-        # Apply custom extractor
+        # IMPORTANT: Extract all H1 tags and title BEFORE any extraction or selector filtering
+        # This ensures we capture H1s from header, nav, or any other area
+        original_h1_tags = parsed.find_all("h1")
+        h1_contents = []
+
+        # Store all H1 contents from the original document
+        for h1 in original_h1_tags:
+            h1_text = h1.get_text(strip=True)
+            if h1_text and h1_text not in h1_contents:  # Remove duplicates
+                h1_contents.append(h1_text)
+
+        # Get title as fallback
+        title_content = None
+        title_tag = parsed.find("title")
+        if title_tag and title_tag.string:
+            title_content = title_tag.string.strip()
+
+        # Apply custom extractor AFTER we've saved H1s
         parsed = self._extractor.extract(parsed, self.config.__dict__)
 
         # Handle CSS selectors if specified (after extraction)
@@ -505,17 +555,91 @@ class Html2mdConverter:
 
             selected = parsed.select_one(self.config.conversion.outermost_selector)
             if selected:
-                # Remove ignored elements
+                # Remove ignored elements (but preserve H1)
                 if self.config.conversion.ignore_selectors:
                     for selector in self.config.conversion.ignore_selectors:
+                        # Skip H1 selector to preserve headings
+                        if selector.lower() in ["h1", "h1.*", "*h1*"]:
+                            continue
                         for elem in selected.select(selector):
-                            elem.decompose()
+                            # Double-check: don't remove H1 tags
+                            if elem.name != "h1":
+                                elem.decompose()
                 # Create new soup from selected element
                 parsed = BeautifulSoup(str(selected), "html.parser")
+
+                # Check if H1 is still present after selection
+                existing_h1s_after = parsed.find_all("h1")
+                existing_h1_texts = [
+                    h1.get_text(strip=True) for h1 in existing_h1s_after
+                ]
+
+                # Always ensure we have at least one H1
+                if h1_contents:
+                    # We had H1s in the original document
+                    if not existing_h1s_after:
+                        # All H1s were removed, restore them
+                        new_h1 = parsed.new_tag("h1")
+                        new_h1.string = h1_contents[0]
+                        parsed.insert(0, new_h1)
+
+                        # Add remaining H1s as H2
+                        for h1_text in h1_contents[1:]:
+                            new_h2 = parsed.new_tag("h2")
+                            new_h2.string = h1_text
+                            parsed.insert(1, new_h2)
+                    else:
+                        # Some H1s still exist, check if we need to add missing ones
+                        for h1_text in h1_contents:
+                            if h1_text not in existing_h1_texts:
+                                # This H1 was removed, add it back as first element
+                                new_h1 = parsed.new_tag("h1")
+                                new_h1.string = h1_text
+                                parsed.insert(0, new_h1)
+                                break  # Only add the first missing H1
+                elif not existing_h1s_after and title_content:
+                    # No H1 at all in original, create one from title
+                    new_h1 = parsed.new_tag("h1")
+                    new_h1.string = title_content
+                    parsed.insert(0, new_h1)
+        else:
+            # No outermost_selector, but still ensure H1 exists
+            if not parsed.find("h1") and title_content:
+                # No H1 in document, create one from title
+                new_h1 = parsed.new_tag("h1")
+                new_h1.string = title_content
+                # Try to insert at the beginning of body, or just at the beginning
+                body = parsed.find("body")
+                if body:
+                    body.insert(0, new_h1)
+                else:
+                    parsed.insert(0, new_h1)
 
         # Remove script and style tags that may have been missed
         for tag in parsed.find_all(["script", "style", "noscript"]):
             tag.decompose()
+
+        # Handle multiple H1 tags - convert duplicates and additional H1s to H2
+        all_h1s = parsed.find_all("h1")
+        if len(all_h1s) > 1:
+            seen_h1_texts = set()
+            first_h1_kept = False
+
+            for h1 in all_h1s:
+                h1_text = h1.get_text(strip=True)
+
+                # Remove duplicate H1s
+                if h1_text in seen_h1_texts:
+                    h1.decompose()
+                    continue
+
+                seen_h1_texts.add(h1_text)
+
+                # Keep first unique H1, convert rest to H2
+                if not first_h1_kept:
+                    first_h1_kept = True
+                else:
+                    h1.name = "h2"
 
         # Apply heading offset if specified
         if self.config.conversion.heading_offset:
@@ -547,7 +671,7 @@ class Html2mdConverter:
                 if title_tag and title_tag.string:
                     frontmatter["title"] = title_tag.string.strip()
 
-            # Add source file if provided
+            # Add source file to frontmatter if provided
             if source_file and "source_file" not in frontmatter:
                 frontmatter["source_file"] = source_file
 
@@ -563,6 +687,11 @@ class Html2mdConverter:
             markdown = self._convert_absolute_paths_to_relative(
                 markdown, source_file, self.config.destination
             )
+
+        # Adjust internal links to convert .html to .md
+        from html2md_tool.utils import adjust_internal_links
+
+        markdown = adjust_internal_links(markdown)
 
         return markdown
 
@@ -679,7 +808,7 @@ class Html2mdConverter:
                     # Check if the linked file exists with .md extension
                     # (it's probably been converted from .html to .md)
                     md_link = link_path.with_suffix(".md")
-                    if md_link.exists() or link_path.suffix in [".html", ".htm"]:
+                    if safe_exists(md_link) or link_path.suffix in [".html", ".htm"]:
                         # Use .md extension for converted files
                         link_path = link_path.with_suffix(".md")
 
@@ -697,7 +826,7 @@ class Html2mdConverter:
                                 test_path = source_dir.parent / link_path.name
                                 if ext:
                                     test_path = test_path.with_suffix(ext)
-                                if test_path.exists():
+                                if safe_exists(test_path):
                                     link_in_source = test_path
                                     break
 
@@ -765,20 +894,20 @@ class Html2mdConverter:
 
         # Read file content
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with safe_open(file_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
         except UnicodeDecodeError:
             # Try with different encodings
             for encoding in ["latin-1", "cp1252"]:
                 try:
-                    with open(file_path, "r", encoding=encoding) as f:
+                    with safe_open(file_path, "r", encoding=encoding) as f:
                         html_content = f.read()
                     break
                 except UnicodeDecodeError:
                     continue
             else:
                 # Last resort - ignore errors
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                with safe_open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     html_content = f.read()
 
         # Convert using the convert_html method which includes preprocessing
@@ -822,10 +951,10 @@ class Html2mdConverter:
         # Validate output path to ensure it stays within destination directory
         output_path = self._validate_output_path(output_path, self.config.destination)
 
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(output_path.parent, parents=True, exist_ok=True)
 
         # Write file
-        output_path.write_text(markdown, encoding=self.config.target_encoding)
+        safe_write_text(output_path, markdown, encoding=self.config.target_encoding)
 
         logger.debug(f"Written to {output_path}")
         return output_path
@@ -906,11 +1035,11 @@ class Html2mdConverter:
         if not filename.endswith(".md"):
             filename = filename.replace(".html", "") + ".md"
         output_path = Path(self.config.destination) / filename
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(output_path.parent, parents=True, exist_ok=True)
 
         # Write file
         encoding = getattr(self.config, "target_encoding", "utf-8")
-        output_path.write_text(markdown, encoding=encoding)
+        safe_write_text(output_path, markdown, encoding=encoding)
 
         logger.info(f"Saved to {output_path}")
         return output_path
@@ -1000,12 +1129,41 @@ class Html2mdConverter:
             # Validate input path
             file_path = self._validate_path(file_path, self.config.source)
 
-            # Re-initialize parser and converter in worker process
-            parser = HTMLParser(self.config.extractor)
-            converter = MarkdownConverter(self.config.processor)
+            # Read file content
+            try:
+                with safe_open(file_path, "r", encoding="utf-8") as f:
+                    html_content = f.read()
+            except UnicodeDecodeError:
+                # Try with different encodings
+                for encoding in ["latin-1", "cp1252"]:
+                    try:
+                        with safe_open(file_path, "r", encoding=encoding) as f:
+                            html_content = f.read()
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                else:
+                    # Last resort - ignore errors
+                    with safe_open(
+                        file_path, "r", encoding="utf-8", errors="ignore"
+                    ) as f:
+                        html_content = f.read()
 
-            parsed = parser.parse_file(file_path)
-            markdown = converter.convert(parsed)
+            # Convert using the convert_html method which includes all preprocessing and CSS selector logic
+            # Use a relative base URL to avoid exposing absolute paths
+            file_name = (
+                file_path.name
+                if file_path and file_path.name
+                else (Path(file_path).resolve().name if file_path else None)
+            )
+            base_url = file_name
+            markdown = self.convert_html(
+                html_content,
+                base_url=base_url,
+                source_file=str(
+                    file_path
+                ),  # Pass full path for proper relative link calculation
+            )
 
             # Determine output path
             # Resolve both paths to handle cases where source is "."
@@ -1034,8 +1192,8 @@ class Html2mdConverter:
                 output_path, self.config.destination
             )
 
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(markdown, encoding=self.config.target_encoding)
+            safe_mkdir(output_path.parent, parents=True, exist_ok=True)
+            safe_write_text(output_path, markdown, encoding=self.config.target_encoding)
 
             return output_path
         except Exception as e:
@@ -1054,7 +1212,7 @@ class Html2mdConverter:
         logger.info("Generating m1f bundle...")
 
         # Import m1f integration
-        from .processors.m1f_integration import M1FBundler
+        from html2md_tool.processors.m1f_integration import M1FBundler
 
         bundler = M1FBundler(self.config.m1f)
         bundle_path = bundler.create_bundle(
@@ -1214,7 +1372,7 @@ def convert_html(html_content: str, **kwargs) -> str:
         Markdown content
     """
     from pathlib import Path
-    from .config.models import ConversionOptions, Config
+    from html2md_tool.config.models import ConversionOptions, Config
 
     # Create minimal config
     config = Config(
@@ -1253,16 +1411,37 @@ Claude runner with reliable subprocess execution and streaming support.
 import subprocess
 import sys
 import os
+import json
+import threading
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
-from rich.console import Console
 
-console = Console()
+# Import safe file operations
+from m1f.file_operations import safe_exists, safe_is_file
+
+# Use unified colorama module
+from shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
+
+# Import shared Claude utilities
+from shared.claude_utils import (
+    ClaudeBinaryFinder,
+    ClaudeErrorHandler,
+    ClaudeConfig,
+    ClaudeRunner as BaseClaudeRunner,
+)
 
 
-class ClaudeRunner:
+class ClaudeRunner(BaseClaudeRunner):
     """Handles Claude CLI execution with reliable subprocess support."""
 
     def __init__(
@@ -1270,38 +1449,11 @@ class ClaudeRunner:
         max_workers: int = 5,
         working_dir: Optional[str] = None,
         claude_binary: Optional[str] = None,
+        config: Optional[ClaudeConfig] = None,
     ):
+        super().__init__(config=config, binary_path=claude_binary)
         self.max_workers = max_workers
         self.working_dir = working_dir or str(Path.cwd())
-        self.claude_binary = claude_binary or self._find_claude_binary()
-
-    def _find_claude_binary(self) -> str:
-        """Find Claude binary in system."""
-        # Try default command first
-        try:
-            subprocess.run(
-                ["claude", "--version"], capture_output=True, check=True, timeout=5
-            )
-            return "claude"
-        except (
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            subprocess.TimeoutExpired,
-        ):
-            pass
-
-        # Check known locations
-        claude_paths = [
-            Path.home() / ".claude" / "local" / "claude",
-            Path("/usr/local/bin/claude"),
-            Path("/usr/bin/claude"),
-        ]
-
-        for path in claude_paths:
-            if path.exists() and path.is_file():
-                return str(path)
-
-        raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
 
     def run_claude_simple(
         self,
@@ -1317,7 +1469,7 @@ class ClaudeRunner:
         Returns: (returncode, stdout, stderr)
         """
         cmd = [
-            self.claude_binary,
+            self.get_binary(),
             "--print",  # Use print mode for non-interactive output
             "--allowedTools",
             allowed_tools,
@@ -1332,9 +1484,9 @@ class ClaudeRunner:
         env["PYTHONUNBUFFERED"] = "1"
 
         if show_output:
-            console.print("🤖 Running Claude...", style="blue")
-            console.print(f"Command: {' '.join(cmd[:3])} ...", style="dim")
-            console.print(f"Working dir: {self.working_dir}", style="dim")
+            info(f"{Colors.BLUE}🤖 Running Claude...{Colors.RESET}")
+            info(f"{Colors.DIM}Command: {' '.join(cmd[:3])} ...{Colors.RESET}")
+            info(f"{Colors.DIM}Working dir: {self.working_dir}{Colors.RESET}")
 
         try:
             # Use a more conservative timeout for complex tasks
@@ -1353,28 +1505,24 @@ class ClaudeRunner:
 
             if show_output:
                 if result.returncode == 0:
-                    console.print("✅ Claude processing complete", style="green")
+                    success("Claude processing complete")
                 else:
-                    console.print(
-                        f"❌ Claude failed with code {result.returncode}", style="red"
-                    )
+                    error(f"Claude failed with code {result.returncode}")
                     if result.stderr:
-                        console.print(
-                            f"Error: {result.stderr[:200]}...", style="red dim"
+                        error(
+                            f"{Colors.DIM}Error: {result.stderr[:200]}...{Colors.RESET}"
                         )
 
             return result.returncode, result.stdout, result.stderr
 
         except subprocess.TimeoutExpired:
-            console.print(
-                f"⏰ Claude timed out after {actual_timeout}s", style="yellow"
-            )
-            console.print(
-                "💡 Try increasing timeout or simplifying the task", style="blue"
+            warning(f"⏰ Claude timed out after {actual_timeout}s")
+            info(
+                f"{Colors.BLUE}💡 Try increasing timeout or simplifying the task{Colors.RESET}"
             )
             return -1, "", f"Process timed out after {actual_timeout}s"
         except Exception as e:
-            console.print(f"❌ Error running Claude: {e}", style="red")
+            self.error_handler.handle_api_error(e, operation="Claude simple")
             return -1, "", str(e)
 
     def run_claude_streaming(
@@ -1395,7 +1543,7 @@ class ClaudeRunner:
         work_dir = working_dir if working_dir is not None else self.working_dir
 
         # Build command
-        cmd = [self.claude_binary, "--print", "--allowedTools", allowed_tools]
+        cmd = [self.get_binary(), "-p", "--allowedTools", allowed_tools]
 
         if add_dir:
             cmd.extend(["--add-dir", add_dir])
@@ -1440,20 +1588,15 @@ class ClaudeRunner:
                     if show_output:
                         current_time = time.time()
                         elapsed = current_time - start_time
-                        # Show Claude's actual output (truncate very long lines)
-                        if len(line) > 200:
-                            console.print(f"[{elapsed:.1f}s] {line[:197]}...")
-                        else:
-                            console.print(f"[{elapsed:.1f}s] {line}")
+                        # Show Claude's actual output (no truncation, terminal will soft wrap)
+                        info(f"[{elapsed:.1f}s] {line}")
                         last_output_time = current_time
 
                 # Check timeout
                 if time.time() - start_time > timeout:
                     process.kill()
                     if show_output:
-                        console.print(
-                            f"⏰ Claude timed out after {timeout}s", style="yellow"
-                        )
+                        warning(f"⏰ Claude timed out after {timeout}s")
                     return -1, "\n".join(stdout_lines), "Process timed out"
 
             # Get any remaining output
@@ -1477,20 +1620,286 @@ class ClaudeRunner:
             if show_output:
                 total_time = time.time() - start_time
                 if process.returncode == 0:
-                    console.print(f"✅ Claude processing complete", style="green")
+                    success("Claude processing complete")
                 else:
-                    console.print(
-                        f"❌ Claude failed with code {process.returncode}", style="red"
-                    )
+                    error(f"Claude failed with code {process.returncode}")
                     if stderr:
-                        console.print(f"Error: {stderr[:200]}...", style="red dim")
+                        error(f"{Colors.DIM}Error: {stderr[:200]}...{Colors.RESET}")
 
             return process.returncode, stdout, stderr
 
         except Exception as e:
             if show_output:
-                console.print(f"❌ Error running Claude: {e}", style="red")
+                self.error_handler.handle_api_error(e, operation="Claude streaming")
             return -1, "\n".join(stdout_lines), str(e)
+
+    def run_claude_streaming_json(
+        self,
+        prompt: str,
+        allowed_tools: str = "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write,Task",
+        add_dir: Optional[str] = None,
+        timeout: int = 600,
+        working_dir: Optional[str] = None,
+        show_progress: bool = True,
+    ) -> Tuple[int, str, str]:
+        """
+        Run Claude with stream-json output format and real-time progress display.
+
+        Returns: (returncode, stdout, stderr)
+        """
+        # Use working directory if provided
+        work_dir = working_dir or self.working_dir
+
+        # Build command with stream-json format
+        cmd = [
+            self.get_binary(),
+            "-p",
+            "--output-format",
+            "stream-json",
+            "--allowedTools",
+            allowed_tools,
+            "--verbose",  # Required for stream-json with -p
+        ]
+
+        if add_dir:
+            cmd.extend(["--add-dir", add_dir])
+
+        # Set environment for unbuffered output
+        env = os.environ.copy()
+        env["PYTHONUNBUFFERED"] = "1"
+
+        if show_progress:
+            info(
+                f"{Colors.BLUE}🤖 Starting Claude with real-time streaming...{Colors.RESET}"
+            )
+
+        # Collect all output
+        stdout_lines = []
+        stderr_lines = []
+
+        try:
+            # Start the process
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=work_dir,
+                text=True,
+                bufsize=1,  # Line buffered
+                universal_newlines=True,
+                env=env,
+            )
+
+            # Send the prompt and close stdin
+            process.stdin.write(prompt)
+            process.stdin.close()
+
+            # Create thread to read stderr
+            def read_stderr():
+                while True:
+                    err_line = process.stderr.readline()
+                    if not err_line:
+                        break
+                    stderr_lines.append(err_line.strip())
+                    if show_progress and err_line.strip():
+                        warning(f"⚠️  {err_line.strip()}")
+
+            stderr_thread = threading.Thread(target=read_stderr)
+            stderr_thread.start()
+
+            # Track timing
+            start_time = time.time()
+
+            if show_progress:
+                info("🔄 Processing with Claude (streaming output)...")
+
+            # Read stdout line by line and parse JSON in real-time
+            while True:
+                line = process.stdout.readline()
+                if not line and process.poll() is not None:
+                    break
+
+                if line:
+                    line = line.strip()
+                    stdout_lines.append(line)
+
+                    # Parse and display progress in real-time
+                    if line and show_progress:
+                        try:
+                            json_obj = json.loads(line)
+                            self._display_claude_progress(json_obj, start_time)
+                        except json.JSONDecodeError:
+                            # Not a JSON line, might be other output
+                            if line and not line.startswith("Running command:"):
+                                info(
+                                    f"{Colors.DIM}Raw: {line[:100]}{'...' if len(line) > 100 else ''}{Colors.RESET}"
+                                )
+
+                # Check timeout
+                if time.time() - start_time > timeout:
+                    process.kill()
+                    if show_progress:
+                        warning(f"⏰ Claude timed out after {timeout}s")
+                    return -1, "\n".join(stdout_lines), "Process timed out"
+
+            # Wait for process to complete
+            process.wait()
+
+            # Wait for stderr thread to finish
+            stderr_thread.join()
+
+            # Join all output
+            stdout = "\n".join(stdout_lines)
+            stderr = "\n".join(stderr_lines)
+
+            if show_progress:
+                total_time = time.time() - start_time
+                if process.returncode == 0:
+                    success(f"✅ Claude processing complete ({total_time:.1f}s)")
+                else:
+                    error(f"❌ Claude failed with code {process.returncode}")
+                    if stderr:
+                        error(f"{Colors.DIM}Error: {stderr[:200]}...{Colors.RESET}")
+
+            return process.returncode, stdout, stderr
+
+        except Exception as e:
+            if show_progress:
+                self.error_handler.handle_api_error(
+                    e, operation="Claude JSON streaming"
+                )
+            return -1, "\n".join(stdout_lines), str(e)
+
+    def _display_claude_progress(self, json_obj: Dict[str, Any], start_time: float):
+        """Display friendly progress messages based on Claude's JSON output."""
+        msg_type = json_obj.get("type", "unknown")
+        elapsed = time.time() - start_time
+
+        if msg_type == "system" and json_obj.get("subtype") == "init":
+            info("🚀 Starting conversation with Claude")
+        elif msg_type == "assistant":
+            # Handle assistant messages
+            message = json_obj.get("message", {})
+            if isinstance(message, dict):
+                content_parts = message.get("content", [])
+                if isinstance(content_parts, list):
+                    for part in content_parts:
+                        if isinstance(part, dict):
+                            if part.get("type") == "text":
+                                text = part.get("text", "")
+                                # Extract meaningful actions from assistant messages
+                                if "Task tool" in text or "Task(" in text:
+                                    info(
+                                        f"[{elapsed:.0f}s] 🔍 Claude is launching a subagent..."
+                                    )
+                                elif "Edit tool" in text or "Edit(" in text:
+                                    info(
+                                        f"[{elapsed:.0f}s] ✏️  Claude is editing files..."
+                                    )
+                                elif "Read tool" in text or "Read(" in text:
+                                    info(
+                                        f"[{elapsed:.0f}s] 📖 Claude is reading files..."
+                                    )
+                                elif (
+                                    "Grep tool" in text
+                                    or "Grep(" in text
+                                    or "search" in text.lower()
+                                ):
+                                    info(
+                                        f"[{elapsed:.0f}s] 🔎 Claude is searching for content..."
+                                    )
+                                elif "TodoWrite" in text:
+                                    info(
+                                        f"[{elapsed:.0f}s] 📝 Claude is managing tasks..."
+                                    )
+                                elif "Write tool" in text or "Write(" in text:
+                                    info(
+                                        f"[{elapsed:.0f}s] 💾 Claude is writing files..."
+                                    )
+                                elif len(text) > 50:  # Significant text output
+                                    info(f"[{elapsed:.0f}s] 💭 Claude is analyzing...")
+                            elif part.get("type") == "tool_use":
+                                # Handle inline tool calls in assistant messages
+                                tool_name = part.get("name", "unknown")
+                                tool_input = part.get("input", {})
+
+                                if tool_name == "Edit":
+                                    file_path = tool_input.get("file_path", "")
+                                    file_name = (
+                                        os.path.basename(file_path)
+                                        if file_path
+                                        else "file"
+                                    )
+                                    info(f"[{elapsed:.0f}s] ✏️  Editing: {file_name}")
+                                elif tool_name == "MultiEdit":
+                                    file_path = tool_input.get("file_path", "")
+                                    edits_count = len(tool_input.get("edits", []))
+                                    file_name = (
+                                        os.path.basename(file_path)
+                                        if file_path
+                                        else "file"
+                                    )
+                                    info(
+                                        f"[{elapsed:.0f}s] ✏️  Making {edits_count} edits to: {file_name}"
+                                    )
+                                elif tool_name == "Read":
+                                    file_path = tool_input.get("file_path", "")
+                                    file_name = (
+                                        os.path.basename(file_path)
+                                        if file_path
+                                        else "file"
+                                    )
+                                    info(f"[{elapsed:.0f}s] 📖 Reading: {file_name}")
+                                elif tool_name == "Task":
+                                    desc = tool_input.get("description", "")
+                                    agent_type = tool_input.get(
+                                        "subagent_type", "general"
+                                    )
+                                    info(
+                                        f"[{elapsed:.0f}s] 🤖 Launching {agent_type} subagent: {desc[:50]}{'...' if len(desc) > 50 else ''}"
+                                    )
+                                elif tool_name == "Grep":
+                                    pattern = tool_input.get("pattern", "")
+                                    path = tool_input.get("path", ".")
+                                    info(
+                                        f"[{elapsed:.0f}s] 🔎 Searching for '{pattern[:30]}{'...' if len(pattern) > 30 else ''}' in {os.path.basename(path)}"
+                                    )
+                                elif tool_name == "TodoWrite":
+                                    todos = tool_input.get("todos", [])
+                                    info(
+                                        f"[{elapsed:.0f}s] 📝 Managing {len(todos)} tasks"
+                                    )
+                                elif tool_name == "Write":
+                                    file_path = tool_input.get("file_path", "")
+                                    file_name = (
+                                        os.path.basename(file_path)
+                                        if file_path
+                                        else "file"
+                                    )
+                                    info(f"[{elapsed:.0f}s] 💾 Writing: {file_name}")
+                                elif tool_name == "Glob":
+                                    pattern = tool_input.get("pattern", "")
+                                    info(
+                                        f"[{elapsed:.0f}s] 📁 Finding files: {pattern}"
+                                    )
+                                elif tool_name == "LS":
+                                    path = tool_input.get("path", "")
+                                    info(
+                                        f"[{elapsed:.0f}s] 📂 Listing: {os.path.basename(path) if path else 'directory'}"
+                                    )
+                                else:
+                                    info(f"[{elapsed:.0f}s] 🔧 Using tool: {tool_name}")
+        elif msg_type == "result":
+            if json_obj.get("subtype") == "success":
+                success(f"[{elapsed:.0f}s] ✅ Task completed successfully")
+            else:
+                warning(f"[{elapsed:.0f}s] ❌ Task failed")
+        elif msg_type == "user":
+            # Skip displaying user messages (the prompt) unless it's a tool result
+            parent_id = json_obj.get("parent_tool_use_id")
+            if parent_id:
+                info(f"[{elapsed:.0f}s]   ↳ Tool result received")
 
     def run_claude_parallel(
         self, tasks: List[Dict[str, Any]], show_progress: bool = True
@@ -1548,9 +1957,8 @@ class ClaudeRunner:
                     elapsed_time = (
                         time.time() - start_time if "start_time" in locals() else 0
                     )
-                    console.print(
-                        f"📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]",
-                        style="blue",
+                    info(
+                        f"{Colors.BLUE}📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]{Colors.RESET}"
                     )
 
                 try:
@@ -1566,12 +1974,12 @@ class ClaudeRunner:
                     }
 
                     if returncode == 0:
-                        console.print(f"✅ Completed: {task['name']}", style="green")
+                        success(f"Completed: {task['name']}")
                     else:
-                        console.print(f"❌ Failed: {task['name']}", style="red")
+                        error(f"Failed: {task['name']}")
 
                 except Exception as e:
-                    console.print(f"❌ Exception in {task['name']}: {e}", style="red")
+                    error(f"Exception in {task['name']}: {e}")
                     result = {
                         "name": task["name"],
                         "success": False,
@@ -1606,11 +2014,23 @@ Simplified Claude runner for debugging.
 
 import subprocess
 import os
+import sys
 from pathlib import Path
 from typing import Tuple, Optional
-from rich.console import Console
 
-console = Console()
+# Import safe file operations
+from m1f.file_operations import safe_exists, safe_is_file
+
+# Use unified colorama module
+from shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 
 class ClaudeRunnerSimple:
@@ -1629,7 +2049,7 @@ class ClaudeRunnerSimple:
         ]
 
         for path in claude_paths:
-            if path.exists() and path.is_file():
+            if safe_exists(path) and safe_is_file(path):
                 return str(path)
 
         # Try default command
@@ -1668,11 +2088,7 @@ class ClaudeRunnerSimple:
 
         try:
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=working_dir,
+                cmd, capture_output=True, text=True, timeout=timeout, cwd=working_dir
             )
 
             return result.returncode, result.stdout, result.stderr
@@ -1704,82 +2120,115 @@ import argparse
 import sys
 from pathlib import Path
 from typing import List, Optional
+from collections import Counter
 
-from rich.console import Console
+# Import statements using absolute imports
+from m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_open,
+    safe_read_text,
+    safe_write_text,
+)
+from shared.colors import (
+    Colors,
+    ColoredHelpFormatter,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
+from shared.cli import CustomArgumentParser
+from html2md_tool import __version__
+from html2md_tool.api import Html2mdConverter
+from html2md_tool.config import Config, OutputFormat
+from html2md_tool.claude_runner import ClaudeRunner
 
-from . import __version__
-from .api import Html2mdConverter
-from .config import Config, OutputFormat
-from .claude_runner import ClaudeRunner
 
-console = Console()
-
-
-def create_parser() -> argparse.ArgumentParser:
+def create_parser() -> CustomArgumentParser:
     """Create the argument parser."""
-    parser = argparse.ArgumentParser(
+    description = """m1f-html2md - HTML to Markdown Converter
+=====================================
+
+Convert HTML files to clean Markdown format with advanced content extraction options.
+Supports both local processing and Claude AI-powered conversion for optimal results.
+
+Perfect for:
+• Converting scraped documentation to readable Markdown
+• Extracting main content from complex HTML layouts
+• Batch processing entire documentation sites
+• AI-powered intelligent content extraction"""
+
+    epilog = """Examples:
+  %(prog)s convert file.html -o file.md
+  %(prog)s convert ./html/ -o ./markdown/
+  %(prog)s convert ./html/ -c config.yaml
+  %(prog)s convert ./html/ -o ./md/ --content-selector "article.post"
+  %(prog)s analyze ./html/ --claude
+  %(prog)s analyze ./html/ --claude --analyze-files 10
+  %(prog)s convert ./html/ -o ./markdown/ --claude --model opus
+  
+For more information, see the documentation."""
+
+    parser = CustomArgumentParser(
         prog="m1f-html2md",
-        description="Convert HTML files to Markdown format with advanced options and optional Claude AI integration",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Convert a single file
-  m1f-html2md convert file.html -o file.md
-  
-  # Convert entire directory
-  m1f-html2md convert ./docs/html/ -o ./docs/markdown/
-  
-  # Use configuration file
-  m1f-html2md convert ./html/ -c config.yaml
-  
-  # Extract specific content
-  m1f-html2md convert ./html/ -o ./md/ --content-selector "article.post"
-  
-  # Analyze HTML structure with AI assistance
-  m1f-html2md analyze ./html/ --claude
-  
-  # Analyze with more files for better coverage
-  m1f-html2md analyze ./html/ --claude --analyze-files 10
-  
-  # Convert HTML to clean Markdown using AI
-  m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus --sleep 2
-""",
+        description=description,
+        epilog=epilog,
+        formatter_class=ColoredHelpFormatter,
+        add_help=True,
     )
 
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}"
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show program version and exit",
     )
 
-    # Global options
-    parser.add_argument(
+    # Output control group
+    output_group = parser.add_argument_group("Output Control")
+    output_group.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
-
-    parser.add_argument(
+    output_group.add_argument(
         "-q", "--quiet", action="store_true", help="Suppress all output except errors"
     )
-
-    parser.add_argument("--log-file", type=Path, help="Log to file")
+    output_group.add_argument("--log-file", type=Path, help="Write logs to file")
 
     # Subcommands
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    subparsers = parser.add_subparsers(
+        dest="command",
+        help="Available commands",
+        required=True,
+        metavar="COMMAND",
+    )
 
     # Convert command
     convert_parser = subparsers.add_parser(
         "convert",
-        help="Convert HTML files to Markdown (supports Claude AI with --claude)",
+        help="Convert HTML files to Markdown",
+        formatter_class=ColoredHelpFormatter,
     )
     add_convert_arguments(convert_parser)
 
     # Analyze command
     analyze_parser = subparsers.add_parser(
         "analyze",
-        help="Analyze HTML structure for selector suggestions (supports Claude AI with --claude)",
+        help="Analyze HTML structure for content extraction",
+        formatter_class=ColoredHelpFormatter,
     )
     add_analyze_arguments(analyze_parser)
 
     # Config command
-    config_parser = subparsers.add_parser("config", help="Generate configuration file")
+    config_parser = subparsers.add_parser(
+        "config",
+        help="Generate configuration file template",
+        formatter_class=ColoredHelpFormatter,
+    )
     add_config_arguments(config_parser)
 
     return parser
@@ -1787,61 +2236,83 @@ Examples:
 
 def add_convert_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for convert command."""
-    parser.add_argument("source", type=Path, help="Source file or directory")
-
+    # Positional arguments
+    parser.add_argument("source", type=Path, help="Source HTML file or directory")
     parser.add_argument(
         "-o", "--output", type=Path, required=True, help="Output file or directory"
     )
 
-    parser.add_argument("-c", "--config", type=Path, help="Configuration file")
-
-    parser.add_argument(
+    # Configuration group
+    config_group = parser.add_argument_group("Configuration")
+    config_group.add_argument(
+        "-c", "--config", type=Path, help="Configuration file (YAML/JSON/TOML)"
+    )
+    config_group.add_argument(
         "--format",
         choices=["markdown", "m1f_bundle", "json"],
         default="markdown",
-        help="Output format",
+        help="Output format (default: markdown)",
     )
 
-    # Content extraction options
-    parser.add_argument("--content-selector", help="CSS selector for main content")
-
-    parser.add_argument("--ignore-selectors", nargs="+", help="CSS selectors to ignore")
-
-    parser.add_argument(
-        "--heading-offset", type=int, default=0, help="Offset heading levels"
+    # Content extraction group
+    extraction_group = parser.add_argument_group("Content Extraction")
+    extraction_group.add_argument(
+        "--content-selector",
+        metavar="SELECTOR",
+        help="CSS selector for main content area",
+    )
+    extraction_group.add_argument(
+        "--ignore-selectors",
+        nargs="+",
+        metavar="SELECTOR",
+        help="CSS selectors to ignore (nav, header, footer, etc.)",
+    )
+    extraction_group.add_argument(
+        "--extractor",
+        type=Path,
+        metavar="FILE",
+        help="Path to custom extractor Python file",
     )
 
-    parser.add_argument(
-        "--no-frontmatter", action="store_true", help="Don't add YAML frontmatter"
+    # Processing options group
+    processing_group = parser.add_argument_group("Processing Options")
+    processing_group.add_argument(
+        "--heading-offset",
+        type=int,
+        default=0,
+        metavar="N",
+        help="Offset heading levels by N (default: 0)",
+    )
+    processing_group.add_argument(
+        "--no-frontmatter",
+        action="store_true",
+        help="Don't add YAML frontmatter to output",
+    )
+    processing_group.add_argument(
+        "--parallel",
+        action="store_true",
+        help="Enable parallel processing for multiple files",
     )
 
-    parser.add_argument(
-        "--parallel", action="store_true", help="Enable parallel processing"
-    )
-
-    parser.add_argument(
-        "--extractor", type=Path, help="Path to custom extractor Python file"
-    )
-
-    # Claude AI conversion options
-    parser.add_argument(
+    # Claude AI options group
+    ai_group = parser.add_argument_group("Claude AI Options")
+    ai_group.add_argument(
         "--claude",
         action="store_true",
-        help="Use Claude AI to convert HTML to Markdown (content only, no headers/navigation)",
+        help="Use Claude AI for intelligent HTML to Markdown conversion",
     )
-
-    parser.add_argument(
+    ai_group.add_argument(
         "--model",
         choices=["opus", "sonnet"],
         default="sonnet",
         help="Claude model to use (default: sonnet)",
     )
-
-    parser.add_argument(
+    ai_group.add_argument(
         "--sleep",
         type=float,
         default=1.0,
-        help="Sleep time in seconds between Claude API calls (default: 1.0)",
+        metavar="SECONDS",
+        help="Delay between Claude API calls (default: 1.0)",
     )
 
 
@@ -1851,70 +2322,73 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         "paths",
         nargs="+",
         type=Path,
-        help="HTML files or directories to analyze (automatically finds all HTML files in directories)",
+        help="HTML files or directories to analyze",
     )
 
-    parser.add_argument(
-        "--show-structure", action="store_true", help="Show detailed HTML structure"
+    # Analysis options group
+    analysis_group = parser.add_argument_group("Analysis Options")
+    analysis_group.add_argument(
+        "--show-structure",
+        action="store_true",
+        help="Show detailed HTML structure analysis",
     )
-
-    parser.add_argument(
+    analysis_group.add_argument(
         "--common-patterns",
         action="store_true",
-        help="Find common patterns across files",
+        help="Find common patterns across multiple files",
     )
-
-    parser.add_argument(
+    analysis_group.add_argument(
         "--suggest-selectors",
         action="store_true",
         help="Suggest CSS selectors for content extraction",
     )
 
-    parser.add_argument(
+    # Claude AI options group
+    ai_group = parser.add_argument_group("Claude AI Options")
+    ai_group.add_argument(
         "--claude",
         action="store_true",
-        help="Use Claude AI to intelligently select representative files and suggest selectors",
+        help="Use Claude AI for intelligent analysis and selector suggestions",
     )
-
-    parser.add_argument(
+    ai_group.add_argument(
         "--analyze-files",
         type=int,
         default=5,
         metavar="N",
         help="Number of files to analyze with Claude (1-20, default: 5)",
     )
-
-    parser.add_argument(
+    ai_group.add_argument(
         "--parallel-workers",
         type=int,
         default=5,
         metavar="N",
-        help="Number of parallel Claude sessions for file analysis (1-10, default: 5)",
+        help="Number of parallel Claude sessions (1-10, default: 5)",
     )
-
-    parser.add_argument(
+    ai_group.add_argument(
         "--project-description",
         type=str,
         default="",
-        help="Project description to help Claude understand the context (avoids interactive prompt)",
+        metavar="TEXT",
+        help="Project description for Claude context",
     )
 
 
 def add_config_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for config command."""
-    parser.add_argument(
+    # Configuration options group
+    config_group = parser.add_argument_group("Configuration Options")
+    config_group.add_argument(
         "-o",
         "--output",
         type=Path,
         default=Path("config.yaml"),
-        help="Output configuration file",
+        help="Output configuration file (default: config.yaml)",
     )
-
-    parser.add_argument(
+    config_group.add_argument(
         "--format",
         choices=["yaml", "toml", "json"],
         default="yaml",
-        help="Configuration format",
+        help="Configuration file format (default: yaml)",
     )
 
 
@@ -1926,20 +2400,22 @@ def handle_convert(args: argparse.Namespace) -> None:
         return
 
     # Load configuration
-    from .config import Config
+    from html2md_tool.config import Config
 
     if args.config:
-        from .config import load_config
+        from html2md_tool.config import load_config
         import yaml
 
         # Load the config file to check its contents
-        with open(args.config, "r") as f:
+        with safe_open(args.config, "r") as f:
             config_data = yaml.safe_load(f)
 
         # If the config only contains extractor settings (from Claude analysis),
         # create a full config with source and destination from CLI
         if "source" not in config_data and "destination" not in config_data:
-            source_path = args.source.parent if args.source.is_file() else args.source
+            source_path = (
+                args.source.parent if safe_is_file(args.source) else args.source
+            )
             config = Config(source=source_path, destination=args.output)
 
             # Apply extractor settings from the config file
@@ -1947,26 +2423,41 @@ def handle_convert(args: argparse.Namespace) -> None:
                 for key, value in config_data["extractor"].items():
                     if hasattr(config.extractor, key):
                         setattr(config.extractor, key, value)
+
+            # Apply conversion settings from the config file
+            if "conversion" in config_data:
+                for key, value in config_data["conversion"].items():
+                    if hasattr(config.conversion, key):
+                        setattr(config.conversion, key, value)
         else:
             # Full config file - load it normally
             config = load_config(args.config)
+
+            # IMPORTANT: CLI arguments should always override config file values
+            # Only override if CLI args were explicitly provided
+            cli_source_path = (
+                args.source.parent if safe_is_file(args.source) else args.source
+            )
+            config.source = cli_source_path
+            config.destination = args.output
     else:
         # When source is a file, use its parent directory as the source
-        source_path = args.source.parent if args.source.is_file() else args.source
+        source_path = args.source.parent if safe_is_file(args.source) else args.source
         config = Config(source=source_path, destination=args.output)
 
     # Update config with CLI arguments
     if args.content_selector:
-        config.extractor.content_selector = args.content_selector
+        config.conversion.outermost_selector = args.content_selector
 
     if args.ignore_selectors:
-        config.extractor.ignore_selectors = args.ignore_selectors
+        config.conversion.ignore_selectors = args.ignore_selectors
 
     if args.heading_offset:
         config.processor.heading_offset = args.heading_offset
 
     if args.no_frontmatter:
-        config.processor.add_frontmatter = False
+        config.conversion.generate_frontmatter = False
+        config.conversion.add_frontmatter = False
 
     if args.parallel:
         config.parallel = True
@@ -1983,18 +2474,18 @@ def handle_convert(args: argparse.Namespace) -> None:
     converter = Html2mdConverter(config, extractor=extractor)
 
     # Convert based on source type
-    if args.source.is_file():
-        console.print(f"Converting file: {args.source}")
+    if safe_is_file(args.source):
+        info(f"Converting file: {args.source}")
         output = converter.convert_file(args.source)
-        console.print(f"✅ Converted to: {output}", style="green")
+        success(f"Converted to: {output}")
 
-    elif args.source.is_dir():
-        console.print(f"Converting directory: {args.source}")
+    elif safe_is_dir(args.source):
+        info(f"Converting directory: {args.source}")
         outputs = converter.convert_directory()
-        console.print(f"✅ Converted {len(outputs)} files", style="green")
+        success(f"Converted {len(outputs)} files")
 
     else:
-        console.print(f"❌ Source not found: {args.source}", style="red")
+        error(f"Source not found: {args.source}")
         sys.exit(1)
 
 
@@ -2007,34 +2498,34 @@ def handle_analyze(args: argparse.Namespace) -> None:
     # Collect all HTML files from provided paths
     html_files = []
     for path in args.paths:
-        if not path.exists():
-            console.print(f"❌ Path not found: {path}", style="red")
+        if not safe_exists(path):
+            error(f"Path not found: {path}")
             continue
 
-        if path.is_file():
+        if safe_is_file(path):
             # Single file
             if path.suffix.lower() in [".html", ".htm"]:
                 html_files.append(path)
             else:
-                console.print(f"⚠️  Skipping non-HTML file: {path}", style="yellow")
-        elif path.is_dir():
+                warning(f"Skipping non-HTML file: {path}")
+        elif safe_is_dir(path):
             # Directory - find all HTML files recursively
             found_files = list(path.rglob("*.html")) + list(path.rglob("*.htm"))
             if found_files:
                 html_files.extend(found_files)
-                console.print(
-                    f"Found {len(found_files)} HTML files in {path}", style="blue"
+                info(
+                    f"{Colors.BLUE}Found {len(found_files)} HTML files in {path}{Colors.RESET}"
                 )
             else:
-                console.print(f"⚠️  No HTML files found in {path}", style="yellow")
+                warning(f"No HTML files found in {path}")
 
     if not html_files:
-        console.print("❌ No HTML files to analyze", style="red")
+        error("No HTML files to analyze")
         sys.exit(1)
 
     # If --claude flag is set, use Claude AI for analysis
     if args.claude:
-        console.print(f"\nFound {len(html_files)} HTML files total")
+        info(f"\nFound {len(html_files)} HTML files total")
         _handle_claude_analysis(
             html_files,
             args.analyze_files,
@@ -2044,13 +2535,13 @@ def handle_analyze(args: argparse.Namespace) -> None:
         return
 
     # Otherwise, do local analysis
-    console.print(f"\nAnalyzing {len(html_files)} HTML files...")
+    info(f"\nAnalyzing {len(html_files)} HTML files...")
 
     # Read and parse all files
     parsed_files = []
     for file_path in html_files:
         try:
-            content = file_path.read_text(encoding="utf-8")
+            content = safe_read_text(file_path, encoding="utf-8")
             soup = BeautifulSoup(content, "html.parser")
             parsed_files.append((file_path, soup))
             # Show relative path from current directory for better identification
@@ -2058,49 +2549,49 @@ def handle_analyze(args: argparse.Namespace) -> None:
                 relative_path = file_path.relative_to(Path.cwd())
             except ValueError:
                 relative_path = file_path
-            console.print(f"✅ Parsed: {relative_path}", style="green")
+            success(f"Parsed: {relative_path}")
         except Exception as e:
-            console.print(f"❌ Error parsing {file_path}: {e}", style="red")
+            error(f"Error parsing {file_path}: {e}")
 
     if not parsed_files:
-        console.print("No files could be parsed", style="red")
+        error("No files could be parsed")
         sys.exit(1)
 
     # Analyze structure
     if args.show_structure:
-        console.print("\n[bold]HTML Structure Analysis:[/bold]")
+        header("HTML Structure Analysis:")
         for file_path, soup in parsed_files:
-            console.print(f"\n[blue]{file_path.name}:[/blue]")
+            info(f"\n{Colors.BLUE}{file_path.name}:{Colors.RESET}")
             _show_structure(soup)
 
     # Find common patterns
     if args.common_patterns:
-        console.print("\n[bold]Common Patterns:[/bold]")
+        header("Common Patterns:")
         _find_common_patterns(parsed_files)
 
     # Suggest selectors
     if args.suggest_selectors or (not args.show_structure and not args.common_patterns):
-        console.print("\n[bold]Suggested CSS Selectors:[/bold]")
+        header("Suggested CSS Selectors:")
         suggestions = _suggest_selectors(parsed_files)
 
-        console.print("\n[yellow]Content selectors:[/yellow]")
+        info(f"\n{Colors.YELLOW}Content selectors:{Colors.RESET}")
         for selector, confidence in suggestions["content"]:
-            console.print(f"  {selector} (confidence: {confidence:.0%})")
+            info(f"  {selector} (confidence: {confidence:.0%})")
 
-        console.print("\n[yellow]Elements to ignore:[/yellow]")
+        info(f"\n{Colors.YELLOW}Elements to ignore:{Colors.RESET}")
         for selector in suggestions["ignore"]:
-            console.print(f"  {selector}")
+            info(f"  {selector}")
 
         # Print example configuration
-        console.print("\n[bold]Example configuration:[/bold]")
-        console.print("```yaml")
-        console.print("extractor:")
+        header("Example configuration:")
+        info("```yaml")
+        info("extractor:")
         if suggestions["content"]:
-            console.print(f"  content_selector: \"{suggestions['content'][0][0]}\"")
-        console.print("  ignore_selectors:")
+            info(f"  outermost_selector: \"{suggestions['content'][0][0]}\"")
+        info("  ignore_selectors:")
         for selector in suggestions["ignore"]:
-            console.print(f'    - "{selector}"')
-        console.print("```")
+            info(f'    - "{selector}"')
+        info("```")
 
 
 def _show_structure(soup):
@@ -2118,7 +2609,7 @@ def _show_structure(soup):
             attrs.append(f'class="{classes}"')
 
         attr_str = " ".join(attrs) if attrs else ""
-        console.print(f"  <{area.name} {attr_str}>")
+        info(f"  <{area.name} {attr_str}>")
 
         # Show child elements
         for child in area.find_all(recursive=False, limit=5):
@@ -2130,7 +2621,7 @@ def _show_structure(soup):
                     child_classes = " ".join(child.get("class"))
                     child_attrs.append(f'class="{child_classes}"')
                 child_attr_str = " ".join(child_attrs) if child_attrs else ""
-                console.print(f"    <{child.name} {child_attr_str}>")
+                info(f"    <{child.name} {child_attr_str}>")
 
 
 def _find_common_patterns(parsed_files):
@@ -2157,17 +2648,17 @@ def _find_common_patterns(parsed_files):
             tag_patterns[elem.name] += 1
 
     # Show most common patterns
-    console.print("\n[yellow]Most common classes:[/yellow]")
+    info(f"\n{Colors.YELLOW}Most common classes:{Colors.RESET}")
     for cls, count in all_classes.most_common(10):
-        console.print(f"  .{cls} (found {count} times)")
+        info(f"  .{cls} (found {count} times)")
 
-    console.print("\n[yellow]Most common IDs:[/yellow]")
+    info(f"\n{Colors.YELLOW}Most common IDs:{Colors.RESET}")
     for id_name, count in all_ids.most_common(10):
-        console.print(f"  #{id_name} (found {count} times)")
+        info(f"  #{id_name} (found {count} times)")
 
-    console.print("\n[yellow]Common structural elements:[/yellow]")
+    info(f"\n{Colors.YELLOW}Common structural elements:{Colors.RESET}")
     for tag, count in tag_patterns.most_common():
-        console.print(f"  <{tag}> (found {count} times)")
+        info(f"  <{tag}> (found {count} times)")
 
 
 def _handle_claude_analysis(
@@ -2181,33 +2672,35 @@ def _handle_claude_analysis(
     from pathlib import Path
     import sys
 
-    sys.path.insert(0, str(Path(__file__).parent.parent))
+    # Import validate_path_traversal
     from m1f.utils import validate_path_traversal
 
     # Try to use improved runner if available
     try:
-        from .cli_claude import handle_claude_analysis_improved
+        from html2md_tool.cli_claude import handle_claude_analysis_improved
 
         return handle_claude_analysis_improved(
             html_files, num_files_to_analyze, parallel_workers, project_description
         )
-    except ImportError:
+    except ImportError as e:
+        # Print the actual error for debugging
+        error(f"Error: {e}")
         pass
 
-    console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
+    header("Using Claude AI for intelligent analysis...")
 
     # Find the common parent directory of all HTML files
     if not html_files:
-        console.print("❌ No HTML files to analyze", style="red")
+        error("No HTML files to analyze")
         return
 
     common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
-    console.print(f"Analysis directory: {common_parent}")
-    console.print(f"Total HTML files found: {len(html_files)}")
+    info(f"Analysis directory: {common_parent}")
+    info(f"Total HTML files found: {len(html_files)}")
 
     # Check if we have enough files
     if len(html_files) == 0:
-        console.print("❌ No HTML files found in the specified directory", style="red")
+        error("No HTML files found in the specified directory")
         return
 
     # We'll work from the current directory and use --add-dir for Claude
@@ -2215,9 +2708,9 @@ def _handle_claude_analysis(
 
     # Step 1: Create m1f and analysis directories if they don't exist
     m1f_dir = common_parent / "m1f"
-    m1f_dir.mkdir(exist_ok=True)
+    safe_mkdir(m1f_dir, exist_ok=True)
     analysis_dir = m1f_dir / "analysis"
-    analysis_dir.mkdir(exist_ok=True)
+    safe_mkdir(analysis_dir, exist_ok=True)
 
     # Clean old analysis files
     for old_file in analysis_dir.glob("*.txt"):
@@ -2231,8 +2724,8 @@ def _handle_claude_analysis(
     log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
     # Create a filelist with all HTML files using m1f
-    console.print("\n🔧 Creating HTML file list using m1f...")
-    console.print(f"Working with HTML directory: {common_parent}")
+    info("\n🔧 Creating HTML file list using m1f...")
+    info(f"Working with HTML directory: {common_parent}")
 
     # Run m1f to create only the filelist (not the content)
     m1f_cmd = [
@@ -2251,16 +2744,21 @@ def _handle_claude_analysis(
     try:
         result = subprocess.run(m1f_cmd, capture_output=True, text=True, check=True)
 
-        # The filelist will be created with this name
-        html_filelist = m1f_dir / "all_html_files_filelist.txt"
-        if not html_filelist.exists():
-            console.print("❌ m1f filelist not created", style="red")
+        # Find the generated filelist (m1f creates *_filelist.txt)
+        filelist_files = list(m1f_dir.glob("*_filelist.txt"))
+        if not filelist_files:
+            error("m1f filelist not created")
+            return
+        # Use the most recent filelist if multiple exist
+        html_filelist = max(filelist_files, key=lambda p: p.stat().st_mtime)
+        if not safe_exists(html_filelist):
+            error("m1f filelist not created")
             return
 
-        console.print(f"✅ Created HTML file list: {html_filelist}")
+        success(f"Created HTML file list: {html_filelist}")
 
     except subprocess.CalledProcessError as e:
-        console.print(f"❌ Failed to create HTML file list: {e.stderr}", style="red")
+        error(f"Failed to create HTML file list: {e.stderr}")
         return
 
     # Get relative paths from the common parent (still needed for filtering)
@@ -2276,45 +2774,41 @@ def _handle_claude_analysis(
     prompt_dir = Path(__file__).parent / "prompts"
     select_prompt_path = prompt_dir / "select_files_from_project.md"
 
-    if not select_prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {select_prompt_path}", style="red")
+    if not safe_exists(select_prompt_path):
+        error(f"Prompt file not found: {select_prompt_path}")
         return
 
     # Load the prompt from external file
-    simple_prompt_template = select_prompt_path.read_text()
+    simple_prompt_template = safe_read_text(select_prompt_path)
 
     # Validate and adjust number of files to analyze
     if num_files_to_analyze < 1:
         num_files_to_analyze = 1
-        console.print("[yellow]Minimum is 1 file. Using 1.[/yellow]")
+        warning("Minimum is 1 file. Using 1.")
     elif num_files_to_analyze > 20:
         num_files_to_analyze = 20
-        console.print("[yellow]Maximum is 20 files. Using 20.[/yellow]")
+        warning("Maximum is 20 files. Using 20.")
 
     if num_files_to_analyze > len(html_files):
         num_files_to_analyze = len(html_files)
-        console.print(
-            f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]"
-        )
+        warning(f"Only {len(html_files)} files available. Will analyze all of them.")
 
     # Ask user for project description if not provided
     if not project_description:
-        console.print("\n[bold]Project Context:[/bold]")
-        console.print(
+        header("Project Context:")
+        info(
             "Please briefly describe what this HTML project contains so Claude can better understand"
         )
-        console.print(
+        info(
             "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
         )
-        console.print(
-            "\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]"
+        info(
+            "\nTip: If there are particularly important files to analyze, mention them in your description"
         )
-        console.print(
-            "[dim]     so Claude will prioritize those files in the analysis.[/dim]"
-        )
-        project_description = console.input("\nProject description: ").strip()
+        info("     so Claude will prioritize those files in the analysis.")
+        project_description = input("\nProject description: ").strip()
     else:
-        console.print(f"\n[bold]Project Context:[/bold] {project_description}")
+        header(f"Project Context: {project_description}")
 
     # Update the prompt with the number of files
     simple_prompt_template = simple_prompt_template.replace(
@@ -2338,9 +2832,7 @@ def _handle_claude_analysis(
     else:
         simple_prompt = simple_prompt_template
 
-    console.print(
-        f"\nAsking Claude to select {num_files_to_analyze} representative files..."
-    )
+    info(f"\nAsking Claude to select {num_files_to_analyze} representative files...")
 
     try:
         # Run claude using the same approach as m1f-claude
@@ -2387,16 +2879,16 @@ def _handle_claude_analysis(
 
         selected_files = valid_files
 
-        console.print(f"\nClaude selected {len(selected_files)} files:")
+        info(f"\nClaude selected {len(selected_files)} files:")
         for f in selected_files:
-            console.print(f"  - {f}", style="blue")
+            info(f"  - {Colors.BLUE}{f}{Colors.RESET}")
 
     except subprocess.TimeoutExpired:
-        console.print("⏰ Timeout selecting files (3 minutes)", style="yellow")
+        warning("Timeout selecting files (3 minutes)")
         return
     except subprocess.CalledProcessError as e:
-        console.print(f"❌ Claude command failed: {e}", style="red")
-        console.print(f"Error output: {e.stderr}", style="red")
+        error(f"Claude command failed: {e}")
+        error(f"Error output: {e.stderr}")
         return
     except FileNotFoundError:
         # Try to find claude in common locations
@@ -2408,8 +2900,8 @@ def _handle_claude_analysis(
 
         claude_found = False
         for claude_path in claude_paths:
-            if claude_path.exists() and claude_path.is_file():
-                console.print(f"Found claude at: {claude_path}", style="yellow")
+            if safe_exists(claude_path) and safe_is_file(claude_path):
+                warning(f"Found claude at: {claude_path}")
                 # Update the command to use the full path
                 cmd[0] = str(claude_path)
                 try:
@@ -2453,29 +2945,26 @@ def _handle_claude_analysis(
 
                     selected_files = valid_files
 
-                    console.print(f"\nClaude selected {len(selected_files)} files:")
+                    info(f"\nClaude selected {len(selected_files)} files:")
                     for f in selected_files:
-                        console.print(f"  - {f}", style="blue")
+                        info(f"  - {Colors.BLUE}{f}{Colors.RESET}")
 
                     claude_found = True
                     break
 
                 except Exception as e:
-                    console.print(f"Failed with {claude_path}: {e}", style="yellow")
+                    warning(f"Failed with {claude_path}: {e}")
                     continue
 
         if not claude_found:
-            console.print(
-                "❌ claude command not found. Please install Claude CLI.", style="red"
-            )
-            console.print(
-                "If claude is installed as an alias, try adding it to your PATH or creating a symlink.",
-                style="yellow",
+            error("claude command not found. Please install Claude CLI.")
+            warning(
+                "If claude is installed as an alias, try adding it to your PATH or creating a symlink."
             )
             return
 
     # Step 2: Verify the selected files exist and save to file
-    console.print("\nVerifying selected HTML files...")
+    info("\nVerifying selected HTML files...")
     verified_files = []
 
     for file_path in selected_files[:num_files_to_analyze]:  # Limit to selected number
@@ -2483,43 +2972,39 @@ def _handle_claude_analysis(
 
         # Check if file exists (relative to common_parent)
         full_path = common_parent / file_path
-        if full_path.exists():
+        if safe_exists(full_path):
             verified_files.append(file_path)
-            console.print(f"✅ Found: {file_path}", style="green")
+            success(f"Found: {file_path}")
         else:
-            console.print(f"⚠️  Not found: {file_path}", style="yellow")
+            warning(f"Not found: {file_path}")
 
     if not verified_files:
-        console.print("❌ No HTML files could be verified", style="red")
+        error("No HTML files could be verified")
         return
 
     # Write the verified files to a reference list
     selected_files_path = m1f_dir / "selected_html_files.txt"
-    with open(selected_files_path, "w") as f:
+    with safe_open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
-    console.print(f"✅ Wrote selected files list to: {selected_files_path}")
+    success(f"Wrote selected files list to: {selected_files_path}")
 
     # Step 3: Analyze each file individually with Claude
-    console.print("\nAnalyzing each file individually with Claude...")
+    info("\nAnalyzing each file individually with Claude...")
 
     # Load the individual analysis prompt template
     individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
-    if not individual_prompt_path.exists():
-        console.print(
-            f"❌ Prompt file not found: {individual_prompt_path}", style="red"
-        )
+    if not safe_exists(individual_prompt_path):
+        error(f"Prompt file not found: {individual_prompt_path}")
         return
 
-    individual_prompt_template = individual_prompt_path.read_text()
+    individual_prompt_template = safe_read_text(individual_prompt_path)
 
     # Analyze each of the selected files
     for i, file_path in enumerate(verified_files, 1):
-        console.print(f"\n📋 Analyzing file {i}/{len(verified_files)}: {file_path}")
-        console.print(
-            f"⏱️  Starting analysis at {time.strftime('%H:%M:%S')}", style="dim"
-        )
+        info(f"\n📋 Analyzing file {i}/{len(verified_files)}: {file_path}")
+        info(f"⏱️  Starting analysis at {time.strftime('%H:%M:%S')}")
 
         # Customize prompt for this specific file
         individual_prompt = individual_prompt_template.replace("{filename}", file_path)
@@ -2547,7 +3032,7 @@ def _handle_claude_analysis(
             except (subprocess.CalledProcessError, FileNotFoundError):
                 # Try to find claude in known locations
                 for path in claude_paths:
-                    if path.exists() and path.is_file():
+                    if safe_exists(path) and safe_is_file(path):
                         claude_cmd = str(path)
                         break
 
@@ -2570,42 +3055,38 @@ def _handle_claude_analysis(
             )
 
             # Debug: Show process details
-            console.print(f"🔍 Process return code: {result.returncode}", style="dim")
+            info(f"🔍 Process return code: {result.returncode}")
             if result.stderr:
-                console.print(f"🔍 stderr: {result.stderr[:200]}...", style="dim")
+                info(f"🔍 stderr: {result.stderr[:200]}...")
 
             if result.returncode != 0:
-                console.print(
-                    f"❌ Analysis failed for {file_path}: {result.stderr}", style="red"
-                )
+                error(f"Analysis failed for {file_path}: {result.stderr}")
                 continue
 
             # Show Claude's response for transparency
             if result.stdout.strip():
-                console.print(f"📄 Claude: {result.stdout.strip()}", style="dim")
+                info(f"📄 Claude: {result.stdout.strip()}")
 
-            console.print(f"✅ Analysis completed for file {i}")
+            success(f"Analysis completed for file {i}")
 
         except subprocess.TimeoutExpired:
-            console.print(
-                f"⏰ Timeout analyzing {file_path} (5 minutes)", style="yellow"
-            )
+            warning(f"Timeout analyzing {file_path} (5 minutes)")
             continue
         except Exception as e:
-            console.print(f"❌ Error analyzing {file_path}: {e}", style="red")
+            error(f"Error analyzing {file_path}: {e}")
             continue
 
     # Step 4: Synthesize all analyses into final config
-    console.print("\n🔬 Synthesizing analyses into final configuration...")
+    info("\n🔬 Synthesizing analyses into final configuration...")
 
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
 
-    if not synthesis_prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {synthesis_prompt_path}", style="red")
+    if not safe_exists(synthesis_prompt_path):
+        error(f"Prompt file not found: {synthesis_prompt_path}")
         return
 
-    synthesis_prompt = synthesis_prompt_path.read_text()
+    synthesis_prompt = safe_read_text(synthesis_prompt_path)
 
     # Update the synthesis prompt with the actual number of files analyzed
     synthesis_prompt = synthesis_prompt.replace(
@@ -2682,7 +3163,7 @@ def _handle_claude_analysis(
         except (subprocess.CalledProcessError, FileNotFoundError):
             # Try to find claude in known locations
             for path in claude_paths:
-                if path.exists() and path.is_file():
+                if safe_exists(path) and safe_is_file(path):
                     claude_cmd = str(path)
                     break
 
@@ -2709,8 +3190,8 @@ def _handle_claude_analysis(
                 result.returncode, cmd, output=result.stdout, stderr=result.stderr
             )
 
-        console.print("\n[bold]Claude's Final Configuration:[/bold]")
-        console.print(result.stdout)
+        header("Claude's Final Configuration:")
+        info(result.stdout)
 
         # Try to parse the YAML config from Claude's output
         import yaml
@@ -2739,99 +3220,88 @@ def _handle_claude_analysis(
 
                 # Save the config to a file with consistent name
                 config_file = common_parent / "html2md_config.yaml"
-                with open(config_file, "w") as f:
+                with safe_open(config_file, "w") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
-                console.print(
-                    f"\n✅ Configuration saved to: {config_file}", style="green"
-                )
+                success(f"Configuration saved to: {config_file}")
 
                 # Show clear usage instructions
-                console.print("\n" + "=" * 60)
-                console.print(
-                    "[bold green]✨ Analysis Complete! Here's how to convert your HTML files:[/bold green]"
+                info("\n" + "=" * 60)
+                info(
+                    f"{Colors.GREEN}{Colors.BOLD}✨ Analysis Complete! Here's how to convert your HTML files:{Colors.RESET}"
                 )
-                console.print("=" * 60 + "\n")
+                info("=" * 60 + "\n")
 
-                console.print(
-                    "[bold]Option 1: Use the generated configuration (RECOMMENDED)[/bold]"
+                info(
+                    f"{Colors.BOLD}Option 1: Use the generated configuration (RECOMMENDED){Colors.RESET}"
                 )
-                console.print(
+                info(
                     "This uses the CSS selectors Claude identified to extract only the main content:\n"
                 )
-                console.print(
-                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]\n"
+                info(
+                    f"{Colors.CYAN}m1f-html2md convert {common_parent} -o ./markdown -c {config_file}{Colors.RESET}\n"
                 )
 
-                console.print("[bold]Option 2: Use Claude AI for each file[/bold]")
-                console.print(
+                info(
+                    f"{Colors.BOLD}Option 2: Use Claude AI for each file{Colors.RESET}"
+                )
+                info(
                     "This uses Claude to intelligently extract content from each file individually:"
                 )
-                console.print("(Slower but may handle edge cases better)\n")
-                console.print(
-                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]\n"
+                info("(Slower but may handle edge cases better)\n")
+                info(
+                    f"{Colors.CYAN}m1f-html2md convert {common_parent} -o ./markdown --claude{Colors.RESET}\n"
                 )
 
-                console.print("[bold]Option 3: Convert a single file[/bold]")
-                console.print("To test the configuration on a single file first:\n")
-                console.print(
-                    f"[cyan]m1f-html2md convert path/to/file.html -o test.md -c {config_file}[/cyan]\n"
+                info(f"{Colors.BOLD}Option 3: Convert a single file{Colors.RESET}")
+                info("To test the configuration on a single file first:\n")
+                info(
+                    f"{Colors.CYAN}m1f-html2md convert path/to/file.html -o test.md -c {config_file}{Colors.RESET}\n"
                 )
 
-                console.print("=" * 60)
+                info("=" * 60)
             else:
-                console.print(
-                    "\n⚠️  Could not extract YAML configuration from Claude's response",
-                    style="yellow",
-                )
-                console.print(
+                warning("Could not extract YAML configuration from Claude's response")
+                info(
                     "Please manually create html2md_config.yaml based on the analysis above."
                 )
-                console.print(
+                info(
                     "\nExpected format: The YAML should be between ```yaml and ``` markers."
                 )
 
         except Exception as e:
-            console.print(f"\n⚠️  Could not save configuration: {e}", style="yellow")
-            console.print(
+            warning(f"Could not save configuration: {e}")
+            info(
                 f"Please manually create {common_parent}/html2md_config.yaml based on the analysis above."
             )
 
     except subprocess.TimeoutExpired:
-        console.print(
-            "⏰ Timeout synthesizing configuration (5 minutes)", style="yellow"
-        )
+        warning("Timeout synthesizing configuration (5 minutes)")
     except subprocess.CalledProcessError as e:
-        console.print(f"❌ Claude command failed: {e}", style="red")
-        console.print(f"Error output: {e.stderr}", style="red")
+        error(f"Claude command failed: {e}")
+        error(f"Error output: {e.stderr}")
 
     # Ask if temporary analysis files should be deleted
-    console.print("\n[bold]Cleanup:[/bold]")
-    cleanup = console.input(
-        "Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: "
-    )
+    header("Cleanup:")
+    cleanup = input("Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: ")
 
     if cleanup.lower() != "n":
         # Delete analysis files
         deleted_count = 0
         for i in range(1, num_files_to_analyze + 1):
             analysis_file = analysis_dir / f"html_analysis_{i}.txt"
-            if analysis_file.exists():
+            if safe_exists(analysis_file):
                 try:
                     analysis_file.unlink()
                     deleted_count += 1
                 except Exception as e:
-                    console.print(
-                        f"⚠️  Could not delete {analysis_file.name}: {e}", style="yellow"
-                    )
+                    warning(f"Could not delete {analysis_file.name}: {e}")
 
         if deleted_count > 0:
-            console.print(
-                f"✅ Deleted {deleted_count} temporary analysis files", style="green"
-            )
+            success(f"Deleted {deleted_count} temporary analysis files")
     else:
-        console.print(
-            "ℹ️  Temporary analysis files kept in m1f/ directory", style="blue"
+        info(
+            f"{Colors.BLUE}ℹ️  Temporary analysis files kept in m1f/ directory{Colors.RESET}"
         )
 
 
@@ -2906,64 +3376,61 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     from pathlib import Path
     import sys
 
-    sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
 
     # Try to use improved converter if available
     try:
-        from .convert_claude import handle_claude_convert_improved
+        from html2md_tool.convert_claude import handle_claude_convert_improved
 
         return handle_claude_convert_improved(args)
     except ImportError:
         pass
 
-    console.print(f"\n[bold]Using Claude AI to convert HTML to Markdown...[/bold]")
-    console.print(f"Model: {args.model}")
-    console.print(f"Sleep between calls: {args.sleep} seconds")
+    header("Using Claude AI to convert HTML to Markdown...")
+    info(f"Model: {args.model}")
+    info(f"Sleep between calls: {args.sleep} seconds")
 
     # Find all HTML files in source directory
     source_path = args.source
-    if not source_path.exists():
-        console.print(f"❌ Source path not found: {source_path}", style="red")
+    if not safe_exists(source_path):
+        error(f"Source path not found: {source_path}")
         sys.exit(1)
 
     html_files = []
-    if source_path.is_file():
+    if safe_is_file(source_path):
         if source_path.suffix.lower() in [".html", ".htm"]:
             html_files.append(source_path)
         else:
-            console.print(f"❌ Source file is not HTML: {source_path}", style="red")
+            error(f"Source file is not HTML: {source_path}")
             sys.exit(1)
-    elif source_path.is_dir():
+    elif safe_is_dir(source_path):
         # Find all HTML files recursively
         html_files = list(source_path.rglob("*.html")) + list(
             source_path.rglob("*.htm")
         )
-        console.print(f"Found {len(html_files)} HTML files in {source_path}")
+        info(f"Found {len(html_files)} HTML files in {source_path}")
 
     if not html_files:
-        console.print("❌ No HTML files found to convert", style="red")
+        error("No HTML files found to convert")
         sys.exit(1)
 
     # Prepare output directory
     output_path = args.output
-    if output_path.exists() and output_path.is_file():
-        console.print(
-            f"❌ Output path is a file, expected directory: {output_path}", style="red"
-        )
+    if safe_exists(output_path) and safe_is_file(output_path):
+        error(f"Output path is a file, expected directory: {output_path}")
         sys.exit(1)
 
-    if not output_path.exists():
-        output_path.mkdir(parents=True, exist_ok=True)
-        console.print(f"Created output directory: {output_path}")
+    if not safe_exists(output_path):
+        safe_mkdir(output_path, parents=True, exist_ok=True)
+        info(f"Created output directory: {output_path}")
 
     # Load conversion prompt
     prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
-    if not prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {prompt_path}", style="red")
+    if not safe_exists(prompt_path):
+        error(f"Prompt file not found: {prompt_path}")
         sys.exit(1)
 
-    prompt_template = prompt_path.read_text()
+    prompt_template = safe_read_text(prompt_path)
 
     # Model parameter for Claude CLI (just use the short names)
     model_param = args.model
@@ -2978,15 +3445,17 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             # Validate path to prevent traversal attacks
             validated_path = validate_path_traversal(
                 html_file,
-                base_path=source_path if source_path.is_dir() else source_path.parent,
+                base_path=(
+                    source_path if safe_is_dir(source_path) else source_path.parent
+                ),
                 allow_outside=False,
             )
 
             # Read HTML content
-            html_content = validated_path.read_text(encoding="utf-8")
+            html_content = safe_read_text(validated_path, encoding="utf-8")
 
             # Determine output file path
-            if source_path.is_file():
+            if safe_is_file(source_path):
                 # Single file conversion
                 output_file = output_path / html_file.with_suffix(".md").name
             else:
@@ -2997,7 +3466,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             # Create output directory if needed
             output_file.parent.mkdir(parents=True, exist_ok=True)
 
-            console.print(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
+            info(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
 
             # Create a temporary file with the HTML content
             import tempfile
@@ -3026,7 +3495,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             except (subprocess.CalledProcessError, FileNotFoundError):
                 # Try to find claude in known locations
                 for path in claude_paths:
-                    if path.exists() and path.is_file():
+                    if safe_exists(path) and safe_is_file(path):
                         claude_cmd = str(path)
                         break
 
@@ -3038,21 +3507,21 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             markdown_content = result.stdout.strip()
             output_file.write_text(markdown_content, encoding="utf-8")
 
-            console.print(f"✅ Converted to: {output_file}", style="green")
+            success(f"Converted to: {output_file}")
             converted_count += 1
 
             # Sleep between API calls (except for the last one)
             if i < len(html_files) - 1 and args.sleep > 0:
-                console.print(f"Sleeping for {args.sleep} seconds...", style="dim")
+                info(f"Sleeping for {args.sleep} seconds...")
                 time.sleep(args.sleep)
 
         except subprocess.CalledProcessError as e:
-            console.print(f"❌ Claude conversion failed: {e}", style="red")
+            error(f"Claude conversion failed: {e}")
             if e.stderr:
-                console.print(f"Error: {e.stderr}", style="red")
+                error(f"Error: {e.stderr}")
             failed_count += 1
         except Exception as e:
-            console.print(f"❌ Error processing {html_file}: {e}", style="red")
+            error(f"Error processing {html_file}: {e}")
             failed_count += 1
         finally:
             # Clean up temporary file
@@ -3063,10 +3532,10 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
                     pass
 
     # Summary
-    console.print(f"\n[bold]Conversion Summary:[/bold]")
-    console.print(f"✅ Successfully converted: {converted_count} files", style="green")
+    header("Conversion Summary:")
+    success(f"Successfully converted: {converted_count} files")
     if failed_count > 0:
-        console.print(f"❌ Failed to convert: {failed_count} files", style="red")
+        error(f"Failed to convert: {failed_count} files")
 
     if converted_count == 0:
         sys.exit(1)
@@ -3074,7 +3543,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
 
 def handle_config(args: argparse.Namespace) -> None:
     """Handle config command."""
-    from .config import Config
+    from html2md_tool.config import Config
 
     # Create default configuration
     config = Config(source=Path("./html"), destination=Path("./markdown"))
@@ -3095,12 +3564,12 @@ def handle_config(args: argparse.Namespace) -> None:
 
         content = json.dumps(config_dict, indent=2)
     else:
-        console.print(f"❌ Unsupported format: {args.format}", style="red")
+        error(f"Unsupported format: {args.format}")
         sys.exit(1)
 
     # Write config file
     args.output.write_text(content, encoding="utf-8")
-    console.print(f"✅ Created configuration file: {args.output}", style="green")
+    success(f"Created configuration file: {args.output}")
 
 
 def create_simple_parser() -> argparse.ArgumentParser:
@@ -3133,7 +3602,7 @@ def main() -> None:
 
         if args.source_dir and args.destination_dir:
             # Simple conversion mode
-            from .config import ConversionOptions
+            from html2md_tool.config import ConversionOptions
 
             options = ConversionOptions(
                 source_dir=args.source_dir,
@@ -3145,7 +3614,7 @@ def main() -> None:
 
             # For URL sources, convert them
             if args.source_dir.startswith("http"):
-                console.print(f"Converting {args.source_dir}")
+                info(f"Converting {args.source_dir}")
 
                 # Handle include patterns if specified
                 if args.include_patterns:
@@ -3157,13 +3626,13 @@ def main() -> None:
                         for pattern in args.include_patterns
                     ]
                     results = asyncio.run(converter.convert_directory_from_urls(urls))
-                    console.print(f"Converted {len(results)} pages")
+                    info(f"Converted {len(results)} pages")
                 else:
                     # Convert single URL
                     output_path = converter.convert_url(args.source_dir)
-                    console.print(f"Converted to {output_path}")
+                    info(f"Converted to {output_path}")
 
-                console.print("Conversion completed successfully")
+                success("Conversion completed successfully")
             sys.exit(0)
         sys.exit(0)
 
@@ -3178,7 +3647,8 @@ def main() -> None:
 
     # Configure console
     if args.quiet:
-        console.quiet = True
+        # console.quiet - removed
+        pass
 
     # Dispatch to command handlers
     try:
@@ -3189,18 +3659,18 @@ def main() -> None:
         elif args.command == "config":
             handle_config(args)
         else:
-            console.print(f"❌ Unknown command: {args.command}", style="red")
+            error(f"Unknown command: {args.command}")
             sys.exit(1)
 
     except KeyboardInterrupt:
-        console.print("\n❌ Interrupted by user", style="yellow")
+        warning("Interrupted by user")
         sys.exit(1)
     except Exception as e:
-        console.print(f"❌ Error: {e}", style="red")
+        error(f"Error: {e}")
         if args.verbose:
             import traceback
 
-            console.print(traceback.format_exc())
+            info(traceback.format_exc())
         sys.exit(1)
 
 
@@ -3231,10 +3701,9 @@ from pathlib import Path
 from typing import List
 from datetime import datetime
 
-from rich.console import Console
-from .claude_runner import ClaudeRunner
-
-console = Console()
+from shared.colors import info, error, warning, success, header, Colors
+from html2md_tool.claude_runner import ClaudeRunner
+from m1f.file_operations import safe_exists, safe_mkdir, safe_open, safe_read_text
 
 
 def handle_claude_analysis_improved(
@@ -3245,20 +3714,17 @@ def handle_claude_analysis_improved(
 ):
     """Handle analysis using Claude AI with improved timeout handling and parallel processing."""
 
-    console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
-    console.print(
-        "⏱️  Note: Processing large HTML files (2MB+) may take several minutes.",
-        style="yellow",
-    )
+    header("\nUsing Claude AI for intelligent analysis...")
+    warning("⏱️  Note: Processing large HTML files (2MB+) may take several minutes.")
 
     # Find the common parent directory of all HTML files
     if not html_files:
-        console.print("❌ No HTML files to analyze", style="red")
+        error("❌ No HTML files to analyze")
         return
 
     common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
-    console.print(f"📁 Analysis directory: {common_parent}")
-    console.print(f"📊 Total HTML files found: {len(html_files)}")
+    info(f"📁 Analysis directory: {common_parent}")
+    info(f"📊 Total HTML files found: {len(html_files)}")
 
     # Initialize Claude runner
     try:
@@ -3266,12 +3732,12 @@ def handle_claude_analysis_improved(
             max_workers=parallel_workers, working_dir=str(common_parent)
         )
     except Exception as e:
-        console.print(f"❌ {e}", style="red")
+        error(f"❌ {e}")
         return
 
     # Check if we have enough files
     if len(html_files) == 0:
-        console.print("❌ No HTML files found in the specified directory", style="red")
+        error("❌ No HTML files found in the specified directory")
         return
 
     # Step 1: Create m1f and analysis directories if they don't exist
@@ -3289,32 +3755,78 @@ def handle_claude_analysis_improved(
     log_file = analysis_dir / "log.txt"
     log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
+    # Ask user for project description FIRST, before m1f runs
+    if not project_description:
+        header("\nProject Context:")
+        info(
+            "Please briefly describe what this HTML project contains so Claude can better understand"
+        )
+        info(
+            "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
+        )
+        info(
+            f"\n{Colors.DIM}Tip: If there are particularly important files to analyze, mention them in your description{Colors.RESET}"
+        )
+        info(
+            f"{Colors.DIM}     so Claude will prioritize those files in the analysis.{Colors.RESET}"
+        )
+        project_description = input("\nProject description: ").strip()
+    else:
+        info(f"\n📋 {Colors.BOLD}Project Context:{Colors.RESET} {project_description}")
+
     # Create a filelist with all HTML files using m1f
-    console.print("\n🔧 Creating HTML file list using m1f...")
-    console.print(f"Working with HTML directory: {common_parent}")
+    info("\n🔧 Creating HTML file list using m1f (only filelist, not content)...")
+    info(f"Working with HTML directory: {common_parent}")
 
     # Run m1f to create only the filelist (not the content)
+    # Run from the target directory to avoid path traversal issues
     m1f_cmd = [
         "m1f",
         "-s",
-        str(common_parent),
+        ".",  # Use current directory
         "-o",
-        str(m1f_dir / "all_html_files.txt"),
+        str(m1f_dir / "all_html_files"),  # Base name - m1f will add _filelist.txt
         "--include-extensions",
         ".html",
-        "-t",  # Text only
+        ".htm",
         "--include-dot-paths",  # Include hidden paths
+        "--skip-output-file",  # ONLY create filelist, not the content file
     ]
 
     try:
-        subprocess.run(m1f_cmd, check=True, capture_output=True, text=True, timeout=60)
-        console.print("✅ Created HTML file list")
+        # Run m1f from the common_parent directory
+        # Add tools directory to PYTHONPATH to ensure m1f can be imported
+        env = os.environ.copy()
+        m1f_tools_path = Path(__file__).parent.parent  # Path to tools directory
+        if "PYTHONPATH" in env:
+            env["PYTHONPATH"] = f"{m1f_tools_path}:{env['PYTHONPATH']}"
+        else:
+            env["PYTHONPATH"] = str(m1f_tools_path)
+
+        info(f"   {Colors.DIM}Running: {' '.join(m1f_cmd[:5])}...{Colors.RESET}")
+
+        # Don't capture output - let m1f show its own progress
+        result = subprocess.run(
+            m1f_cmd,
+            check=True,
+            timeout=300,  # 5 minutes for large projects
+            cwd=str(common_parent),  # Change working directory for m1f
+            env=env,  # Use modified environment with PYTHONPATH
+        )
+        success("✅ Created HTML file list")
     except subprocess.CalledProcessError as e:
-        console.print(f"❌ Failed to create file list: {e}", style="red")
+        error(f"❌ Failed to create file list: {e}")
+        error(f"   m1f exit code: {e.returncode}")
         return
     except subprocess.TimeoutExpired:
-        console.print("❌ Timeout creating file list", style="red")
+        error("❌ Timeout creating file list after 5 minutes")
+        error("   For very large projects, consider using a more specific path")
+        error("   or reducing the scope with --exclude patterns")
         return
+
+    # Define path to the file list that was just created
+    # m1f creates filename_filelist.txt when using --skip-output-file
+    file_list_path = m1f_dir / "all_html_files_filelist.txt"
 
     # Get relative paths for all HTML files
     relative_paths = []
@@ -3329,45 +3841,26 @@ def handle_claude_analysis_improved(
     prompt_dir = Path(__file__).parent / "prompts"
     select_prompt_path = prompt_dir / "select_files_from_project.md"
 
-    if not select_prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {select_prompt_path}", style="red")
+    if not safe_exists(select_prompt_path):
+        error(f"❌ Prompt file not found: {select_prompt_path}")
         return
 
     # Load the prompt from external file
-    simple_prompt_template = select_prompt_path.read_text()
+    simple_prompt_template = safe_read_text(select_prompt_path)
 
     # Validate and adjust number of files to analyze
     if num_files_to_analyze < 1:
         num_files_to_analyze = 1
-        console.print("[yellow]Minimum is 1 file. Using 1.[/yellow]")
+        warning("Minimum is 1 file. Using 1.")
     elif num_files_to_analyze > 20:
         num_files_to_analyze = 20
-        console.print("[yellow]Maximum is 20 files. Using 20.[/yellow]")
+        warning("Maximum is 20 files. Using 20.")
 
     if num_files_to_analyze > len(html_files):
         num_files_to_analyze = len(html_files)
-        console.print(
-            f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]"
-        )
+        warning(f"Only {len(html_files)} files available. Will analyze all of them.")
 
-    # Ask user for project description if not provided
-    if not project_description:
-        console.print("\n[bold]Project Context:[/bold]")
-        console.print(
-            "Please briefly describe what this HTML project contains so Claude can better understand"
-        )
-        console.print(
-            "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
-        )
-        console.print(
-            "\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]"
-        )
-        console.print(
-            "[dim]     so Claude will prioritize those files in the analysis.[/dim]"
-        )
-        project_description = console.input("\nProject description: ").strip()
-    else:
-        console.print(f"\n📋 [bold]Project Context:[/bold] {project_description}")
+    # Project description was already collected earlier
 
     # Update the prompt with the number of files
     simple_prompt_template = simple_prompt_template.replace(
@@ -3382,11 +3875,13 @@ def handle_claude_analysis_improved(
     simple_prompt_template = simple_prompt_template.replace(
         "exactly 5 representative", f"exactly {num_files_to_analyze} representative"
     )
+    simple_prompt_template = simple_prompt_template.replace(
+        "exactly 5 files", f"exactly {num_files_to_analyze} files"
+    )
 
-    # Add the list of available HTML files to the prompt
-    file_list = "\n".join(relative_paths)
-    simple_prompt = f"""Available HTML files in the directory:
-{file_list}
+    # The file list is already saved in all_html_files_filelist.txt
+    # Use absolute path so Claude can read it directly
+    simple_prompt = f"""Available HTML files are listed in: {str(file_list_path)}
 
 {simple_prompt_template}"""
 
@@ -3394,179 +3889,361 @@ def handle_claude_analysis_improved(
     if project_description:
         simple_prompt = f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt}"
 
-    console.print(
-        f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files..."
-    )
-    console.print("   This may take 10-30 seconds...", style="dim")
+    info(f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files...")
+    info(f"   {Colors.DIM}This may take 10-30 seconds...{Colors.RESET}")
 
     # Step 3: Use Claude to select representative files
-    returncode, stdout, stderr = runner.run_claude_streaming(
+    returncode, stdout, stderr = runner.run_claude_streaming_json(
         prompt=simple_prompt,
-        allowed_tools="Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
-        add_dir=str(common_parent),
+        allowed_tools="Read,Task,TodoWrite",  # Allow Read for file access, Task for sub-agents, TodoWrite for task management
+        add_dir=str(common_parent),  # Set working directory for file resolution
         timeout=180,  # 3 minutes for file selection
-        show_output=True,
+        working_dir=str(common_parent),
+        show_progress=True,  # Show progress for file selection too
     )
 
     if returncode != 0:
-        console.print(f"❌ Claude command failed: {stderr}", style="red")
+        error(f"❌ Claude command failed: {stderr}")
         return
 
-    selected_files = stdout.strip().split("\n")
+    # Check if Claude returned output
+    if not stdout.strip():
+        warning("⚠️  Claude returned empty output")
+        if stderr:
+            warning(f"Error details: {stderr[:500]}")
+
+    # Parse JSON output to extract Claude's actual text responses
+    import json
+
+    claude_text_output = []
+
+    for line in stdout.strip().split("\n"):
+        if not line.strip():
+            continue
+        try:
+            json_obj = json.loads(line)
+            # Extract text from assistant messages
+            if json_obj.get("type") == "assistant":
+                message = json_obj.get("message", {})
+                if isinstance(message, dict):
+                    content_parts = message.get("content", [])
+                    if isinstance(content_parts, list):
+                        for part in content_parts:
+                            if isinstance(part, dict) and part.get("type") == "text":
+                                text = part.get("text", "")
+                                if text:
+                                    claude_text_output.append(text)
+        except json.JSONDecodeError:
+            # If it's not JSON, it might be plain text (backwards compatibility)
+            claude_text_output.append(line)
+
+    # Join all text outputs and split by newlines to get individual lines
+    full_text = "\n".join(claude_text_output)
+
+    selected_files = full_text.strip().split("\n")
     selected_files = [f.strip() for f in selected_files if f.strip()]
 
-    # Filter out any lines that are not file paths and normalize paths
+    # Filter out any lines that are not file paths
     valid_files = []
-    for f in selected_files:
-        if (
-            any(
-                word in f.lower()
-                for word in ["select", "based on", "analysis", "representative"]
-            )
-            or len(f) > 200
+    for line in selected_files:
+        line = line.strip()
+
+        # Skip empty lines and the completion marker
+        if not line or "FILE_SELECTION_COMPLETE_OK" in line:
+            continue
+
+        # Skip lines that look like explanatory text
+        if any(
+            word in line.lower()
+            for word in [
+                "select",
+                "based",
+                "analysis",
+                "representative",
+                "file:",
+                "path:",
+            ]
         ):
             continue
-        if "FILE_SELECTION_COMPLETE_OK" in f:
+
+        # Skip lines that are too long to be reasonable file paths
+        if len(line) > 300:
             continue
-        if ".html" in f or ".htm" in f:
-            # Normalize path - remove common_parent prefix if present
-            if str(common_parent) in f:
-                f = f.replace(str(common_parent) + "/", "")
-            valid_files.append(f)
+
+        # Accept lines that look like HTML file paths
+        if ".html" in line.lower() or ".htm" in line.lower():
+            # Clean up the path - remove any leading/trailing whitespace or quotes
+            clean_path = line.strip().strip('"').strip("'")
+
+            # If the path is in our relative_paths list, it's definitely valid
+            if clean_path in relative_paths:
+                valid_files.append(clean_path)
+            else:
+                # Otherwise, try to normalize it
+                if str(common_parent) in clean_path:
+                    clean_path = clean_path.replace(str(common_parent) + "/", "")
+                valid_files.append(clean_path)
 
     selected_files = valid_files
 
-    console.print(f"\nClaude selected {len(selected_files)} files:")
+    info(f"\nClaude selected {len(selected_files)} files:")
     for f in selected_files:
-        console.print(f"  - {f}", style="blue")
+        info(f"  - {Colors.BLUE}{f}{Colors.RESET}")
+
+    # Check if Claude returned fewer files than requested
+    if len(selected_files) < num_files_to_analyze:
+        warning(
+            f"⚠️  Claude returned only {len(selected_files)} files instead of {num_files_to_analyze} requested"
+        )
+        warning("   Proceeding with the files that were selected...")
+    elif len(selected_files) > num_files_to_analyze:
+        info(
+            f"📝 Claude returned {len(selected_files)} files, using first {num_files_to_analyze}"
+        )
+        selected_files = selected_files[:num_files_to_analyze]
 
     # Step 4: Verify the selected files exist
-    console.print("\nVerifying selected HTML files...")
+    info("\nVerifying selected HTML files...")
     verified_files = []
 
-    for file_path in selected_files[:num_files_to_analyze]:
+    for file_path in selected_files:
         file_path = file_path.strip()
 
-        # Try different path resolutions
-        paths_to_try = [
-            common_parent / file_path,  # Relative to common_parent
-            Path(file_path),  # Absolute path
-            common_parent / Path(file_path).name,  # Just filename in common_parent
-        ]
+        # First check if this path is exactly in our relative_paths list
+        if file_path in relative_paths:
+            # It's a valid path from our list
+            full_path = common_parent / file_path
+            if safe_exists(full_path):
+                verified_files.append(file_path)
+                success(f"✅ Found: {file_path}")
+                continue
 
-        found = False
-        for test_path in paths_to_try:
-            if test_path.exists() and test_path.suffix.lower() in [".html", ".htm"]:
-                # Store relative path from common_parent
-                try:
-                    rel_path = test_path.relative_to(common_parent)
-                    verified_files.append(str(rel_path))
-                    console.print(f"✅ Found: {rel_path}", style="green")
-                    found = True
-                    break
-                except ValueError:
-                    # If not relative to common_parent, use the filename
-                    verified_files.append(test_path.name)
-                    console.print(f"✅ Found: {test_path.name}", style="green")
-                    found = True
-                    break
+        # If not found exactly, try as a path relative to common_parent
+        test_path = common_parent / file_path
+        if safe_exists(test_path) and test_path.suffix.lower() in [".html", ".htm"]:
+            try:
+                rel_path = test_path.relative_to(common_parent)
+                verified_files.append(str(rel_path))
+                success(f"✅ Found: {rel_path}")
+                continue
+            except ValueError:
+                pass
 
-        if not found:
-            console.print(f"⚠️  Not found: {file_path}", style="yellow")
+        # If still not found, log it as missing
+        warning(f"⚠️  Not found: {file_path}")
+        warning(f"   Expected it to be in: {common_parent}")
 
     if not verified_files:
-        console.print("❌ No HTML files could be verified", style="red")
+        error("❌ No HTML files could be verified")
         return
+
+    # Check if we have fewer verified files than requested
+    if len(verified_files) < num_files_to_analyze:
+        warning(
+            f"⚠️  Only {len(verified_files)} files passed verification (requested {num_files_to_analyze})"
+        )
+        if len(verified_files) < len(selected_files):
+            warning(
+                f"   {len(selected_files) - len(verified_files)} files failed verification"
+            )
 
     # Write the verified files to a reference list
     selected_files_path = m1f_dir / "selected_html_files.txt"
-    with open(selected_files_path, "w") as f:
+    with safe_open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
-    console.print(f"✅ Wrote selected files list to: {selected_files_path}")
+    success(f"✅ Wrote selected files list to: {selected_files_path}")
 
-    # Step 5: Analyze each file individually with Claude (in parallel)
-    console.print(
-        f"\n🚀 Analyzing {len(verified_files)} files with up to {parallel_workers} parallel Claude sessions..."
-    )
-    console.print(
-        "⏱️  Expected duration: 3-5 minutes for large HTML files", style="yellow"
-    )
-    console.print(
-        "   Claude is analyzing each file's structure in detail...", style="dim"
+    # Step 5: Analyze each file individually with Claude using subagents
+    info(f"\n🚀 Analyzing {len(verified_files)} files using parallel subagents...")
+    warning("⏱️  Expected duration: 2-3 minutes with parallel execution")
+    info(
+        f"   {Colors.DIM}Claude is coordinating subagents to analyze each file...{Colors.RESET}"
     )
 
-    # Load the individual analysis prompt template
-    individual_prompt_path = prompt_dir / "analyze_individual_file.md"
+    # Load the coordinated analysis prompt template
+    coordinate_prompt_path = prompt_dir / "coordinate_parallel_analysis.md"
 
-    if not individual_prompt_path.exists():
-        console.print(
-            f"❌ Prompt file not found: {individual_prompt_path}", style="red"
+    if not safe_exists(coordinate_prompt_path):
+        # Fall back to old approach if new prompt doesn't exist
+        warning(
+            "⚠️  Coordinated analysis prompt not found, using traditional parallel approach..."
         )
-        return
 
-    individual_prompt_template = individual_prompt_path.read_text()
+        # Load the individual analysis prompt template
+        individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
-    # Prepare tasks for parallel execution
-    tasks = []
-    for i, file_path in enumerate(verified_files, 1):
-        # Construct paths - use relative paths when possible
-        # For output, we need to ensure it's relative to where Claude is running
-        output_path = f"m1f/analysis/html_analysis_{i}.txt"
+        if not safe_exists(individual_prompt_path):
+            error(f"❌ Prompt file not found: {individual_prompt_path}")
+            return
 
-        # Customize prompt for this specific file
-        individual_prompt = individual_prompt_template.replace("{filename}", file_path)
-        individual_prompt = individual_prompt.replace("{output_path}", output_path)
-        individual_prompt = individual_prompt.replace("{file_number}", str(i))
+        individual_prompt_template = safe_read_text(individual_prompt_path)
 
-        # Add project context if provided
-        if project_description:
-            individual_prompt = (
-                f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
+        # Prepare tasks for parallel execution
+        tasks = []
+        for i, file_path in enumerate(verified_files, 1):
+            # Construct paths - use absolute path to ensure correct location
+            # Analysis files go into the m1f/analysis directory
+            output_path = str(analysis_dir / f"html_analysis_{i}.txt")
+
+            # Customize prompt for this specific file
+            individual_prompt = individual_prompt_template.replace(
+                "{filename}", file_path
+            )
+            individual_prompt = individual_prompt.replace("{output_path}", output_path)
+            individual_prompt = individual_prompt.replace("{file_number}", str(i))
+
+            # Add project context if provided
+            if project_description:
+                individual_prompt = (
+                    f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
+                )
+
+            tasks.append(
+                {
+                    "name": f"Analysis {i}: {file_path}",
+                    "prompt": individual_prompt,
+                    "add_dir": str(common_parent),
+                    "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write,Bash,Task",
+                    "timeout": 300,  # 5 minutes per file
+                    "working_dir": str(common_parent),  # Set working directory
+                }
             )
 
-        tasks.append(
-            {
-                "name": f"Analysis {i}: {file_path}",
-                "prompt": individual_prompt,
-                "add_dir": str(common_parent),
-                "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
-                "timeout": 300,  # 5 minutes per file
-                "working_dir": str(common_parent),  # Set working directory
-            }
+        # Run analyses in parallel
+        results = runner.run_claude_parallel(tasks, show_progress=True)
+
+        # Check results
+        successful_analyses = sum(1 for r in results if r["success"])
+        success(
+            f"\n✅ Successfully analyzed {successful_analyses}/{len(verified_files)} files"
         )
 
-    # Removed debug output for cleaner interface
+        # Show any errors
+        for result in results:
+            if not result["success"]:
+                error(
+                    f"❌ Failed: {result['name']} - {result.get('error') or result.get('stderr')}"
+                )
+    else:
+        # Use new coordinated subagent approach
+        coordinate_prompt_template = safe_read_text(coordinate_prompt_path)
 
-    # Run analyses in parallel
-    results = runner.run_claude_parallel(tasks, show_progress=True)
+        # Load individual analysis template for subagent instructions
+        individual_prompt_path = prompt_dir / "analyze_individual_file.md"
+        if not safe_exists(individual_prompt_path):
+            error(f"❌ Individual analysis prompt not found: {individual_prompt_path}")
+            return
 
-    # Check results
-    successful_analyses = sum(1 for r in results if r["success"])
-    console.print(
-        f"\n✅ Successfully analyzed {successful_analyses}/{len(verified_files)} files"
-    )
+        individual_prompt_template = safe_read_text(individual_prompt_path)
 
-    # Show any errors
-    for result in results:
-        if not result["success"]:
-            console.print(
-                f"❌ Failed: {result['name']} - {result.get('error') or result.get('stderr')}",
-                style="red",
+        # Build file list for the coordination prompt
+        file_list = []
+        for i, file_path in enumerate(verified_files, 1):
+            file_list.append(f"- File {i}: {file_path}")
+
+        # Prepare the coordination prompt
+        coordinate_prompt = coordinate_prompt_template.replace(
+            "{num_files}", str(len(verified_files))
+        )
+        coordinate_prompt = coordinate_prompt.replace(
+            "{project_description}", project_description or ""
+        )
+        coordinate_prompt = coordinate_prompt.replace(
+            "{file_list}", "\n".join(file_list)
+        )
+        coordinate_prompt = coordinate_prompt.replace(
+            "{analysis_dir}", str(analysis_dir)
+        )
+
+        # Build the subagent instructions for each file
+        subagent_instructions = []
+        for i, file_path in enumerate(verified_files, 1):
+            output_path = str(analysis_dir / f"html_analysis_{i}.txt")
+
+            # Prepare individual analysis instructions
+            individual_instructions = individual_prompt_template.replace(
+                "{filename}", file_path
+            )
+            individual_instructions = individual_instructions.replace(
+                "{output_path}", output_path
+            )
+            individual_instructions = individual_instructions.replace(
+                "{file_number}", str(i)
+            )
+
+            subagent_instructions.append(
+                {
+                    "file_num": i,
+                    "file_path": file_path,
+                    "output_path": output_path,
+                    "instructions": individual_instructions,
+                }
+            )
+
+        # Add the detailed instructions to the coordination prompt
+        detailed_instructions = "\n\n".join(
+            [
+                f"### File {inst['file_num']}: {inst['file_path']}\n"
+                f"Output: {inst['output_path']}\n"
+                f"Instructions:\n{inst['instructions']}"
+                for inst in subagent_instructions
+            ]
+        )
+
+        # Replace placeholder with actual detailed instructions
+        coordinate_prompt = coordinate_prompt.replace(
+            "{detailed_instructions}", detailed_instructions
+        )
+
+        info("\n📊 Launching coordinated analysis with subagents...")
+        info(
+            f"   Managing {len(verified_files)} parallel analyses through Task delegation"
+        )
+
+        # Run the coordinated analysis with real-time JSON streaming
+        returncode, stdout, stderr = runner.run_claude_streaming_json(
+            prompt=coordinate_prompt,
+            allowed_tools="Task,TodoWrite,Read,Write,LS,Grep",  # Task for subagents, TodoWrite for tracking
+            add_dir=str(common_parent),
+            timeout=600,  # 10 minutes for coordination
+            working_dir=str(common_parent),
+            show_progress=True,  # Show real-time progress
+        )
+
+        if returncode != 0:
+            error(f"❌ Coordinated analysis failed: {stderr}")
+            return
+
+        # Verify all analysis files were created
+        successful_analyses = 0
+        for i in range(1, len(verified_files) + 1):
+            analysis_file = analysis_dir / f"html_analysis_{i}.txt"
+            if safe_exists(analysis_file):
+                successful_analyses += 1
+
+        if successful_analyses == len(verified_files):
+            success(
+                f"\n✅ Successfully analyzed all {successful_analyses} files using subagents"
+            )
+        else:
+            warning(f"\n⚠️  Analyzed {successful_analyses}/{len(verified_files)} files")
+            warning(
+                "   Some files may have failed - check the output above for details"
             )
 
     # Step 6: Synthesize all analyses into final config
-    console.print("\n🔬 Synthesizing analyses into final configuration...")
-    console.print("⏱️  This final step typically takes 1-2 minutes...", style="yellow")
+    info("\n🔬 Synthesizing analyses into final configuration...")
+    warning("⏱️  This final step typically takes 1-2 minutes...")
 
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
 
-    if not synthesis_prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {synthesis_prompt_path}", style="red")
+    if not safe_exists(synthesis_prompt_path):
+        error(f"❌ Prompt file not found: {synthesis_prompt_path}")
         return
 
-    synthesis_prompt = synthesis_prompt_path.read_text()
+    synthesis_prompt = safe_read_text(synthesis_prompt_path)
 
     # Update the synthesis prompt with the actual number of files analyzed
     synthesis_prompt = synthesis_prompt.replace(
@@ -3580,7 +4257,9 @@ def handle_claude_analysis_improved(
     # Build the file list dynamically with relative paths
     file_list = []
     for i in range(1, len(verified_files) + 1):
-        file_list.append(f"- m1f/analysis/html_analysis_{i}.txt")
+        # Use absolute paths for synthesis to ensure files are found
+        analysis_file_path = str(analysis_dir / f"html_analysis_{i}.txt")
+        file_list.append(f"- {analysis_file_path}")
 
     # Replace the static file list with the dynamic one
     old_file_list = """Read the 5 analysis files:
@@ -3612,28 +4291,59 @@ def handle_claude_analysis_improved(
             f"PROJECT CONTEXT: {project_description}\n\n{synthesis_prompt}"
         )
 
-    # Run synthesis with streaming output
-    console.print("\nRunning synthesis with Claude...")
-    returncode, stdout, stderr = runner.run_claude_streaming(
+    # Run synthesis with real-time streaming output
+    info("\nRunning synthesis with Claude...")
+    returncode, stdout, stderr = runner.run_claude_streaming_json(
         prompt=synthesis_prompt,
         add_dir=str(common_parent),
         timeout=300,  # 5 minutes for synthesis
-        show_output=True,
+        working_dir=str(common_parent),
+        show_progress=True,
     )
 
     if returncode != 0:
-        console.print(f"❌ Synthesis failed: {stderr}", style="red")
+        error(f"❌ Synthesis failed: {stderr}")
         return
 
-    console.print("\n✨ [bold]Claude's Final Configuration:[/bold]")
-    console.print(stdout)
+    # Parse JSON output to extract Claude's actual text response (for synthesis)
+    synthesis_text_output = []
+
+    for line in stdout.strip().split("\n"):
+        if not line.strip():
+            continue
+        try:
+            json_obj = json.loads(line)
+            # Extract text from assistant messages
+            if json_obj.get("type") == "assistant":
+                message = json_obj.get("message", {})
+                if isinstance(message, dict):
+                    content_parts = message.get("content", [])
+                    if isinstance(content_parts, list):
+                        for part in content_parts:
+                            if isinstance(part, dict) and part.get("type") == "text":
+                                text = part.get("text", "")
+                                if text:
+                                    synthesis_text_output.append(text)
+        except json.JSONDecodeError:
+            # If it's not JSON, might be plain text (backwards compatibility)
+            synthesis_text_output.append(line)
+
+    # Join all text outputs
+    full_synthesis_text = "\n".join(synthesis_text_output)
+
+    header("\n✨ Claude's Final Configuration:")
+    info(
+        full_synthesis_text[:2000] + "..."
+        if len(full_synthesis_text) > 2000
+        else full_synthesis_text
+    )
 
     # Try to parse the YAML config from Claude's output
     import yaml
 
     try:
         # Extract YAML from the output (between ```yaml and ```)
-        output = stdout
+        output = full_synthesis_text
         yaml_start = output.find("```yaml")
         yaml_end = output.find("```", yaml_start + 6)
 
@@ -3655,37 +4365,45 @@ def handle_claude_analysis_improved(
 
             # Save the config to a file
             config_path = common_parent / "m1f-html2md-config.yaml"
-            with open(config_path, "w") as f:
+            with safe_open(config_path, "w") as f:
                 yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
-            console.print(f"\n✅ Saved configuration to: {config_path}", style="green")
-            console.print(
+            success(f"\n✅ Saved configuration to: {config_path}")
+            info(
                 "\nYou can now use this configuration file to convert your HTML files:"
             )
-            console.print(
-                f"  m1f-html2md convert {common_parent} -c {config_path} -o ./output/",
-                style="blue",
+            info(
+                f"  {Colors.BLUE}m1f-html2md convert {common_parent} -c {config_path} -o ./output/{Colors.RESET}"
             )
         else:
-            console.print(
-                "\n⚠️  Could not extract YAML config from Claude's response",
-                style="yellow",
-            )
-            console.print(
-                "Please review the output above and create the config file manually.",
-                style="yellow",
-            )
+            warning("\n⚠️  Could not extract YAML config from Claude's response")
+            # Save the full response for manual review
+            full_response_path = common_parent / "m1f-html2md-claude-response.txt"
+            with safe_open(full_response_path, "w") as f:
+                f.write(full_synthesis_text)
+            warning(f"  Saved Claude's full response to: {full_response_path}")
+            warning("  Please review the response and create the config file manually.")
 
     except yaml.YAMLError as e:
-        console.print(f"\n⚠️  Error parsing YAML config: {e}", style="yellow")
-        console.print(
-            "Please review the output above and create the config file manually.",
-            style="yellow",
-        )
+        warning(f"\n⚠️  Error parsing YAML config: {e}")
+        # Save the full response for manual review
+        full_response_path = common_parent / "m1f-html2md-claude-response.txt"
+        with safe_open(full_response_path, "w") as f:
+            f.write(full_synthesis_text)
+        warning(f"  Saved Claude's full response to: {full_response_path}")
+        warning("  Please review the response and create the config file manually.")
     except Exception as e:
-        console.print(f"\n⚠️  Error saving config: {e}", style="yellow")
+        warning(f"\n⚠️  Error saving config: {e}")
+        # Try to save the full response at least
+        try:
+            full_response_path = common_parent / "m1f-html2md-claude-response.txt"
+            with safe_open(full_response_path, "w") as f:
+                f.write(full_synthesis_text)
+            warning(f"  Saved Claude's full response to: {full_response_path}")
+        except:
+            pass
 
-    console.print("\n✅ Analysis complete!", style="green bold")
+    success(f"\n✅ {Colors.BOLD}Analysis complete!{Colors.RESET}")
 
 ======= html2md_tool/convert_claude.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -3710,75 +4428,92 @@ import time
 import tempfile
 from pathlib import Path
 from typing import List
-from rich.console import Console
-from .claude_runner import ClaudeRunner
+from html2md_tool.claude_runner import ClaudeRunner
 
-console = Console()
+# Import safe file operations
+from m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_read_text,
+)
+
+# Use unified colorama module
+from shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 
 def handle_claude_convert_improved(args):
     """Handle conversion using Claude AI with improved timeout handling."""
 
-    console.print(
-        f"\n[bold]Using Claude AI to convert HTML to Markdown (with improved streaming)...[/bold]"
+    header(
+        f"{Colors.BOLD}Using Claude AI to convert HTML to Markdown (with improved streaming)...{Colors.RESET}"
     )
-    console.print(f"Model: {args.model}")
-    console.print(f"Sleep between calls: {args.sleep} seconds")
+    info(f"Model: {args.model}")
+    info(f"Sleep between calls: {args.sleep} seconds")
+
+    # Get source path first
+    source_path = args.source
 
     # Initialize Claude runner
     try:
         runner = ClaudeRunner(
             working_dir=str(
-                source_path.parent if source_path.is_file() else source_path
+                source_path.parent if safe_is_file(source_path) else source_path
             )
         )
     except Exception as e:
-        console.print(f"❌ {e}", style="red")
+        error(str(e))
         sys.exit(1)
 
     # Find all HTML files in source directory
-    source_path = args.source
-    if not source_path.exists():
-        console.print(f"❌ Source path not found: {source_path}", style="red")
+    if not safe_exists(source_path):
+        error(f"Source path not found: {source_path}")
         sys.exit(1)
 
     html_files = []
-    if source_path.is_file():
+    if safe_is_file(source_path):
         if source_path.suffix.lower() in [".html", ".htm"]:
             html_files.append(source_path)
         else:
-            console.print(f"❌ Source file is not HTML: {source_path}", style="red")
+            error(f"Source file is not HTML: {source_path}")
             sys.exit(1)
-    elif source_path.is_dir():
+    elif safe_is_dir(source_path):
         # Find all HTML files recursively
         html_files = list(source_path.rglob("*.html")) + list(
             source_path.rglob("*.htm")
         )
-        console.print(f"Found {len(html_files)} HTML files in {source_path}")
+        info(f"Found {len(html_files)} HTML files in {source_path}")
 
     if not html_files:
-        console.print("❌ No HTML files found to convert", style="red")
+        error("No HTML files found to convert")
         sys.exit(1)
 
     # Prepare output directory
     output_path = args.output
-    if output_path.exists() and output_path.is_file():
-        console.print(
-            f"❌ Output path is a file, expected directory: {output_path}", style="red"
-        )
+    if safe_exists(output_path) and safe_is_file(output_path):
+        error(f"Output path is a file, expected directory: {output_path}")
         sys.exit(1)
 
-    if not output_path.exists():
+    if not safe_exists(output_path):
         output_path.mkdir(parents=True, exist_ok=True)
-        console.print(f"Created output directory: {output_path}")
+        info(f"Created output directory: {output_path}")
 
     # Load conversion prompt
     prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
-    if not prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {prompt_path}", style="red")
+    if not safe_exists(prompt_path):
+        error(f"Prompt file not found: {prompt_path}")
         sys.exit(1)
 
-    prompt_template = prompt_path.read_text()
+    prompt_template = safe_read_text(prompt_path)
 
     # Process each HTML file
     converted_count = 0
@@ -3787,14 +4522,15 @@ def handle_claude_convert_improved(args):
     for i, html_file in enumerate(html_files):
         tmp_html_path = None
         try:
-            # Import validate_path_traversal
-            sys.path.insert(0, str(Path(__file__).parent.parent))
+            # Import validate_path_traversal from m1f tool
             from m1f.utils import validate_path_traversal
 
             # Validate path to prevent traversal attacks
             validated_path = validate_path_traversal(
                 html_file,
-                base_path=source_path if source_path.is_dir() else source_path.parent,
+                base_path=(
+                    source_path if safe_is_dir(source_path) else source_path.parent
+                ),
                 allow_outside=False,
             )
 
@@ -3802,7 +4538,7 @@ def handle_claude_convert_improved(args):
             html_content = validated_path.read_text(encoding="utf-8")
 
             # Determine output file path
-            if source_path.is_file():
+            if safe_is_file(source_path):
                 # Single file conversion
                 output_file = output_path / html_file.with_suffix(".md").name
             else:
@@ -3813,7 +4549,7 @@ def handle_claude_convert_improved(args):
             # Create output directory if needed
             output_file.parent.mkdir(parents=True, exist_ok=True)
 
-            console.print(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
+            info(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
 
             # Create a temporary file with the HTML content
             with tempfile.NamedTemporaryFile(
@@ -3829,7 +4565,7 @@ def handle_claude_convert_improved(args):
             prompt = f"{prompt}\n\nNote: Using model {args.model}"
 
             # Use improved Claude runner with streaming
-            console.print("🔄 Converting with Claude...", style="dim")
+            info(f"{Colors.DIM}🔄 Converting with Claude...{Colors.RESET}")
             returncode, stdout, stderr = runner.run_claude_streaming(
                 prompt=prompt,
                 allowed_tools="Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
@@ -3838,7 +4574,7 @@ def handle_claude_convert_improved(args):
             )
 
             if returncode != 0:
-                console.print(f"❌ Claude conversion failed: {stderr}", style="red")
+                error(f"Claude conversion failed: {stderr}")
                 failed_count += 1
                 continue
 
@@ -3855,33 +4591,33 @@ def handle_claude_convert_improved(args):
                 markdown_content = "\n".join(cleaned_lines)
 
             output_file.write_text(markdown_content, encoding="utf-8")
-            console.print(f"✅ Converted to: {output_file}", style="green")
+            success(f"Converted to: {output_file}")
             converted_count += 1
 
             # Sleep between API calls (except for the last one)
             if i < len(html_files) - 1 and args.sleep > 0:
-                console.print(f"Sleeping for {args.sleep} seconds...", style="dim")
+                info(f"{Colors.DIM}Sleeping for {args.sleep} seconds...{Colors.RESET}")
                 time.sleep(args.sleep)
 
         except Exception as e:
-            console.print(f"❌ Error processing {html_file}: {e}", style="red")
+            error(f"Error processing {html_file}: {e}")
             failed_count += 1
 
         finally:
             # Clean up temporary file
-            if tmp_html_path and os.path.exists(tmp_html_path):
+            if tmp_html_path and safe_exists(Path(tmp_html_path)):
                 try:
                     os.unlink(tmp_html_path)
                 except Exception:
                     pass
 
     # Summary
-    console.print(f"\n✅ Conversion complete!", style="green bold")
-    console.print(f"Successfully converted: {converted_count} files")
+    success(f"{Colors.BOLD}Conversion complete!{Colors.RESET}")
+    info(f"Successfully converted: {converted_count} files")
     if failed_count > 0:
-        console.print(f"Failed: {failed_count} files", style="yellow")
+        warning(f"Failed: {failed_count} files")
 
-    console.print(f"\nOutput directory: {output_path}")
+    info(f"\nOutput directory: {output_path}")
 
 ======= html2md_tool/core.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -3907,7 +4643,10 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup, NavigableString, Tag
 from markdownify import markdownify
 
-from .config.models import ExtractorConfig, ProcessorConfig
+# Import safe file operations
+from m1f.file_operations import safe_open
+
+from html2md_tool.config.models import ExtractorConfig, ProcessorConfig
 
 
 class HTMLParser:
@@ -3957,7 +4696,7 @@ class HTMLParser:
 
         for encoding in encodings:
             try:
-                with open(file_path, "r", encoding=encoding) as f:
+                with safe_open(file_path, "r", encoding=encoding) as f:
                     html_content = f.read()
                 break
             except (UnicodeDecodeError, LookupError):
@@ -3965,7 +4704,7 @@ class HTMLParser:
 
         if html_content is None:
             # Fallback: read as binary and decode with errors='ignore'
-            with open(file_path, "rb") as f:
+            with safe_open(file_path, "rb") as f:
                 html_content = f.read().decode(
                     self.config.encoding, errors=self.config.decode_errors
                 )
@@ -4190,7 +4929,10 @@ import sys
 from pathlib import Path
 from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
-from .utils import get_logger
+from html2md_tool.utils import get_logger
+
+# Import safe file operations
+from m1f.file_operations import safe_exists
 
 logger = get_logger(__name__)
 
@@ -4251,7 +4993,7 @@ def load_extractor(extractor_path: Path) -> BaseExtractor:
     Raises:
         ValueError: If extractor cannot be loaded
     """
-    if not extractor_path.exists():
+    if not safe_exists(extractor_path):
         raise ValueError(f"Extractor file not found: {extractor_path}")
 
     # Load the module dynamically
@@ -4494,12 +5236,13 @@ def preprocess_html(html_content: str, config: PreprocessingConfig) -> str:
 """Utility functions for mf1-html2md."""
 
 import logging
-import sys
 from pathlib import Path
 from typing import Optional
 
-from rich.console import Console
-from rich.logging import RichHandler
+from shared.logging import (
+    get_logger as shared_get_logger,
+    configure_logging as shared_configure_logging,
+)
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -4511,7 +5254,7 @@ def get_logger(name: str) -> logging.Logger:
     Returns:
         Logger instance
     """
-    return logging.getLogger(name)
+    return shared_get_logger(name)
 
 
 def configure_logging(
@@ -4524,44 +5267,10 @@ def configure_logging(
         quiet: Suppress all but error messages
         log_file: Optional log file path
     """
-    # Determine log level
-    if quiet:
-        level = logging.ERROR
-    elif verbose:
-        level = logging.DEBUG
-    else:
-        level = logging.INFO
+    # Use the shared configure_logging function
+    shared_configure_logging(verbose=verbose, quiet=quiet, log_file=log_file)
 
-    # Create handlers
-    handlers = []
-
-    # Console handler with rich formatting
-    console_handler = RichHandler(
-        console=Console(stderr=True),
-        show_path=verbose,
-        show_time=verbose,
-    )
-    console_handler.setLevel(level)
-    handlers.append(console_handler)
-
-    # File handler if specified
-    if log_file:
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.DEBUG)
-        file_formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        file_handler.setFormatter(file_formatter)
-        handlers.append(file_handler)
-
-    # Configure root logger
-    logging.basicConfig(
-        level=logging.DEBUG,
-        handlers=handlers,
-        force=True,
-    )
-
-    # Suppress some noisy loggers
+    # Suppress some noisy loggers specific to html2md
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)
 
@@ -4645,8 +5354,8 @@ def convert_html(
     Returns:
         Markdown content
     """
-    from .config.models import ExtractorConfig, ProcessorConfig
-    from .core import HTMLParser, MarkdownConverter
+    from html2md_tool.config.models import ExtractorConfig, ProcessorConfig
+    from html2md_tool.core import HTMLParser, MarkdownConverter
 
     # Create default configs
     extractor_config = ExtractorConfig()
@@ -4694,15 +5403,15 @@ def convert_html(
     return result
 
 
-def adjust_internal_links(content, base_path: str = "") -> None:
-    """Adjust internal links in HTML content (BeautifulSoup object).
+def adjust_internal_links(content, base_path: str = ""):
+    """Adjust internal links in HTML/Markdown content.
 
     Args:
-        content: BeautifulSoup object or string
+        content: BeautifulSoup object or Markdown string
         base_path: Base path for links
 
     Returns:
-        None (modifies in place)
+        Modified string if content is string, None if BeautifulSoup (modifies in place)
     """
     from bs4 import BeautifulSoup
 
@@ -4725,9 +5434,11 @@ def adjust_internal_links(content, base_path: str = "") -> None:
             if base_path and not url.startswith("/"):
                 url = f"{base_path}/{url}"
 
-            # Convert .html to .md
+            # Convert .html/.htm to .md
             if url.endswith(".html"):
                 url = url[:-5] + ".md"
+            elif url.endswith(".htm"):
+                url = url[:-4] + ".md"
 
             return f"[{text}]({url})"
 
@@ -4743,9 +5454,11 @@ def adjust_internal_links(content, base_path: str = "") -> None:
                     if base_path and not href.startswith("/"):
                         href = f"{base_path}/{href}"
 
-                    # Convert .html to .md
+                    # Convert .html/.htm to .md
                     if href.endswith(".html"):
                         href = href[:-5] + ".md"
+                    elif href.endswith(".htm"):
+                        href = href[:-4] + ".md"
 
                     link["href"] = href
 
@@ -4788,38 +5501,22 @@ def extract_title_from_html(html_content) -> Optional[str]:
     return None
 
 
-def create_progress_bar() -> "Progress":
-    """Create a rich progress bar.
+def create_progress_bar():
+    """Create a simple text-based progress indicator.
+
+    Note: Rich progress bars are no longer used. This returns None
+    and calling code should handle progress display differently.
 
     Returns:
-        Progress instance
+        None
     """
-    from rich.progress import (
-        BarColumn,
-        MofNCompleteColumn,
-        Progress,
-        SpinnerColumn,
-        TextColumn,
-        TimeElapsedColumn,
-        TimeRemainingColumn,
-    )
-
-    return Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        MofNCompleteColumn(),
-        TimeElapsedColumn(),
-        TimeRemainingColumn(),
-        console=Console(),
-        transient=True,
-    )
+    return None
 
 ======= html2md_tool/config/__init__.py ======
 """Configuration system for mf1-html2md."""
 
-from .loader import load_config, save_config
-from .models import (
+from html2md_tool.config.loader import load_config, save_config
+from html2md_tool.config.models import (
     AssetConfig,
     Config,
     ConversionOptions,
@@ -4867,11 +5564,23 @@ import warnings
 from dataclasses import fields
 
 import yaml
-from rich.console import Console
+import sys
 
-from .models import Config
+# Import safe file operations
+from m1f.file_operations import safe_exists, safe_open
 
-console = Console()
+# Use unified colorama module
+from shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
+
+from html2md_tool.config.models import Config
 
 
 def load_config(path: Path) -> Config:
@@ -4887,19 +5596,29 @@ def load_config(path: Path) -> Config:
         ValueError: If file format is not supported
         FileNotFoundError: If file does not exist
     """
-    if not path.exists():
+    if not safe_exists(path):
         raise FileNotFoundError(f"Configuration file not found: {path}")
 
     suffix = path.suffix.lower()
 
     if suffix in [".json"]:
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = json.load(f)
     elif suffix in [".yaml", ".yml"]:
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = yaml.safe_load(f)
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")
+
+    # Import nested config models
+    from html2md_tool.config.models import (
+        ConversionOptions,
+        ExtractorConfig,
+        ProcessorConfig,
+        AssetConfig,
+        CrawlerConfig,
+        M1fConfig,
+    )
 
     # Get valid field names from Config dataclass
     valid_fields = {f.name for f in fields(Config)}
@@ -4913,6 +5632,19 @@ def load_config(path: Path) -> Config:
             # Convert string paths to Path objects for specific fields
             if key in ["source", "destination", "log_file"] and value is not None:
                 filtered_data[key] = Path(value)
+            # Handle nested configuration objects
+            elif key == "conversion" and isinstance(value, dict):
+                filtered_data[key] = ConversionOptions(**value)
+            elif key == "extractor" and isinstance(value, dict):
+                filtered_data[key] = ExtractorConfig(**value)
+            elif key == "processor" and isinstance(value, dict):
+                filtered_data[key] = ProcessorConfig(**value)
+            elif key == "assets" and isinstance(value, dict):
+                filtered_data[key] = AssetConfig(**value)
+            elif key == "crawler" and isinstance(value, dict):
+                filtered_data[key] = CrawlerConfig(**value)
+            elif key == "m1f" and isinstance(value, dict):
+                filtered_data[key] = M1fConfig(**value)
             else:
                 filtered_data[key] = value
         else:
@@ -4920,13 +5652,9 @@ def load_config(path: Path) -> Config:
 
     # Warn about unknown fields
     if unknown_fields:
-        console.print(
-            f"⚠️  Warning: Ignoring unknown configuration fields: {', '.join(unknown_fields)}",
-            style="yellow",
-        )
-        console.print(
-            "   These fields are not recognized by m1f-html2md and will be ignored.",
-            style="dim",
+        warning(f"Ignoring unknown configuration fields: {', '.join(unknown_fields)}")
+        info(
+            f"{Colors.DIM}   These fields are not recognized by m1f-html2md and will be ignored.{Colors.RESET}"
         )
 
     return Config(**filtered_data)
@@ -4948,10 +5676,10 @@ def save_config(config: Config, path: Path) -> None:
     data = _config_to_dict(config)
 
     if suffix in [".json"]:
-        with open(path, "w") as f:
+        with safe_open(path, "w") as f:
             json.dump(data, f, indent=2)
     elif suffix in [".yaml", ".yml"]:
-        with open(path, "w") as f:
+        with safe_open(path, "w") as f:
             yaml.dump(data, f, default_flow_style=False)
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")
@@ -5067,8 +5795,9 @@ class ConversionOptions:
     def from_config_file(cls, path: Path) -> "ConversionOptions":
         """Load options from a configuration file."""
         import yaml
+        from m1f.file_operations import safe_open
 
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = yaml.safe_load(f)
 
         # Handle aliases in config file
@@ -5195,7 +5924,7 @@ class Config:
     def __post_init__(self):
         """Initialize preprocessing with defaults if not provided."""
         if self.preprocessing is None:
-            from ..preprocessors import PreprocessingConfig
+            from html2md_tool.preprocessors import PreprocessingConfig
 
             self.preprocessing = PreprocessingConfig(
                 remove_elements=["script", "style", "noscript"],

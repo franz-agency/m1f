@@ -27,6 +27,9 @@ from typing import List, Tuple, Optional
 from .config import Config, ArchiveType
 from .exceptions import ArchiveError
 from .logging import LoggerManager
+from .file_operations import (
+    safe_exists,
+)
 
 
 class ArchiveCreator:
@@ -85,7 +88,7 @@ class ArchiveCreator:
                         self.logger.debug(f"Adding to zip: {file_path} as {rel_path}")
 
                     # Skip if file doesn't exist
-                    if not file_path.exists():
+                    if not safe_exists(file_path, logger=self.logger):
                         self.logger.warning(f"File not found, skipping: {file_path}")
                         continue
 
@@ -114,7 +117,7 @@ class ArchiveCreator:
                         )
 
                     # Skip if file doesn't exist
-                    if not file_path.exists():
+                    if not safe_exists(file_path, logger=self.logger):
                         self.logger.warning(f"File not found, skipping: {file_path}")
                         continue
 

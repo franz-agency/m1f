@@ -2,6 +2,8 @@
 
 **Because your AI assistant deserves the full story, not just fragments.**
 
+> **📦 Quick Update:** Already using m1f? Update with: `cd m1f && git pull && source ./scripts/install.sh`
+
 ## You know that moment when...
 
 ...you're trying to get Claude, ChatGPT, or Gemini to help with your codebase,
@@ -15,127 +17,85 @@ keeps suggesting v3 syntax? Frustrating, right?
 
 ## The Big Idea 💡
 
-m1f transforms your sprawling codebase into AI-ready context bundles. One
-command, and suddenly your entire project – thousands of files, millions of
-lines – becomes a single, perfectly formatted file that any AI can digest.
+m1f isn't just file concatenation—it's intelligent context engineering for AI. Automatically handles duplicates, respects gitignore patterns, converts encodings, scans for secrets, and optimizes content for LLM consumption. One command transforms your sprawling codebase into perfectly formatted AI context.
 
 ```bash
-# Turn this nightmare...
-src/
-├── components/     (247 files)
-├── utils/          (89 files)
-├── services/       (156 files)
-└── ... (and 2000 more)
+# Before: Wrestling with context limits
+❌ 1,247 React components across 47 directories
+❌ Mixed TypeScript, CSS, and markdown files  
+❌ Accidentally including secrets and dependencies
+❌ Hit token limits, lose context mid-conversation
 
-# Into this dream:
-m1f/
-├── project_complete.txt    ← Your entire codebase
-├── project_docs.txt        ← Just the docs
-└── custom_bundles/         ← Whatever you need
+# After: AI-ready intelligence
+✅ One optimized bundle with just the essentials
+✅ Smart deduplication and encoding normalization
+✅ Security scanning prevents secret leaks
+✅ Perfect for Claude's 200k context window
+
+# The magic command:
+m1f-init && m1f-update
 ```
 
-## Get Started in 30 Seconds
+## Key Features
+
+- **Content Deduplication**: Automatically detects and skips duplicate files based on SHA256 checksums.
+- **Smart Auto-Loading**: Automatically respects .gitignore and .m1fignore files without configuration.
+- **Async I/O**: High-performance file operations with concurrent processing.
+- **Smart Filtering**: Advanced file filtering with size limits, extensions, and gitignore-style patterns.
+- **Symlink Support**: Intelligent symlink handling with cycle detection.
+- **Professional Security**: Integration with `detect-secrets` for sensitive data detection.
+- **Preset System**: Define file-specific processing rules for different file types within the same bundle.
+- **Automatic Bundling**: Create multiple bundles from a single YAML config file.
+- **Real-Time Progress**: Live streaming of operations with friendly progress indicators.
+
+## Get Started in 2 Minutes
 
 Works on Linux, macOS, and Windows. Because we don't discriminate.
 
 ```bash
-# 1. Clone it
-git clone https://github.com/franz-agency/m1f.git
-cd m1f
-
-# 2. Install it
+# 1. Install m1f (30 seconds)
+git clone https://github.com/franz-agency/m1f.git && cd m1f
 source ./scripts/install.sh    # Linux/macOS
-.\scripts\install.ps1          # Windows (restart your terminal)
+# OR
+.\scripts\install.ps1          # Windows (restart terminal after)
 
-# 3. Use it
-cd /your/amazing/project
-m1f-init
+# 2. Initialize your project (30 seconds)  
+cd /your/amazing/project && m1f-init
 
-# 💥 Boom! Your AI just became a project expert.
+# 3. Generate bundles (60 seconds)
+m1f-update
+# ✅ Done! Check the m1f/ directory for your AI-ready files
 ```
 
-## Why This Changes Everything
-
-### The Problem We All Face
-
-Modern software isn't just code anymore. It's:
-
-- 📁 Hundreds of source files across dozens of directories
-- 📚 Documentation scattered everywhere
-- ⚙️ Config files in every flavor (JSON, YAML, TOML, you name it)
-- 🔧 Build scripts, test files, deployment configs
-- 🎨 Assets, styles, templates
-
-**You can't just "upload a project" to AI.** Until now.
-
-### The m1f Solution
-
-We didn't just build a file concatenator. We built an intelligent context
-creator that:
-
-#### 🧠 Thinks Like a Developer
-
-- Respects your `.gitignore` (because `node_modules` shouldn't go to AI)
-- Deduplicates files automatically (why send the same content twice?)
-- Handles symlinks properly (no infinite loops here)
-- Detects secrets before they leak (your AWS keys are safe)
-
-#### 🚀 Works at Scale
-
-- Async everything (because waiting is so 2010)
-- Streaming processing (10GB repo? No problem)
-
-#### 🔒 Security First
-
-- Automatic secret scanning with
-  [`detect-secrets`](https://github.com/Yelp/detect-secrets)
-- No passwords, API keys, or tokens in your AI conversations
-- Path traversal protection (hackers hate this one trick)
-
-## Real Magic: Teaching AI New Tricks ✨
-
-Here's where it gets really cool. Your AI has a knowledge cutoff, but your
-projects don't wait. When Tailwind CSS 4 drops and Claude is still thinking v3,
-here's what you do:
-
-```bash
-# 1. Grab the latest docs
-git clone https://github.com/tailwindlabs/tailwindcss.com
-cd tailwindcss.com
-
-# 2. Create AI brain food
-m1f-init
-# Creates: m1f/tailwind_complete.txt and m1f/tailwind_docs.txt
-
-# 3. Get fancy with topic bundles (optional but awesome)
-m1f-claude --setup
-# AI analyzes and creates:
-# - m1f/tailwind_utilities.txt
-# - m1f/tailwind_components.txt
-# - m1f/tailwind_configuration.txt
-
-# 4. Link to your project
-cd ~/your-awesome-project
-ln -s ~/tailwindcss.com/m1f/tailwind_docs.txt m1f/
-
-# 5. Blow your AI's mind
-# "Hey @m1f/tailwind_docs.txt, show me how to use the new v4 grid system"
-# *AI proceeds to give you perfect v4 code*
-```
+**💥 What just happened?**
+- Analyzed your project structure and created `.m1f.config.yml`
+- Generated multiple bundles: complete project, docs-only, and more
+- Auto-ignored node_modules, .git, and other noise
+- Ready to paste into Claude, ChatGPT, or any LLM
 
 ## The Complete Toolkit 🛠️
 
 ### m1f
 
-The core bundler. Smart, fast, and secure.
+The intelligent core bundler with advanced preset system, security scanning, and async processing. Goes far beyond simple file concatenation.
 
 ```bash
-m1f -s ./src -o context.txt --preset code-review
+# Smart bundling with auto-ignore
+m1f -s ./src -o context.txt
+
+# Advanced preset workflows  
+m1f -s . -o bundle.txt --preset wordpress.m1f-presets.yml
+
+# Security-aware bundling
+m1f -s . -o secure-bundle.txt --security-check abort
+
+# Multiple source directories
+m1f -s ./frontend -s ./backend -o full-stack.txt
 ```
 
 ### m1f-init
 
-One command to rule them all. Analyzes your project and creates instant bundles.
+One command to rule them all. Analyzes your project, creates a `.m1f.config.yml`, and generates instant default bundles.
 
 ```bash
 m1f-init  # That's it. Seriously.
@@ -143,28 +103,25 @@ m1f-init  # That's it. Seriously.
 
 ### m1f-claude
 
-The ultimate meta tool: Controls Claude Code headlessly and automatically
-includes m1f's complete documentation in every prompt. This means Claude knows
-ALL m1f parameters and features without you explaining anything.
+The ultimate meta tool: Controls Claude Code headlessly and automatically includes m1f's complete documentation in every prompt. This means Claude knows ALL m1f parameters and features without you explaining anything.
 
 ```bash
-# Ask Claude to create custom bundles for you
 m1f-claude "Create bundles for my React project, separate frontend and backend"
-
-# Claude now operates m1f for you with full knowledge
-m1f-claude "Bundle only TypeScript files modified in the last week"
-
-# Advanced project setup with AI-organized topics
-m1f-claude --setup  # Claude analyzes your project and creates topic bundles
 ```
 
-Since m1f-claude feeds the complete m1f documentation to Claude automatically,
-you can ask it to do anything m1f can do - it's like having an expert m1f user
-as your assistant.
+### m1f-update
+
+Regenerates all configured bundles from your `.m1f.config.yml`. The intelligent way to keep your AI context fresh.
+
+```bash
+m1f-update              # Regenerate all bundles
+m1f-update frontend     # Update specific bundle  
+m1f-update --list       # Show available bundles
+```
 
 ### m1f-s1f (Split One File)
 
-When AI generates that perfect codebase and you need real files back.
+When an AI generates a perfect codebase in a single file and you need real files back.
 
 ```bash
 m1f-s1f -i ai-generated-magic.txt -d ./actual-files/
@@ -172,19 +129,48 @@ m1f-s1f -i ai-generated-magic.txt -d ./actual-files/
 
 ### m1f-scrape
 
-Because not all docs live in git repos.
+Enterprise-grade web scraper with multiple backends (Playwright, BeautifulSoup, Selectolax), security protections, and intelligent link adjustment.
 
 ```bash
-m1f-scrape https://shiny-new-framework.dev -o ./docs/
+# Multi-backend scraping with restrictions
+m1f-scrape https://docs.react.dev --allowed-paths /reference/ /learn/
+
+# Bulk documentation harvesting  
+m1f-scrape https://tailwindcss.com --max-pages 100 --follow-external false
 ```
 
 ### m1f-html2md
 
-Turn that scraped HTML into beautiful Markdown.
+Turns scraped HTML into clean, readable Markdown, ready for bundling.
 
 ```bash
 m1f-html2md convert ./scraped-docs -o ./markdown/
 ```
+
+### m1f-research
+
+> ⚠️ **Early Alpha**: This tool is under heavy development. Expect significant changes.
+
+Advanced AI research workflow with 7-phase automation: query expansion, web search, URL curation, deep crawling, content analysis, bundling, and AI synthesis.
+
+```bash
+# Interactive workflow with terminal UI
+m1f-research "latest React 19 features and migration guide"
+
+# Advanced configuration  
+m1f-research "Vue.js vs React 2025" --crawl-depth 2 --analysis-type comparative
+
+# Job management
+m1f-research --list-jobs
+m1f-research --resume abc123
+```
+
+**Key Features:**
+- **Query Expansion**: AI generates multiple search variations
+- **Interactive URL Review**: Terminal UI for curating sources  
+- **Deep Crawling**: Recursive page discovery with configurable depth
+- **Job Management**: Track, resume, and delete research projects
+- **AI Analysis**: Generates separate analysis documents with insights
 
 ### m1f-token-counter
 
@@ -195,55 +181,50 @@ m1f-token-counter bundle.txt
 # Output: 45,231 tokens (fits in Claude's 200k context!)
 ```
 
-## Use Cases That'll Make You Smile 😊
+## Command-Line Options
 
-### 1. Code Review Prep
+<details>
+<summary>Click to expand the full list of `m1f` command-line options</summary>
 
-```bash
-# Get changed files from git and bundle them
-git diff --name-only HEAD~10 | xargs m1f --input-files -o review.txt
-# Or use a code review preset if you have one
-m1f --preset presets/code-review.m1f-presets.yml
-```
+| Option                      | Description                                                                                                                                                                                                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-s, --source-directory`    | Path to the directory containing files to process. Can be specified multiple times to include files from multiple directories (e.g., `-s dir1 -s dir2`)                                                                                                          |
+| `-i, --input-file`          | Path to a file containing a list of files/directories to process. Can be used together with --source-directory to resolve relative paths in the input file against the source directory                                                                          |
+| `-o, --output-file`         | Path for the combined output file                                                                                                                                                                                                                                |
+| `-f, --force`               | Force overwrite of existing output file without prompting                                                                                                                                                                                                        |
+| `-t, --add-timestamp`       | Add a timestamp (\_YYYYMMDD\_HHMMSS) to the output filename. Useful for versioning and preventing accidental overwrite of previous output files                                                                                                                   |
+| `--filename-mtime-hash`     | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes                        |
+| `--include-extensions`      | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                                                    |
+| `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
+| `--includes`                | Space-separated list of gitignore-style patterns to include (e.g., `--includes "*.py" "src/**" "!test.py"`). When combined with `--include-extensions`, files must match both criteria                                                                           |
+| `--docs-only`               | Include only documentation files (62 extensions including .md, .txt, .rst, .org, .tex, .info, etc.). Overrides include-extensions.                                                                                                                               |
+| `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context   |
+| `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
+| `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, \***\*pycache\*\*** (see [Default Excludes Guide](./26_default_excludes_guide.md) for complete list)        |
+| `--excludes`                | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                                            |
+| `--include-dot-paths`       | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                                        |
+| `--include-binary-files`    | Attempt to include files with binary extensions                                                                                                                                                                                                                  |
+| `--remove-scraped-metadata` | Remove scraped metadata (URL, timestamp) from HTML2MD files during processing. Automatically detects and removes metadata blocks at the end of markdown files created by HTML scraping tools                                                                     |
+| `--separator-style`         | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`)                                                                                                                                                                |
+| `--line-ending`             | Line ending for script-generated separators (`lf` or `crlf`)                                                                                                                                                                                                     |
+| `--convert-to-charset`      | Convert all files to the specified character encoding (`utf-8` [default], `utf-16`, `utf-16-le`, `utf-16-be`, `ascii`, `latin-1`, `cp1252`). The original encoding is automatically detected and included in the metadata when using compatible separator styles |
+| `--abort-on-encoding-error` | Abort processing if encoding conversion errors occur. Without this flag, characters that cannot be represented will be replaced                                                                                                                                  |
+| `-v, --verbose`             | Enable verbose logging. Without this flag, only summary information is shown, and detailed file-by-file logs are written to the log file instead of the console                                                                                                  |
+| `--minimal-output`          | Generate only the combined output file (no auxiliary files)                                                                                                                                                                                                      |
+| `--skip-output-file`        | Execute operations but skip writing the final output file                                                                                                                                                                                                        |
+| `-q, --quiet`               | Suppress all console output                                                                                                                                                                                                                                      |
+| `--create-archive`          | Create a backup archive of all processed files                                                                                                                                                                                                                   |
+| `--archive-type`            | Type of archive to create (`zip` or `tar.gz`)                                                                                                                                                                                                                    |
+| `--security-check`          | Scan files for secrets before merging (`abort`, `skip`, `warn`)                                                                                                                                                                                                  |
+| `--preset`                  | One or more preset configuration files for file-specific processing. Files are loaded in order with later files overriding earlier ones                                                                                                                          |
+| `--preset-group`            | Specific preset group to use from the configuration. If not specified, all matching presets from all groups are considered                                                                                                                                       |
+| `--disable-presets`         | Disable all preset processing even if preset files are loaded                                                                                                                                                                                                    |
 
-### 2. Documentation Deep Dive
-
-```bash
-m1f --docs-only -o project-knowledge.txt
-# Pure documentation, no code noise
-```
-
-### 3. Architecture Overview
-
-```bash
-m1f --include "**/*.py" --include "**/README.md" \
-    --max-file-size 50kb -o architecture.txt
-# High-level view without implementation details
-```
-
-### 4. The "New Developer Onboarding" Special
-
-```bash
-m1f-init && m1f-claude --setup
-# Generate organized bundles for different aspects of your project
-# Share with new team members → instant project experts
-```
-
-## Smart Defaults Because We Get You
-
-Out of the box, m1f:
-
-- ✅ Ignores `node_modules/`, `vendor/`, `.git/`, and other noise
-- ✅ Skips binary files (unless you really want them)
-- ✅ Handles any text encoding (UTF-8, UTF-16, that weird Windows-1252 file
-  from 2003)
-- ✅ Respects `.gitignore` rules (that wasn't easy ;-)
-- ✅ Warns about potential secrets
-- ✅ Adds clear file separators
+</details>
 
 ## Configuration for Power Users
 
-After `m1f-init`, tweak `.m1f.config.yml` to your heart's content:
+After `m1f-init`, tweak `.m1f.config.yml` to your heart's content. You can define multiple bundles, each with its own set of inclusion/exclusion patterns, and then generate them all with `m1f-update`.
 
 ```yaml
 bundles:
@@ -269,46 +250,6 @@ bundles:
     max_file_size: 100kb
     output: "m1f/architecture-overview.txt"
 ```
-
-## Beyond AI: Surprise Use Cases 🎁
-
-### Universal File Normalizer
-
-```bash
-# Got files in 17 different encodings?
-m1f --normalize-to utf-8 --output clean-project.txt
-m1f-s1f -i clean-project.txt -d ./clean/
-# Boom. Everything is UTF-8 now.
-```
-
-### Time Capsule Creator
-
-```bash
-m1f --add-timestamps -o "backup_$(date +%Y%m%d).txt"
-# Perfect snapshot of your project at this moment
-```
-
-### The "Poor Developer's Docker"
-
-```bash
-# Bundle on machine A
-m1f -o myproject.txt
-# Transfer one file
-scp myproject.txt user@machine-b:
-# Extract on machine B
-m1f-s1f -i myproject.txt -d ./project/
-# Entire project structure preserved!
-```
-
-## Pro Tips from the Trenches 🏆
-
-1. **Start with `m1f-init`** - It's smarter than you think
-2. **Use presets** - We've included configs for WordPress, Django, React, and
-   more
-3. **Chain tools** - `m1f-scrape` → `m1f-html2md` → `m1f` = Documentation power
-   combo
-4. **Set up watches** - `./scripts/watch_and_bundle.sh` for auto-updates
-5. **Check token counts** - Always know what you're pasting
 
 ## Join the Revolution
 

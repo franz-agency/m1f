@@ -46,10 +46,10 @@ function Invoke-AutoBundle {
         if (Get-Command m1f-update -ErrorAction SilentlyContinue) {
             & m1f-update --quiet
             if ($LASTEXITCODE -eq 0) {
-                Write-ColorOutput "✓ Auto-bundle completed successfully" -Color "Green"
+                Write-ColorOutput "[OK] Auto-bundle completed successfully" -Color "Green"
                 return $true
             } else {
-                Write-ColorOutput "✗ Auto-bundle failed" -Color "Red"
+                Write-ColorOutput "[FAIL] Auto-bundle failed" -Color "Red"
                 return $false
             }
         }
@@ -57,15 +57,15 @@ function Invoke-AutoBundle {
         elseif (Get-Command m1f -ErrorAction SilentlyContinue) {
             & m1f auto-bundle --quiet
             if ($LASTEXITCODE -eq 0) {
-                Write-ColorOutput "✓ Auto-bundle completed successfully" -Color "Green"
+                Write-ColorOutput "[OK] Auto-bundle completed successfully" -Color "Green"
                 return $true
             } else {
-                Write-ColorOutput "✗ Auto-bundle failed" -Color "Red"
+                Write-ColorOutput "[FAIL] Auto-bundle failed" -Color "Red"
                 return $false
             }
         }
     } catch {
-        Write-ColorOutput "✗ Auto-bundle error: $_" -Color "Red"
+        Write-ColorOutput "[ERROR] Auto-bundle error: $_" -Color "Red"
         return $false
     }
     
@@ -84,18 +84,22 @@ if (Invoke-AutoBundle) {
 if ($filesModified) {
     Write-ColorOutput "Re-staging m1f bundle files..." -Color "Cyan"
     
-    # Find and stage all .txt files in m1f directories
+    # Find and stage all .txt files in m1f directories (excluding .venv, dev, test output, and egg-info)
     Get-ChildItem -Path . -Filter "*.txt" -Recurse | Where-Object { 
-        $_.FullName -match "[\\/]m1f[\\/]" 
+        $_.FullName -match "[\\/]m1f[\\/]" -and 
+        $_.FullName -notmatch "[\\/]\.venv[\\/]" -and
+        $_.FullName -notmatch "[\\/]dev[\\/]" -and
+        $_.FullName -notmatch "[\\/]tests[\\/]s1f[\\/]output[\\/]" -and
+        $_.FullName -notmatch "\.egg-info[\\/]"
     } | ForEach-Object {
         $file = $_.FullName
         $relativePath = Resolve-Path -Path $file -Relative
         
-        # Check if file is tracked by git
-        $inGit = git ls-files --error-unmatch $relativePath 2>$null
+        # Check if file is tracked by git (suppress error output)
+        git ls-files --error-unmatch $relativePath 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) {
             git add $relativePath
-            Write-ColorOutput "✓ Staged: $relativePath" -Color "Green"
+            Write-ColorOutput "[OK] Staged: $relativePath" -Color "Green"
         }
     }
     
@@ -109,11 +113,11 @@ if ($filesModified) {
             $inGit = git ls-files --error-unmatch $relativePath 2>$null
             if ($LASTEXITCODE -eq 0) {
                 git add $relativePath
-                Write-ColorOutput "✓ Staged: $relativePath" -Color "Green"
+                Write-ColorOutput "[OK] Staged: $relativePath" -Color "Green"
             }
         }
     }
 }
 
-Write-ColorOutput "✓ m1f pre-commit hook completed" -Color "Green"
+Write-ColorOutput "[OK] m1f pre-commit hook completed" -Color "Green"
 exit 0

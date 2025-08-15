@@ -49,6 +49,17 @@ DEFAULT_EXCLUDED_FILES: Set[str] = {
     "yarn.lock",
 }
 
+# Default file patterns to exclude
+DEFAULT_EXCLUDED_PATTERNS: Set[str] = {
+    "*.tmp",
+    "*.bak",
+    "*.swp",
+    "*.swo",
+    "*~",
+    ".DS_Store",
+    "Thumbs.db",
+}
+
 # Maximum symlink depth to prevent infinite loops
 MAX_SYMLINK_DEPTH: int = 40
 

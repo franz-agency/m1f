@@ -18,11 +18,23 @@ Simplified Claude runner for debugging.
 
 import subprocess
 import os
+import sys
 from pathlib import Path
 from typing import Tuple, Optional
-from rich.console import Console
 
-console = Console()
+# Import safe file operations
+from m1f.file_operations import safe_exists, safe_is_file
+
+# Use unified colorama module
+from shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 
 class ClaudeRunnerSimple:
@@ -41,7 +53,7 @@ class ClaudeRunnerSimple:
         ]
 
         for path in claude_paths:
-            if path.exists() and path.is_file():
+            if safe_exists(path) and safe_is_file(path):
                 return str(path)
 
         # Try default command
@@ -80,11 +92,7 @@ class ClaudeRunnerSimple:
 
         try:
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=working_dir,
+                cmd, capture_output=True, text=True, timeout=timeout, cwd=working_dir
             )
 
             return result.returncode, result.stdout, result.stderr

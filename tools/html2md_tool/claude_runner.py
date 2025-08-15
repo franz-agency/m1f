@@ -19,16 +19,37 @@ Claude runner with reliable subprocess execution and streaming support.
 import subprocess
 import sys
 import os
+import json
+import threading
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
-from rich.console import Console
 
-console = Console()
+# Import safe file operations
+from m1f.file_operations import safe_exists, safe_is_file
+
+# Use unified colorama module
+from shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
+
+# Import shared Claude utilities
+from shared.claude_utils import (
+    ClaudeBinaryFinder,
+    ClaudeErrorHandler,
+    ClaudeConfig,
+    ClaudeRunner as BaseClaudeRunner,
+)
 
 
-class ClaudeRunner:
+class ClaudeRunner(BaseClaudeRunner):
     """Handles Claude CLI execution with reliable subprocess support."""
 
     def __init__(
@@ -36,38 +57,11 @@ class ClaudeRunner:
         max_workers: int = 5,
         working_dir: Optional[str] = None,
         claude_binary: Optional[str] = None,
+        config: Optional[ClaudeConfig] = None,
     ):
+        super().__init__(config=config, binary_path=claude_binary)
         self.max_workers = max_workers
         self.working_dir = working_dir or str(Path.cwd())
-        self.claude_binary = claude_binary or self._find_claude_binary()
-
-    def _find_claude_binary(self) -> str:
-        """Find Claude binary in system."""
-        # Try default command first
-        try:
-            subprocess.run(
-                ["claude", "--version"], capture_output=True, check=True, timeout=5
-            )
-            return "claude"
-        except (
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            subprocess.TimeoutExpired,
-        ):
-            pass
-
-        # Check known locations
-        claude_paths = [
-            Path.home() / ".claude" / "local" / "claude",
-            Path("/usr/local/bin/claude"),
-            Path("/usr/bin/claude"),
-        ]
-
-        for path in claude_paths:
-            if path.exists() and path.is_file():
-                return str(path)
-
-        raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
 
     def run_claude_simple(
         self,
@@ -83,7 +77,7 @@ class ClaudeRunner:
         Returns: (returncode, stdout, stderr)
         """
         cmd = [
-            self.claude_binary,
+            self.get_binary(),
             "--print",  # Use print mode for non-interactive output
             "--allowedTools",
             allowed_tools,
@@ -98,9 +92,9 @@ class ClaudeRunner:
         env["PYTHONUNBUFFERED"] = "1"
 
         if show_output:
-            console.print("🤖 Running Claude...", style="blue")
-            console.print(f"Command: {' '.join(cmd[:3])} ...", style="dim")
-            console.print(f"Working dir: {self.working_dir}", style="dim")
+            info(f"{Colors.BLUE}🤖 Running Claude...{Colors.RESET}")
+            info(f"{Colors.DIM}Command: {' '.join(cmd[:3])} ...{Colors.RESET}")
+            info(f"{Colors.DIM}Working dir: {self.working_dir}{Colors.RESET}")
 
         try:
             # Use a more conservative timeout for complex tasks
@@ -119,28 +113,24 @@ class ClaudeRunner:
 
             if show_output:
                 if result.returncode == 0:
-                    console.print("✅ Claude processing complete", style="green")
+                    success("Claude processing complete")
                 else:
-                    console.print(
-                        f"❌ Claude failed with code {result.returncode}", style="red"
-                    )
+                    error(f"Claude failed with code {result.returncode}")
                     if result.stderr:
-                        console.print(
-                            f"Error: {result.stderr[:200]}...", style="red dim"
+                        error(
+                            f"{Colors.DIM}Error: {result.stderr[:200]}...{Colors.RESET}"
                         )
 
             return result.returncode, result.stdout, result.stderr
 
         except subprocess.TimeoutExpired:
-            console.print(
-                f"⏰ Claude timed out after {actual_timeout}s", style="yellow"
-            )
-            console.print(
-                "💡 Try increasing timeout or simplifying the task", style="blue"
+            warning(f"⏰ Claude timed out after {actual_timeout}s")
+            info(
+                f"{Colors.BLUE}💡 Try increasing timeout or simplifying the task{Colors.RESET}"
             )
             return -1, "", f"Process timed out after {actual_timeout}s"
         except Exception as e:
-            console.print(f"❌ Error running Claude: {e}", style="red")
+            self.error_handler.handle_api_error(e, operation="Claude simple")
             return -1, "", str(e)
 
     def run_claude_streaming(
@@ -161,7 +151,7 @@ class ClaudeRunner:
         work_dir = working_dir if working_dir is not None else self.working_dir
 
         # Build command
-        cmd = [self.claude_binary, "--print", "--allowedTools", allowed_tools]
+        cmd = [self.get_binary(), "-p", "--allowedTools", allowed_tools]
 
         if add_dir:
             cmd.extend(["--add-dir", add_dir])
@@ -206,20 +196,15 @@ class ClaudeRunner:
                     if show_output:
                         current_time = time.time()
                         elapsed = current_time - start_time
-                        # Show Claude's actual output (truncate very long lines)
-                        if len(line) > 200:
-                            console.print(f"[{elapsed:.1f}s] {line[:197]}...")
-                        else:
-                            console.print(f"[{elapsed:.1f}s] {line}")
+                        # Show Claude's actual output (no truncation, terminal will soft wrap)
+                        info(f"[{elapsed:.1f}s] {line}")
                         last_output_time = current_time
 
                 # Check timeout
                 if time.time() - start_time > timeout:
                     process.kill()
                     if show_output:
-                        console.print(
-                            f"⏰ Claude timed out after {timeout}s", style="yellow"
-                        )
+                        warning(f"⏰ Claude timed out after {timeout}s")
                     return -1, "\n".join(stdout_lines), "Process timed out"
 
             # Get any remaining output
@@ -243,20 +228,286 @@ class ClaudeRunner:
             if show_output:
                 total_time = time.time() - start_time
                 if process.returncode == 0:
-                    console.print(f"✅ Claude processing complete", style="green")
+                    success("Claude processing complete")
                 else:
-                    console.print(
-                        f"❌ Claude failed with code {process.returncode}", style="red"
-                    )
+                    error(f"Claude failed with code {process.returncode}")
                     if stderr:
-                        console.print(f"Error: {stderr[:200]}...", style="red dim")
+                        error(f"{Colors.DIM}Error: {stderr[:200]}...{Colors.RESET}")
 
             return process.returncode, stdout, stderr
 
         except Exception as e:
             if show_output:
-                console.print(f"❌ Error running Claude: {e}", style="red")
+                self.error_handler.handle_api_error(e, operation="Claude streaming")
             return -1, "\n".join(stdout_lines), str(e)
+
+    def run_claude_streaming_json(
+        self,
+        prompt: str,
+        allowed_tools: str = "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write,Task",
+        add_dir: Optional[str] = None,
+        timeout: int = 600,
+        working_dir: Optional[str] = None,
+        show_progress: bool = True,
+    ) -> Tuple[int, str, str]:
+        """
+        Run Claude with stream-json output format and real-time progress display.
+
+        Returns: (returncode, stdout, stderr)
+        """
+        # Use working directory if provided
+        work_dir = working_dir or self.working_dir
+
+        # Build command with stream-json format
+        cmd = [
+            self.get_binary(),
+            "-p",
+            "--output-format",
+            "stream-json",
+            "--allowedTools",
+            allowed_tools,
+            "--verbose",  # Required for stream-json with -p
+        ]
+
+        if add_dir:
+            cmd.extend(["--add-dir", add_dir])
+
+        # Set environment for unbuffered output
+        env = os.environ.copy()
+        env["PYTHONUNBUFFERED"] = "1"
+
+        if show_progress:
+            info(
+                f"{Colors.BLUE}🤖 Starting Claude with real-time streaming...{Colors.RESET}"
+            )
+
+        # Collect all output
+        stdout_lines = []
+        stderr_lines = []
+
+        try:
+            # Start the process
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=work_dir,
+                text=True,
+                bufsize=1,  # Line buffered
+                universal_newlines=True,
+                env=env,
+            )
+
+            # Send the prompt and close stdin
+            process.stdin.write(prompt)
+            process.stdin.close()
+
+            # Create thread to read stderr
+            def read_stderr():
+                while True:
+                    err_line = process.stderr.readline()
+                    if not err_line:
+                        break
+                    stderr_lines.append(err_line.strip())
+                    if show_progress and err_line.strip():
+                        warning(f"⚠️  {err_line.strip()}")
+
+            stderr_thread = threading.Thread(target=read_stderr)
+            stderr_thread.start()
+
+            # Track timing
+            start_time = time.time()
+
+            if show_progress:
+                info("🔄 Processing with Claude (streaming output)...")
+
+            # Read stdout line by line and parse JSON in real-time
+            while True:
+                line = process.stdout.readline()
+                if not line and process.poll() is not None:
+                    break
+
+                if line:
+                    line = line.strip()
+                    stdout_lines.append(line)
+
+                    # Parse and display progress in real-time
+                    if line and show_progress:
+                        try:
+                            json_obj = json.loads(line)
+                            self._display_claude_progress(json_obj, start_time)
+                        except json.JSONDecodeError:
+                            # Not a JSON line, might be other output
+                            if line and not line.startswith("Running command:"):
+                                info(
+                                    f"{Colors.DIM}Raw: {line[:100]}{'...' if len(line) > 100 else ''}{Colors.RESET}"
+                                )
+
+                # Check timeout
+                if time.time() - start_time > timeout:
+                    process.kill()
+                    if show_progress:
+                        warning(f"⏰ Claude timed out after {timeout}s")
+                    return -1, "\n".join(stdout_lines), "Process timed out"
+
+            # Wait for process to complete
+            process.wait()
+
+            # Wait for stderr thread to finish
+            stderr_thread.join()
+
+            # Join all output
+            stdout = "\n".join(stdout_lines)
+            stderr = "\n".join(stderr_lines)
+
+            if show_progress:
+                total_time = time.time() - start_time
+                if process.returncode == 0:
+                    success(f"✅ Claude processing complete ({total_time:.1f}s)")
+                else:
+                    error(f"❌ Claude failed with code {process.returncode}")
+                    if stderr:
+                        error(f"{Colors.DIM}Error: {stderr[:200]}...{Colors.RESET}")
+
+            return process.returncode, stdout, stderr
+
+        except Exception as e:
+            if show_progress:
+                self.error_handler.handle_api_error(
+                    e, operation="Claude JSON streaming"
+                )
+            return -1, "\n".join(stdout_lines), str(e)
+
+    def _display_claude_progress(self, json_obj: Dict[str, Any], start_time: float):
+        """Display friendly progress messages based on Claude's JSON output."""
+        msg_type = json_obj.get("type", "unknown")
+        elapsed = time.time() - start_time
+
+        if msg_type == "system" and json_obj.get("subtype") == "init":
+            info("🚀 Starting conversation with Claude")
+        elif msg_type == "assistant":
+            # Handle assistant messages
+            message = json_obj.get("message", {})
+            if isinstance(message, dict):
+                content_parts = message.get("content", [])
+                if isinstance(content_parts, list):
+                    for part in content_parts:
+                        if isinstance(part, dict):
+                            if part.get("type") == "text":
+                                text = part.get("text", "")
+                                # Extract meaningful actions from assistant messages
+                                if "Task tool" in text or "Task(" in text:
+                                    info(
+                                        f"[{elapsed:.0f}s] 🔍 Claude is launching a subagent..."
+                                    )
+                                elif "Edit tool" in text or "Edit(" in text:
+                                    info(
+                                        f"[{elapsed:.0f}s] ✏️  Claude is editing files..."
+                                    )
+                                elif "Read tool" in text or "Read(" in text:
+                                    info(
+                                        f"[{elapsed:.0f}s] 📖 Claude is reading files..."
+                                    )
+                                elif (
+                                    "Grep tool" in text
+                                    or "Grep(" in text
+                                    or "search" in text.lower()
+                                ):
+                                    info(
+                                        f"[{elapsed:.0f}s] 🔎 Claude is searching for content..."
+                                    )
+                                elif "TodoWrite" in text:
+                                    info(
+                                        f"[{elapsed:.0f}s] 📝 Claude is managing tasks..."
+                                    )
+                                elif "Write tool" in text or "Write(" in text:
+                                    info(
+                                        f"[{elapsed:.0f}s] 💾 Claude is writing files..."
+                                    )
+                                elif len(text) > 50:  # Significant text output
+                                    info(f"[{elapsed:.0f}s] 💭 Claude is analyzing...")
+                            elif part.get("type") == "tool_use":
+                                # Handle inline tool calls in assistant messages
+                                tool_name = part.get("name", "unknown")
+                                tool_input = part.get("input", {})
+
+                                if tool_name == "Edit":
+                                    file_path = tool_input.get("file_path", "")
+                                    file_name = (
+                                        os.path.basename(file_path)
+                                        if file_path
+                                        else "file"
+                                    )
+                                    info(f"[{elapsed:.0f}s] ✏️  Editing: {file_name}")
+                                elif tool_name == "MultiEdit":
+                                    file_path = tool_input.get("file_path", "")
+                                    edits_count = len(tool_input.get("edits", []))
+                                    file_name = (
+                                        os.path.basename(file_path)
+                                        if file_path
+                                        else "file"
+                                    )
+                                    info(
+                                        f"[{elapsed:.0f}s] ✏️  Making {edits_count} edits to: {file_name}"
+                                    )
+                                elif tool_name == "Read":
+                                    file_path = tool_input.get("file_path", "")
+                                    file_name = (
+                                        os.path.basename(file_path)
+                                        if file_path
+                                        else "file"
+                                    )
+                                    info(f"[{elapsed:.0f}s] 📖 Reading: {file_name}")
+                                elif tool_name == "Task":
+                                    desc = tool_input.get("description", "")
+                                    agent_type = tool_input.get(
+                                        "subagent_type", "general"
+                                    )
+                                    info(
+                                        f"[{elapsed:.0f}s] 🤖 Launching {agent_type} subagent: {desc[:50]}{'...' if len(desc) > 50 else ''}"
+                                    )
+                                elif tool_name == "Grep":
+                                    pattern = tool_input.get("pattern", "")
+                                    path = tool_input.get("path", ".")
+                                    info(
+                                        f"[{elapsed:.0f}s] 🔎 Searching for '{pattern[:30]}{'...' if len(pattern) > 30 else ''}' in {os.path.basename(path)}"
+                                    )
+                                elif tool_name == "TodoWrite":
+                                    todos = tool_input.get("todos", [])
+                                    info(
+                                        f"[{elapsed:.0f}s] 📝 Managing {len(todos)} tasks"
+                                    )
+                                elif tool_name == "Write":
+                                    file_path = tool_input.get("file_path", "")
+                                    file_name = (
+                                        os.path.basename(file_path)
+                                        if file_path
+                                        else "file"
+                                    )
+                                    info(f"[{elapsed:.0f}s] 💾 Writing: {file_name}")
+                                elif tool_name == "Glob":
+                                    pattern = tool_input.get("pattern", "")
+                                    info(
+                                        f"[{elapsed:.0f}s] 📁 Finding files: {pattern}"
+                                    )
+                                elif tool_name == "LS":
+                                    path = tool_input.get("path", "")
+                                    info(
+                                        f"[{elapsed:.0f}s] 📂 Listing: {os.path.basename(path) if path else 'directory'}"
+                                    )
+                                else:
+                                    info(f"[{elapsed:.0f}s] 🔧 Using tool: {tool_name}")
+        elif msg_type == "result":
+            if json_obj.get("subtype") == "success":
+                success(f"[{elapsed:.0f}s] ✅ Task completed successfully")
+            else:
+                warning(f"[{elapsed:.0f}s] ❌ Task failed")
+        elif msg_type == "user":
+            # Skip displaying user messages (the prompt) unless it's a tool result
+            parent_id = json_obj.get("parent_tool_use_id")
+            if parent_id:
+                info(f"[{elapsed:.0f}s]   ↳ Tool result received")
 
     def run_claude_parallel(
         self, tasks: List[Dict[str, Any]], show_progress: bool = True
@@ -314,9 +565,8 @@ class ClaudeRunner:
                     elapsed_time = (
                         time.time() - start_time if "start_time" in locals() else 0
                     )
-                    console.print(
-                        f"📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]",
-                        style="blue",
+                    info(
+                        f"{Colors.BLUE}📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]{Colors.RESET}"
                     )
 
                 try:
@@ -332,12 +582,12 @@ class ClaudeRunner:
                     }
 
                     if returncode == 0:
-                        console.print(f"✅ Completed: {task['name']}", style="green")
+                        success(f"Completed: {task['name']}")
                     else:
-                        console.print(f"❌ Failed: {task['name']}", style="red")
+                        error(f"Failed: {task['name']}")
 
                 except Exception as e:
-                    console.print(f"❌ Exception in {task['name']}: {e}", style="red")
+                    error(f"Exception in {task['name']}: {e}")
                     result = {
                         "name": task["name"],
                         "success": False,

@@ -21,11 +21,23 @@ import warnings
 from dataclasses import fields
 
 import yaml
-from rich.console import Console
+import sys
 
-from .models import Config
+# Import safe file operations
+from m1f.file_operations import safe_exists, safe_open
 
-console = Console()
+# Use unified colorama module
+from shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
+
+from html2md_tool.config.models import Config
 
 
 def load_config(path: Path) -> Config:
@@ -41,19 +53,29 @@ def load_config(path: Path) -> Config:
         ValueError: If file format is not supported
         FileNotFoundError: If file does not exist
     """
-    if not path.exists():
+    if not safe_exists(path):
         raise FileNotFoundError(f"Configuration file not found: {path}")
 
     suffix = path.suffix.lower()
 
     if suffix in [".json"]:
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = json.load(f)
     elif suffix in [".yaml", ".yml"]:
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = yaml.safe_load(f)
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")
+
+    # Import nested config models
+    from html2md_tool.config.models import (
+        ConversionOptions,
+        ExtractorConfig,
+        ProcessorConfig,
+        AssetConfig,
+        CrawlerConfig,
+        M1fConfig,
+    )
 
     # Get valid field names from Config dataclass
     valid_fields = {f.name for f in fields(Config)}
@@ -67,6 +89,19 @@ def load_config(path: Path) -> Config:
             # Convert string paths to Path objects for specific fields
             if key in ["source", "destination", "log_file"] and value is not None:
                 filtered_data[key] = Path(value)
+            # Handle nested configuration objects
+            elif key == "conversion" and isinstance(value, dict):
+                filtered_data[key] = ConversionOptions(**value)
+            elif key == "extractor" and isinstance(value, dict):
+                filtered_data[key] = ExtractorConfig(**value)
+            elif key == "processor" and isinstance(value, dict):
+                filtered_data[key] = ProcessorConfig(**value)
+            elif key == "assets" and isinstance(value, dict):
+                filtered_data[key] = AssetConfig(**value)
+            elif key == "crawler" and isinstance(value, dict):
+                filtered_data[key] = CrawlerConfig(**value)
+            elif key == "m1f" and isinstance(value, dict):
+                filtered_data[key] = M1fConfig(**value)
             else:
                 filtered_data[key] = value
         else:
@@ -74,13 +109,9 @@ def load_config(path: Path) -> Config:
 
     # Warn about unknown fields
     if unknown_fields:
-        console.print(
-            f"⚠️  Warning: Ignoring unknown configuration fields: {', '.join(unknown_fields)}",
-            style="yellow",
-        )
-        console.print(
-            "   These fields are not recognized by m1f-html2md and will be ignored.",
-            style="dim",
+        warning(f"Ignoring unknown configuration fields: {', '.join(unknown_fields)}")
+        info(
+            f"{Colors.DIM}   These fields are not recognized by m1f-html2md and will be ignored.{Colors.RESET}"
         )
 
     return Config(**filtered_data)
@@ -102,10 +133,10 @@ def save_config(config: Config, path: Path) -> None:
     data = _config_to_dict(config)
 
     if suffix in [".json"]:
-        with open(path, "w") as f:
+        with safe_open(path, "w") as f:
             json.dump(data, f, indent=2)
     elif suffix in [".yaml", ".yml"]:
-        with open(path, "w") as f:
+        with safe_open(path, "w") as f:
             yaml.dump(data, f, default_flow_style=False)
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")

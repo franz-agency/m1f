@@ -104,7 +104,8 @@ Common options for all scrapers:
 --scraper BACKEND           # Choose scraper backend (beautifulsoup, bs4, httrack,
                            # selectolax, httpx, scrapy, playwright)
 --max-depth N               # Maximum crawl depth (default: 5)
---max-pages N               # Maximum pages to crawl (default: 1000)
+--max-pages N               # Maximum pages to crawl (default: 10000, -1 for unlimited)
+--allowed-paths [PATHS...]  # Restrict crawling to specified paths and subdirectories
 --request-delay SECONDS     # Delay between requests (default: 15.0)
 --concurrent-requests N     # Number of concurrent requests (default: 2)
 --user-agent STRING         # Custom user agent
@@ -367,9 +368,18 @@ Browser automation for JavaScript-heavy websites and SPAs.
 **Installation:**
 
 ```bash
-pip install playwright
-playwright install  # Install browser binaries
+# The Playwright package is already included in requirements.txt
+# Just install the browser binaries:
+playwright install  # Install browser binaries (Chromium, Firefox, WebKit)
+
+# On Windows, you might need to run PowerShell as Administrator
+# if you encounter permission issues
 ```
+
+**Windows-specific notes:**
+- Playwright will download browsers to `%LOCALAPPDATA%\ms-playwright\` (typically `C:\Users\YourName\AppData\Local\ms-playwright\`)
+- First run will download ~300MB of browser binaries
+- No additional configuration needed after `playwright install`
 
 **Usage:**
 

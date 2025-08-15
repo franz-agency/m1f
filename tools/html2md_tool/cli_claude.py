@@ -21,10 +21,9 @@ from pathlib import Path
 from typing import List
 from datetime import datetime
 
-from rich.console import Console
-from .claude_runner import ClaudeRunner
-
-console = Console()
+from shared.colors import info, error, warning, success, header, Colors
+from html2md_tool.claude_runner import ClaudeRunner
+from m1f.file_operations import safe_exists, safe_mkdir, safe_open, safe_read_text
 
 
 def handle_claude_analysis_improved(
@@ -35,20 +34,17 @@ def handle_claude_analysis_improved(
 ):
     """Handle analysis using Claude AI with improved timeout handling and parallel processing."""
 
-    console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
-    console.print(
-        "⏱️  Note: Processing large HTML files (2MB+) may take several minutes.",
-        style="yellow",
-    )
+    header("\nUsing Claude AI for intelligent analysis...")
+    warning("⏱️  Note: Processing large HTML files (2MB+) may take several minutes.")
 
     # Find the common parent directory of all HTML files
     if not html_files:
-        console.print("❌ No HTML files to analyze", style="red")
+        error("❌ No HTML files to analyze")
         return
 
     common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
-    console.print(f"📁 Analysis directory: {common_parent}")
-    console.print(f"📊 Total HTML files found: {len(html_files)}")
+    info(f"📁 Analysis directory: {common_parent}")
+    info(f"📊 Total HTML files found: {len(html_files)}")
 
     # Initialize Claude runner
     try:
@@ -56,12 +52,12 @@ def handle_claude_analysis_improved(
             max_workers=parallel_workers, working_dir=str(common_parent)
         )
     except Exception as e:
-        console.print(f"❌ {e}", style="red")
+        error(f"❌ {e}")
         return
 
     # Check if we have enough files
     if len(html_files) == 0:
-        console.print("❌ No HTML files found in the specified directory", style="red")
+        error("❌ No HTML files found in the specified directory")
         return
 
     # Step 1: Create m1f and analysis directories if they don't exist
@@ -79,32 +75,78 @@ def handle_claude_analysis_improved(
     log_file = analysis_dir / "log.txt"
     log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
+    # Ask user for project description FIRST, before m1f runs
+    if not project_description:
+        header("\nProject Context:")
+        info(
+            "Please briefly describe what this HTML project contains so Claude can better understand"
+        )
+        info(
+            "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
+        )
+        info(
+            f"\n{Colors.DIM}Tip: If there are particularly important files to analyze, mention them in your description{Colors.RESET}"
+        )
+        info(
+            f"{Colors.DIM}     so Claude will prioritize those files in the analysis.{Colors.RESET}"
+        )
+        project_description = input("\nProject description: ").strip()
+    else:
+        info(f"\n📋 {Colors.BOLD}Project Context:{Colors.RESET} {project_description}")
+
     # Create a filelist with all HTML files using m1f
-    console.print("\n🔧 Creating HTML file list using m1f...")
-    console.print(f"Working with HTML directory: {common_parent}")
+    info("\n🔧 Creating HTML file list using m1f (only filelist, not content)...")
+    info(f"Working with HTML directory: {common_parent}")
 
     # Run m1f to create only the filelist (not the content)
+    # Run from the target directory to avoid path traversal issues
     m1f_cmd = [
         "m1f",
         "-s",
-        str(common_parent),
+        ".",  # Use current directory
         "-o",
-        str(m1f_dir / "all_html_files.txt"),
+        str(m1f_dir / "all_html_files"),  # Base name - m1f will add _filelist.txt
         "--include-extensions",
         ".html",
-        "-t",  # Text only
+        ".htm",
         "--include-dot-paths",  # Include hidden paths
+        "--skip-output-file",  # ONLY create filelist, not the content file
     ]
 
     try:
-        subprocess.run(m1f_cmd, check=True, capture_output=True, text=True, timeout=60)
-        console.print("✅ Created HTML file list")
+        # Run m1f from the common_parent directory
+        # Add tools directory to PYTHONPATH to ensure m1f can be imported
+        env = os.environ.copy()
+        m1f_tools_path = Path(__file__).parent.parent  # Path to tools directory
+        if "PYTHONPATH" in env:
+            env["PYTHONPATH"] = f"{m1f_tools_path}:{env['PYTHONPATH']}"
+        else:
+            env["PYTHONPATH"] = str(m1f_tools_path)
+
+        info(f"   {Colors.DIM}Running: {' '.join(m1f_cmd[:5])}...{Colors.RESET}")
+
+        # Don't capture output - let m1f show its own progress
+        result = subprocess.run(
+            m1f_cmd,
+            check=True,
+            timeout=300,  # 5 minutes for large projects
+            cwd=str(common_parent),  # Change working directory for m1f
+            env=env,  # Use modified environment with PYTHONPATH
+        )
+        success("✅ Created HTML file list")
     except subprocess.CalledProcessError as e:
-        console.print(f"❌ Failed to create file list: {e}", style="red")
+        error(f"❌ Failed to create file list: {e}")
+        error(f"   m1f exit code: {e.returncode}")
         return
     except subprocess.TimeoutExpired:
-        console.print("❌ Timeout creating file list", style="red")
+        error("❌ Timeout creating file list after 5 minutes")
+        error("   For very large projects, consider using a more specific path")
+        error("   or reducing the scope with --exclude patterns")
         return
+
+    # Define path to the file list that was just created
+    # m1f creates filename_filelist.txt when using --skip-output-file
+    file_list_path = m1f_dir / "all_html_files_filelist.txt"
 
     # Get relative paths for all HTML files
     relative_paths = []
@@ -119,45 +161,26 @@ def handle_claude_analysis_improved(
     prompt_dir = Path(__file__).parent / "prompts"
     select_prompt_path = prompt_dir / "select_files_from_project.md"
 
-    if not select_prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {select_prompt_path}", style="red")
+    if not safe_exists(select_prompt_path):
+        error(f"❌ Prompt file not found: {select_prompt_path}")
         return
 
     # Load the prompt from external file
-    simple_prompt_template = select_prompt_path.read_text()
+    simple_prompt_template = safe_read_text(select_prompt_path)
 
     # Validate and adjust number of files to analyze
     if num_files_to_analyze < 1:
         num_files_to_analyze = 1
-        console.print("[yellow]Minimum is 1 file. Using 1.[/yellow]")
+        warning("Minimum is 1 file. Using 1.")
     elif num_files_to_analyze > 20:
         num_files_to_analyze = 20
-        console.print("[yellow]Maximum is 20 files. Using 20.[/yellow]")
+        warning("Maximum is 20 files. Using 20.")
 
     if num_files_to_analyze > len(html_files):
         num_files_to_analyze = len(html_files)
-        console.print(
-            f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]"
-        )
+        warning(f"Only {len(html_files)} files available. Will analyze all of them.")
 
-    # Ask user for project description if not provided
-    if not project_description:
-        console.print("\n[bold]Project Context:[/bold]")
-        console.print(
-            "Please briefly describe what this HTML project contains so Claude can better understand"
-        )
-        console.print(
-            "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
-        )
-        console.print(
-            "\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]"
-        )
-        console.print(
-            "[dim]     so Claude will prioritize those files in the analysis.[/dim]"
-        )
-        project_description = console.input("\nProject description: ").strip()
-    else:
-        console.print(f"\n📋 [bold]Project Context:[/bold] {project_description}")
+    # Project description was already collected earlier
 
     # Update the prompt with the number of files
     simple_prompt_template = simple_prompt_template.replace(
@@ -172,11 +195,13 @@ def handle_claude_analysis_improved(
     simple_prompt_template = simple_prompt_template.replace(
         "exactly 5 representative", f"exactly {num_files_to_analyze} representative"
     )
+    simple_prompt_template = simple_prompt_template.replace(
+        "exactly 5 files", f"exactly {num_files_to_analyze} files"
+    )
 
-    # Add the list of available HTML files to the prompt
-    file_list = "\n".join(relative_paths)
-    simple_prompt = f"""Available HTML files in the directory:
-{file_list}
+    # The file list is already saved in all_html_files_filelist.txt
+    # Use absolute path so Claude can read it directly
+    simple_prompt = f"""Available HTML files are listed in: {str(file_list_path)}
 
 {simple_prompt_template}"""
 
@@ -184,179 +209,361 @@ def handle_claude_analysis_improved(
     if project_description:
         simple_prompt = f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt}"
 
-    console.print(
-        f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files..."
-    )
-    console.print("   This may take 10-30 seconds...", style="dim")
+    info(f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files...")
+    info(f"   {Colors.DIM}This may take 10-30 seconds...{Colors.RESET}")
 
     # Step 3: Use Claude to select representative files
-    returncode, stdout, stderr = runner.run_claude_streaming(
+    returncode, stdout, stderr = runner.run_claude_streaming_json(
         prompt=simple_prompt,
-        allowed_tools="Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
-        add_dir=str(common_parent),
+        allowed_tools="Read,Task,TodoWrite",  # Allow Read for file access, Task for sub-agents, TodoWrite for task management
+        add_dir=str(common_parent),  # Set working directory for file resolution
         timeout=180,  # 3 minutes for file selection
-        show_output=True,
+        working_dir=str(common_parent),
+        show_progress=True,  # Show progress for file selection too
     )
 
     if returncode != 0:
-        console.print(f"❌ Claude command failed: {stderr}", style="red")
+        error(f"❌ Claude command failed: {stderr}")
         return
 
-    selected_files = stdout.strip().split("\n")
+    # Check if Claude returned output
+    if not stdout.strip():
+        warning("⚠️  Claude returned empty output")
+        if stderr:
+            warning(f"Error details: {stderr[:500]}")
+
+    # Parse JSON output to extract Claude's actual text responses
+    import json
+
+    claude_text_output = []
+
+    for line in stdout.strip().split("\n"):
+        if not line.strip():
+            continue
+        try:
+            json_obj = json.loads(line)
+            # Extract text from assistant messages
+            if json_obj.get("type") == "assistant":
+                message = json_obj.get("message", {})
+                if isinstance(message, dict):
+                    content_parts = message.get("content", [])
+                    if isinstance(content_parts, list):
+                        for part in content_parts:
+                            if isinstance(part, dict) and part.get("type") == "text":
+                                text = part.get("text", "")
+                                if text:
+                                    claude_text_output.append(text)
+        except json.JSONDecodeError:
+            # If it's not JSON, it might be plain text (backwards compatibility)
+            claude_text_output.append(line)
+
+    # Join all text outputs and split by newlines to get individual lines
+    full_text = "\n".join(claude_text_output)
+
+    selected_files = full_text.strip().split("\n")
     selected_files = [f.strip() for f in selected_files if f.strip()]
 
-    # Filter out any lines that are not file paths and normalize paths
+    # Filter out any lines that are not file paths
     valid_files = []
-    for f in selected_files:
-        if (
-            any(
-                word in f.lower()
-                for word in ["select", "based on", "analysis", "representative"]
-            )
-            or len(f) > 200
+    for line in selected_files:
+        line = line.strip()
+
+        # Skip empty lines and the completion marker
+        if not line or "FILE_SELECTION_COMPLETE_OK" in line:
+            continue
+
+        # Skip lines that look like explanatory text
+        if any(
+            word in line.lower()
+            for word in [
+                "select",
+                "based",
+                "analysis",
+                "representative",
+                "file:",
+                "path:",
+            ]
         ):
             continue
-        if "FILE_SELECTION_COMPLETE_OK" in f:
+
+        # Skip lines that are too long to be reasonable file paths
+        if len(line) > 300:
             continue
-        if ".html" in f or ".htm" in f:
-            # Normalize path - remove common_parent prefix if present
-            if str(common_parent) in f:
-                f = f.replace(str(common_parent) + "/", "")
-            valid_files.append(f)
+
+        # Accept lines that look like HTML file paths
+        if ".html" in line.lower() or ".htm" in line.lower():
+            # Clean up the path - remove any leading/trailing whitespace or quotes
+            clean_path = line.strip().strip('"').strip("'")
+
+            # If the path is in our relative_paths list, it's definitely valid
+            if clean_path in relative_paths:
+                valid_files.append(clean_path)
+            else:
+                # Otherwise, try to normalize it
+                if str(common_parent) in clean_path:
+                    clean_path = clean_path.replace(str(common_parent) + "/", "")
+                valid_files.append(clean_path)
 
     selected_files = valid_files
 
-    console.print(f"\nClaude selected {len(selected_files)} files:")
+    info(f"\nClaude selected {len(selected_files)} files:")
     for f in selected_files:
-        console.print(f"  - {f}", style="blue")
+        info(f"  - {Colors.BLUE}{f}{Colors.RESET}")
+
+    # Check if Claude returned fewer files than requested
+    if len(selected_files) < num_files_to_analyze:
+        warning(
+            f"⚠️  Claude returned only {len(selected_files)} files instead of {num_files_to_analyze} requested"
+        )
+        warning("   Proceeding with the files that were selected...")
+    elif len(selected_files) > num_files_to_analyze:
+        info(
+            f"📝 Claude returned {len(selected_files)} files, using first {num_files_to_analyze}"
+        )
+        selected_files = selected_files[:num_files_to_analyze]
 
     # Step 4: Verify the selected files exist
-    console.print("\nVerifying selected HTML files...")
+    info("\nVerifying selected HTML files...")
     verified_files = []
 
-    for file_path in selected_files[:num_files_to_analyze]:
+    for file_path in selected_files:
         file_path = file_path.strip()
 
-        # Try different path resolutions
-        paths_to_try = [
-            common_parent / file_path,  # Relative to common_parent
-            Path(file_path),  # Absolute path
-            common_parent / Path(file_path).name,  # Just filename in common_parent
-        ]
+        # First check if this path is exactly in our relative_paths list
+        if file_path in relative_paths:
+            # It's a valid path from our list
+            full_path = common_parent / file_path
+            if safe_exists(full_path):
+                verified_files.append(file_path)
+                success(f"✅ Found: {file_path}")
+                continue
 
-        found = False
-        for test_path in paths_to_try:
-            if test_path.exists() and test_path.suffix.lower() in [".html", ".htm"]:
-                # Store relative path from common_parent
-                try:
-                    rel_path = test_path.relative_to(common_parent)
-                    verified_files.append(str(rel_path))
-                    console.print(f"✅ Found: {rel_path}", style="green")
-                    found = True
-                    break
-                except ValueError:
-                    # If not relative to common_parent, use the filename
-                    verified_files.append(test_path.name)
-                    console.print(f"✅ Found: {test_path.name}", style="green")
-                    found = True
-                    break
+        # If not found exactly, try as a path relative to common_parent
+        test_path = common_parent / file_path
+        if safe_exists(test_path) and test_path.suffix.lower() in [".html", ".htm"]:
+            try:
+                rel_path = test_path.relative_to(common_parent)
+                verified_files.append(str(rel_path))
+                success(f"✅ Found: {rel_path}")
+                continue
+            except ValueError:
+                pass
 
-        if not found:
-            console.print(f"⚠️  Not found: {file_path}", style="yellow")
+        # If still not found, log it as missing
+        warning(f"⚠️  Not found: {file_path}")
+        warning(f"   Expected it to be in: {common_parent}")
 
     if not verified_files:
-        console.print("❌ No HTML files could be verified", style="red")
+        error("❌ No HTML files could be verified")
         return
+
+    # Check if we have fewer verified files than requested
+    if len(verified_files) < num_files_to_analyze:
+        warning(
+            f"⚠️  Only {len(verified_files)} files passed verification (requested {num_files_to_analyze})"
+        )
+        if len(verified_files) < len(selected_files):
+            warning(
+                f"   {len(selected_files) - len(verified_files)} files failed verification"
+            )
 
     # Write the verified files to a reference list
     selected_files_path = m1f_dir / "selected_html_files.txt"
-    with open(selected_files_path, "w") as f:
+    with safe_open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
-    console.print(f"✅ Wrote selected files list to: {selected_files_path}")
+    success(f"✅ Wrote selected files list to: {selected_files_path}")
 
-    # Step 5: Analyze each file individually with Claude (in parallel)
-    console.print(
-        f"\n🚀 Analyzing {len(verified_files)} files with up to {parallel_workers} parallel Claude sessions..."
-    )
-    console.print(
-        "⏱️  Expected duration: 3-5 minutes for large HTML files", style="yellow"
-    )
-    console.print(
-        "   Claude is analyzing each file's structure in detail...", style="dim"
+    # Step 5: Analyze each file individually with Claude using subagents
+    info(f"\n🚀 Analyzing {len(verified_files)} files using parallel subagents...")
+    warning("⏱️  Expected duration: 2-3 minutes with parallel execution")
+    info(
+        f"   {Colors.DIM}Claude is coordinating subagents to analyze each file...{Colors.RESET}"
     )
 
-    # Load the individual analysis prompt template
-    individual_prompt_path = prompt_dir / "analyze_individual_file.md"
+    # Load the coordinated analysis prompt template
+    coordinate_prompt_path = prompt_dir / "coordinate_parallel_analysis.md"
 
-    if not individual_prompt_path.exists():
-        console.print(
-            f"❌ Prompt file not found: {individual_prompt_path}", style="red"
+    if not safe_exists(coordinate_prompt_path):
+        # Fall back to old approach if new prompt doesn't exist
+        warning(
+            "⚠️  Coordinated analysis prompt not found, using traditional parallel approach..."
         )
-        return
 
-    individual_prompt_template = individual_prompt_path.read_text()
+        # Load the individual analysis prompt template
+        individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
-    # Prepare tasks for parallel execution
-    tasks = []
-    for i, file_path in enumerate(verified_files, 1):
-        # Construct paths - use relative paths when possible
-        # For output, we need to ensure it's relative to where Claude is running
-        output_path = f"m1f/analysis/html_analysis_{i}.txt"
+        if not safe_exists(individual_prompt_path):
+            error(f"❌ Prompt file not found: {individual_prompt_path}")
+            return
 
-        # Customize prompt for this specific file
-        individual_prompt = individual_prompt_template.replace("{filename}", file_path)
-        individual_prompt = individual_prompt.replace("{output_path}", output_path)
-        individual_prompt = individual_prompt.replace("{file_number}", str(i))
+        individual_prompt_template = safe_read_text(individual_prompt_path)
 
-        # Add project context if provided
-        if project_description:
-            individual_prompt = (
-                f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
+        # Prepare tasks for parallel execution
+        tasks = []
+        for i, file_path in enumerate(verified_files, 1):
+            # Construct paths - use absolute path to ensure correct location
+            # Analysis files go into the m1f/analysis directory
+            output_path = str(analysis_dir / f"html_analysis_{i}.txt")
+
+            # Customize prompt for this specific file
+            individual_prompt = individual_prompt_template.replace(
+                "{filename}", file_path
+            )
+            individual_prompt = individual_prompt.replace("{output_path}", output_path)
+            individual_prompt = individual_prompt.replace("{file_number}", str(i))
+
+            # Add project context if provided
+            if project_description:
+                individual_prompt = (
+                    f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
+                )
+
+            tasks.append(
+                {
+                    "name": f"Analysis {i}: {file_path}",
+                    "prompt": individual_prompt,
+                    "add_dir": str(common_parent),
+                    "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write,Bash,Task",
+                    "timeout": 300,  # 5 minutes per file
+                    "working_dir": str(common_parent),  # Set working directory
+                }
             )
 
-        tasks.append(
-            {
-                "name": f"Analysis {i}: {file_path}",
-                "prompt": individual_prompt,
-                "add_dir": str(common_parent),
-                "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
-                "timeout": 300,  # 5 minutes per file
-                "working_dir": str(common_parent),  # Set working directory
-            }
+        # Run analyses in parallel
+        results = runner.run_claude_parallel(tasks, show_progress=True)
+
+        # Check results
+        successful_analyses = sum(1 for r in results if r["success"])
+        success(
+            f"\n✅ Successfully analyzed {successful_analyses}/{len(verified_files)} files"
         )
 
-    # Removed debug output for cleaner interface
+        # Show any errors
+        for result in results:
+            if not result["success"]:
+                error(
+                    f"❌ Failed: {result['name']} - {result.get('error') or result.get('stderr')}"
+                )
+    else:
+        # Use new coordinated subagent approach
+        coordinate_prompt_template = safe_read_text(coordinate_prompt_path)
 
-    # Run analyses in parallel
-    results = runner.run_claude_parallel(tasks, show_progress=True)
+        # Load individual analysis template for subagent instructions
+        individual_prompt_path = prompt_dir / "analyze_individual_file.md"
+        if not safe_exists(individual_prompt_path):
+            error(f"❌ Individual analysis prompt not found: {individual_prompt_path}")
+            return
 
-    # Check results
-    successful_analyses = sum(1 for r in results if r["success"])
-    console.print(
-        f"\n✅ Successfully analyzed {successful_analyses}/{len(verified_files)} files"
-    )
+        individual_prompt_template = safe_read_text(individual_prompt_path)
 
-    # Show any errors
-    for result in results:
-        if not result["success"]:
-            console.print(
-                f"❌ Failed: {result['name']} - {result.get('error') or result.get('stderr')}",
-                style="red",
+        # Build file list for the coordination prompt
+        file_list = []
+        for i, file_path in enumerate(verified_files, 1):
+            file_list.append(f"- File {i}: {file_path}")
+
+        # Prepare the coordination prompt
+        coordinate_prompt = coordinate_prompt_template.replace(
+            "{num_files}", str(len(verified_files))
+        )
+        coordinate_prompt = coordinate_prompt.replace(
+            "{project_description}", project_description or ""
+        )
+        coordinate_prompt = coordinate_prompt.replace(
+            "{file_list}", "\n".join(file_list)
+        )
+        coordinate_prompt = coordinate_prompt.replace(
+            "{analysis_dir}", str(analysis_dir)
+        )
+
+        # Build the subagent instructions for each file
+        subagent_instructions = []
+        for i, file_path in enumerate(verified_files, 1):
+            output_path = str(analysis_dir / f"html_analysis_{i}.txt")
+
+            # Prepare individual analysis instructions
+            individual_instructions = individual_prompt_template.replace(
+                "{filename}", file_path
+            )
+            individual_instructions = individual_instructions.replace(
+                "{output_path}", output_path
+            )
+            individual_instructions = individual_instructions.replace(
+                "{file_number}", str(i)
+            )
+
+            subagent_instructions.append(
+                {
+                    "file_num": i,
+                    "file_path": file_path,
+                    "output_path": output_path,
+                    "instructions": individual_instructions,
+                }
+            )
+
+        # Add the detailed instructions to the coordination prompt
+        detailed_instructions = "\n\n".join(
+            [
+                f"### File {inst['file_num']}: {inst['file_path']}\n"
+                f"Output: {inst['output_path']}\n"
+                f"Instructions:\n{inst['instructions']}"
+                for inst in subagent_instructions
+            ]
+        )
+
+        # Replace placeholder with actual detailed instructions
+        coordinate_prompt = coordinate_prompt.replace(
+            "{detailed_instructions}", detailed_instructions
+        )
+
+        info("\n📊 Launching coordinated analysis with subagents...")
+        info(
+            f"   Managing {len(verified_files)} parallel analyses through Task delegation"
+        )
+
+        # Run the coordinated analysis with real-time JSON streaming
+        returncode, stdout, stderr = runner.run_claude_streaming_json(
+            prompt=coordinate_prompt,
+            allowed_tools="Task,TodoWrite,Read,Write,LS,Grep",  # Task for subagents, TodoWrite for tracking
+            add_dir=str(common_parent),
+            timeout=600,  # 10 minutes for coordination
+            working_dir=str(common_parent),
+            show_progress=True,  # Show real-time progress
+        )
+
+        if returncode != 0:
+            error(f"❌ Coordinated analysis failed: {stderr}")
+            return
+
+        # Verify all analysis files were created
+        successful_analyses = 0
+        for i in range(1, len(verified_files) + 1):
+            analysis_file = analysis_dir / f"html_analysis_{i}.txt"
+            if safe_exists(analysis_file):
+                successful_analyses += 1
+
+        if successful_analyses == len(verified_files):
+            success(
+                f"\n✅ Successfully analyzed all {successful_analyses} files using subagents"
+            )
+        else:
+            warning(f"\n⚠️  Analyzed {successful_analyses}/{len(verified_files)} files")
+            warning(
+                "   Some files may have failed - check the output above for details"
             )
 
     # Step 6: Synthesize all analyses into final config
-    console.print("\n🔬 Synthesizing analyses into final configuration...")
-    console.print("⏱️  This final step typically takes 1-2 minutes...", style="yellow")
+    info("\n🔬 Synthesizing analyses into final configuration...")
+    warning("⏱️  This final step typically takes 1-2 minutes...")
 
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
 
-    if not synthesis_prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {synthesis_prompt_path}", style="red")
+    if not safe_exists(synthesis_prompt_path):
+        error(f"❌ Prompt file not found: {synthesis_prompt_path}")
         return
 
-    synthesis_prompt = synthesis_prompt_path.read_text()
+    synthesis_prompt = safe_read_text(synthesis_prompt_path)
 
     # Update the synthesis prompt with the actual number of files analyzed
     synthesis_prompt = synthesis_prompt.replace(
@@ -370,7 +577,9 @@ def handle_claude_analysis_improved(
     # Build the file list dynamically with relative paths
     file_list = []
     for i in range(1, len(verified_files) + 1):
-        file_list.append(f"- m1f/analysis/html_analysis_{i}.txt")
+        # Use absolute paths for synthesis to ensure files are found
+        analysis_file_path = str(analysis_dir / f"html_analysis_{i}.txt")
+        file_list.append(f"- {analysis_file_path}")
 
     # Replace the static file list with the dynamic one
     old_file_list = """Read the 5 analysis files:
@@ -402,28 +611,59 @@ def handle_claude_analysis_improved(
             f"PROJECT CONTEXT: {project_description}\n\n{synthesis_prompt}"
         )
 
-    # Run synthesis with streaming output
-    console.print("\nRunning synthesis with Claude...")
-    returncode, stdout, stderr = runner.run_claude_streaming(
+    # Run synthesis with real-time streaming output
+    info("\nRunning synthesis with Claude...")
+    returncode, stdout, stderr = runner.run_claude_streaming_json(
         prompt=synthesis_prompt,
         add_dir=str(common_parent),
         timeout=300,  # 5 minutes for synthesis
-        show_output=True,
+        working_dir=str(common_parent),
+        show_progress=True,
     )
 
     if returncode != 0:
-        console.print(f"❌ Synthesis failed: {stderr}", style="red")
+        error(f"❌ Synthesis failed: {stderr}")
         return
 
-    console.print("\n✨ [bold]Claude's Final Configuration:[/bold]")
-    console.print(stdout)
+    # Parse JSON output to extract Claude's actual text response (for synthesis)
+    synthesis_text_output = []
+
+    for line in stdout.strip().split("\n"):
+        if not line.strip():
+            continue
+        try:
+            json_obj = json.loads(line)
+            # Extract text from assistant messages
+            if json_obj.get("type") == "assistant":
+                message = json_obj.get("message", {})
+                if isinstance(message, dict):
+                    content_parts = message.get("content", [])
+                    if isinstance(content_parts, list):
+                        for part in content_parts:
+                            if isinstance(part, dict) and part.get("type") == "text":
+                                text = part.get("text", "")
+                                if text:
+                                    synthesis_text_output.append(text)
+        except json.JSONDecodeError:
+            # If it's not JSON, might be plain text (backwards compatibility)
+            synthesis_text_output.append(line)
+
+    # Join all text outputs
+    full_synthesis_text = "\n".join(synthesis_text_output)
+
+    header("\n✨ Claude's Final Configuration:")
+    info(
+        full_synthesis_text[:2000] + "..."
+        if len(full_synthesis_text) > 2000
+        else full_synthesis_text
+    )
 
     # Try to parse the YAML config from Claude's output
     import yaml
 
     try:
         # Extract YAML from the output (between ```yaml and ```)
-        output = stdout
+        output = full_synthesis_text
         yaml_start = output.find("```yaml")
         yaml_end = output.find("```", yaml_start + 6)
 
@@ -445,34 +685,42 @@ def handle_claude_analysis_improved(
 
             # Save the config to a file
             config_path = common_parent / "m1f-html2md-config.yaml"
-            with open(config_path, "w") as f:
+            with safe_open(config_path, "w") as f:
                 yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
-            console.print(f"\n✅ Saved configuration to: {config_path}", style="green")
-            console.print(
+            success(f"\n✅ Saved configuration to: {config_path}")
+            info(
                 "\nYou can now use this configuration file to convert your HTML files:"
             )
-            console.print(
-                f"  m1f-html2md convert {common_parent} -c {config_path} -o ./output/",
-                style="blue",
+            info(
+                f"  {Colors.BLUE}m1f-html2md convert {common_parent} -c {config_path} -o ./output/{Colors.RESET}"
             )
         else:
-            console.print(
-                "\n⚠️  Could not extract YAML config from Claude's response",
-                style="yellow",
-            )
-            console.print(
-                "Please review the output above and create the config file manually.",
-                style="yellow",
-            )
+            warning("\n⚠️  Could not extract YAML config from Claude's response")
+            # Save the full response for manual review
+            full_response_path = common_parent / "m1f-html2md-claude-response.txt"
+            with safe_open(full_response_path, "w") as f:
+                f.write(full_synthesis_text)
+            warning(f"  Saved Claude's full response to: {full_response_path}")
+            warning("  Please review the response and create the config file manually.")
 
     except yaml.YAMLError as e:
-        console.print(f"\n⚠️  Error parsing YAML config: {e}", style="yellow")
-        console.print(
-            "Please review the output above and create the config file manually.",
-            style="yellow",
-        )
+        warning(f"\n⚠️  Error parsing YAML config: {e}")
+        # Save the full response for manual review
+        full_response_path = common_parent / "m1f-html2md-claude-response.txt"
+        with safe_open(full_response_path, "w") as f:
+            f.write(full_synthesis_text)
+        warning(f"  Saved Claude's full response to: {full_response_path}")
+        warning("  Please review the response and create the config file manually.")
     except Exception as e:
-        console.print(f"\n⚠️  Error saving config: {e}", style="yellow")
+        warning(f"\n⚠️  Error saving config: {e}")
+        # Try to save the full response at least
+        try:
+            full_response_path = common_parent / "m1f-html2md-claude-response.txt"
+            with safe_open(full_response_path, "w") as f:
+                f.write(full_synthesis_text)
+            warning(f"  Saved Claude's full response to: {full_response_path}")
+        except:
+            pass
 
-    console.print("\n✅ Analysis complete!", style="green bold")
+    success(f"\n✅ {Colors.BOLD}Analysis complete!{Colors.RESET}")

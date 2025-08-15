@@ -42,11 +42,14 @@ A modern Python tool to split a combined file (created by m1f) back into individ
 """
 
 try:
-    from .._version import __version__, __version_info__
+    from tools._version import __version__, __version_info__
 except ImportError:
-    # Fallback when running as standalone script
-    __version__ = "3.3.0"
-    __version_info__ = (3, 3, 0)
+    try:
+        from .._version import __version__, __version_info__
+    except ImportError:
+        # Fallback when running as standalone script
+        __version__ = "3.8.1"
+        __version_info__ = (3, 8, 1)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
@@ -104,49 +107,107 @@ from .core import FileSplitter
 from .logging import setup_logging
 from .exceptions import ConfigurationError
 
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from ..m1f.file_operations import safe_exists, safe_is_file
+except (ImportError, ValueError):
+    # Fallback for direct script execution or when running as main module
+    import sys
+    from pathlib import Path
 
-def create_argument_parser() -> argparse.ArgumentParser:
+    # Add parent directory to path for imports
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from tools.m1f.file_operations import safe_exists, safe_is_file
+
+# Use unified colorama module
+try:
+    from ..shared.colors import (
+        Colors,
+        ColoredHelpFormatter,
+        error,
+        COLORAMA_AVAILABLE,
+    )
+    from ..shared.cli import CustomArgumentParser
+except ImportError:
+    try:
+        from tools.shared.colors import (
+            Colors,
+            ColoredHelpFormatter,
+            error,
+            COLORAMA_AVAILABLE,
+        )
+        from tools.shared.cli import CustomArgumentParser
+    except ImportError:
+        COLORAMA_AVAILABLE = False
+
+        # Fallback
+        def error(msg):
+            print(f"Error: {msg}", file=sys.stderr)
+
+        class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
+            pass
+
+        # Fallback CustomArgumentParser
+        class CustomArgumentParser(argparse.ArgumentParser):
+            """Custom argument parser with better error messages."""
+
+            def error(self, message: str) -> None:
+                """Display error message with colors if available."""
+                error_msg = f"ERROR: {message}"
+
+                if COLORAMA_AVAILABLE:
+                    error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
+
+                self.print_usage(sys.stderr)
+                print(f"\n{error_msg}", file=sys.stderr)
+                print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
+                self.exit(2)
+
+
+def create_argument_parser() -> CustomArgumentParser:
     """Create and configure the argument parser."""
-    parser = argparse.ArgumentParser(
-        description="s1f - Split combined files back into original files",
-        epilog=f"""Examples:
-  # Extract files from archive
-  s1f archive.m1f.txt ./output/
+    description = """m1f-s1f - Split One File
+=====================
+
+Extract files from m1f bundles back to their original structure.
+Preserves file metadata, encodings, and directory hierarchy.
+
+Perfect for:
+• Extracting files from m1f archives
+• Recovering original project structure
+• Inspecting bundle contents
+• Converting between encodings"""
+
+    epilog = f"""Examples:
+  %(prog)s archive.m1f.txt ./output/
+  %(prog)s --list archive.m1f.txt
+  %(prog)s archive.m1f.txt ./output/ --respect-encoding
+  %(prog)s bundle.txt ./extracted/ --force
   
-  # List files without extracting
-  s1f --list archive.m1f.txt
-  
-  # Extract with original encoding
-  s1f archive.m1f.txt ./output/ --respect-encoding
-  
-Project home: {__project__}""",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+For more information, see the documentation.
+Project home: {__project__}"""
+
+    parser = CustomArgumentParser(
+        prog="m1f-s1f",
+        description=description,
+        epilog=epilog,
+        formatter_class=ColoredHelpFormatter,
+        add_help=True,
     )
 
-    # Support both positional and option-style arguments for backward compatibility
-    # Option-style (for backward compatibility)
+    # Add version argument first
     parser.add_argument(
-        "-i",
-        "--input-file",
-        type=Path,
-        dest="input_file_opt",
-        help="Path to the combined file (m1f output)",
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show program version and exit",
     )
 
-    parser.add_argument(
-        "-d",
-        "--destination-directory",
-        type=Path,
-        dest="destination_directory_opt",
-        help="Directory where files will be extracted",
-    )
-
-    # Positional arguments (new style)
+    # Positional arguments
     parser.add_argument(
         "input_file",
         type=Path,
-        nargs="?",
-        help="Path to the combined file (m1f output)",
+        help="Path to the m1f bundle file",
     )
 
     parser.add_argument(
@@ -156,63 +217,53 @@ Project home: {__project__}""",
         help="Directory where files will be extracted",
     )
 
-    # Optional arguments
-    parser.add_argument(
+    # Extraction options group
+    extract_group = parser.add_argument_group("Extraction Options")
+    extract_group.add_argument(
         "-f",
         "--force",
         action="store_true",
         help="Overwrite existing files without prompting",
     )
-
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Enable verbose output for debugging",
-    )
-
-    parser.add_argument(
+    extract_group.add_argument(
         "-l",
         "--list",
         action="store_true",
         help="List files in the archive without extracting",
     )
-
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"s1f {__version__}",
-        help="Show version information and exit",
-    )
-
-    # Timestamp handling
-    timestamp_group = parser.add_mutually_exclusive_group()
-    timestamp_group.add_argument(
+    extract_group.add_argument(
         "--timestamp-mode",
         choices=["original", "current"],
         default="original",
-        help="How to set file timestamps (default: %(default)s)",
+        help="How to set file timestamps (default: original)",
     )
-
-    # Checksum handling
-    parser.add_argument(
+    extract_group.add_argument(
         "--ignore-checksum",
         action="store_true",
-        help="Skip checksum verification",
+        help="Skip checksum verification during extraction",
     )
 
-    # Encoding handling
-    encoding_group = parser.add_argument_group("encoding options")
+    # Encoding options group
+    encoding_group = parser.add_argument_group("Encoding Options")
     encoding_group.add_argument(
         "--respect-encoding",
         action="store_true",
-        help="Write files using their original encoding (when available)",
+        help="Write files using their original encoding when available",
     )
-
     encoding_group.add_argument(
         "--target-encoding",
         type=str,
-        help="Force all files to be written with this encoding (e.g., 'utf-8', 'latin-1')",
+        metavar="ENCODING",
+        help="Force all files to be written with this encoding (e.g., utf-8, latin-1)",
+    )
+
+    # Output control group
+    output_group = parser.add_argument_group("Output Control")
+    output_group.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output for debugging",
     )
 
     return parser
@@ -220,12 +271,6 @@ Project home: {__project__}""",
 
 def validate_args(args: argparse.Namespace) -> None:
     """Validate command-line arguments."""
-    # Handle backward compatibility for option-style arguments
-    if args.input_file_opt:
-        args.input_file = args.input_file_opt
-    if args.destination_directory_opt:
-        args.destination_directory = args.destination_directory_opt
-
     # Ensure required arguments are provided
     if not args.input_file:
         raise ConfigurationError("Missing required argument: input_file")
@@ -233,10 +278,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ConfigurationError("Missing required argument: destination_directory")
 
     # Check if input file exists
-    if not args.input_file.exists():
+    if not safe_exists(args.input_file):
         raise ConfigurationError(f"Input file does not exist: {args.input_file}")
 
-    if not args.input_file.is_file():
+    if not safe_is_file(args.input_file):
         raise ConfigurationError(f"Input path is not a file: {args.input_file}")
 
     # Validate encoding options
@@ -285,13 +330,13 @@ async def async_main(argv: Optional[Sequence[str]] = None) -> int:
         return exit_code
 
     except ConfigurationError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        error(str(e))
         return e.exit_code
     except KeyboardInterrupt:
-        print("\nOperation cancelled by user.", file=sys.stderr)
+        error("Operation cancelled by user.")
         return 130
     except Exception as e:
-        print(f"Unexpected error: {e}", file=sys.stderr)
+        error(f"Unexpected error: {e}")
         if args.verbose:
             import traceback
 
@@ -399,6 +444,14 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 import logging
 
+from m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_mkdir,
+    safe_read_text,
+    safe_stat,
+)
+
 try:
     import aiofiles
 
@@ -408,6 +461,10 @@ except ImportError:
 
 from .config import Config
 from .models import ExtractedFile, ExtractionResult
+
+from shared.colors import info
+
+
 from .parsers import CombinedFileParser
 from .writers import FileWriter
 from .utils import format_size, is_binary_content
@@ -446,7 +503,7 @@ class FileSplitter:
                 return ExtractionResult(), 2
 
             # Display file list
-            print(
+            info(
                 f"\nFound {len(extracted_files)} file(s) in {self.config.input_file}:\n"
             )
 
@@ -467,12 +524,12 @@ class FileSplitter:
                 if meta.type:
                     info_parts.append(f"Type: {meta.type}")
 
-                print("  ".join(info_parts))
+                info("  ".join(info_parts))
 
                 if meta.size_bytes:
                     total_size += meta.size_bytes
 
-            print(f"\nTotal size: {format_size(total_size)}")
+            info(f"\nTotal size: {format_size(total_size)}")
 
             result = ExtractionResult(
                 files_created=0,
@@ -523,7 +580,16 @@ class FileSplitter:
             self.logger.info(f"Found {len(extracted_files)} file(s) to extract")
 
             # Ensure destination directory exists
-            self.config.destination_directory.mkdir(parents=True, exist_ok=True)
+            if not safe_mkdir(
+                self.config.destination_directory,
+                logger=self.logger,
+                parents=True,
+                exist_ok=True,
+            ):
+                self.logger.error(
+                    f"Failed to create destination directory '{self.config.destination_directory}': Permission denied"
+                )
+                return ExtractionResult(execution_time=time.time() - start_time), 1
 
             # Write the files
             result = await self.writer.write_files(extracted_files)
@@ -561,7 +627,7 @@ class FileSplitter:
 
     async def _read_input_file(self) -> str:
         """Read the input file content."""
-        if not self.config.input_file.exists():
+        if not safe_exists(self.config.input_file, logger=self.logger):
             raise FileParsingError(
                 f"Input file '{self.config.input_file}' does not exist.",
                 str(self.config.input_file),
@@ -571,8 +637,14 @@ class FileSplitter:
             if AIOFILES_AVAILABLE:
                 # Use async I/O
                 # First, try to detect if the file is binary
-                async with aiofiles.open(self.config.input_file, "rb") as f:
-                    sample_bytes = await f.read(8192)
+                try:
+                    async with aiofiles.open(self.config.input_file, "rb") as f:
+                        sample_bytes = await f.read(8192)
+                except PermissionError as e:
+                    raise FileParsingError(
+                        f"Permission denied reading input file '{self.config.input_file}': {e}",
+                        str(self.config.input_file),
+                    )
 
                 if is_binary_content(sample_bytes):
                     raise FileParsingError(
@@ -586,20 +658,37 @@ class FileSplitter:
                         self.config.input_file, "r", encoding="utf-8"
                     ) as f:
                         content = await f.read()
-                except UnicodeDecodeError:
+                except (UnicodeDecodeError, PermissionError) as e:
+                    if isinstance(e, PermissionError):
+                        raise FileParsingError(
+                            f"Permission denied reading input file '{self.config.input_file}': {e}",
+                            str(self.config.input_file),
+                        )
                     # Try with latin-1 as fallback (can decode any byte sequence)
                     self.logger.warning(
                         f"Failed to decode '{self.config.input_file}' as UTF-8, "
                         f"trying latin-1 encoding..."
                     )
-                    async with aiofiles.open(
-                        self.config.input_file, "r", encoding="latin-1"
-                    ) as f:
-                        content = await f.read()
+                    try:
+                        async with aiofiles.open(
+                            self.config.input_file, "r", encoding="latin-1"
+                        ) as f:
+                            content = await f.read()
+                    except PermissionError as e:
+                        raise FileParsingError(
+                            f"Permission denied reading input file '{self.config.input_file}': {e}",
+                            str(self.config.input_file),
+                        )
             else:
                 # Fallback to sync I/O
                 # First, try to detect if the file is binary
-                sample_bytes = self.config.input_file.read_bytes()[:8192]
+                try:
+                    sample_bytes = self.config.input_file.read_bytes()[:8192]
+                except PermissionError as e:
+                    raise FileParsingError(
+                        f"Permission denied reading input file '{self.config.input_file}': {e}",
+                        str(self.config.input_file),
+                    )
                 if is_binary_content(sample_bytes):
                     raise FileParsingError(
                         f"Input file '{self.config.input_file}' appears to be binary.",
@@ -607,15 +696,23 @@ class FileSplitter:
                     )
 
                 # Try to read with UTF-8 first
-                try:
-                    content = self.config.input_file.read_text(encoding="utf-8")
-                except UnicodeDecodeError:
+                content = safe_read_text(
+                    self.config.input_file, logger=self.logger, encoding="utf-8"
+                )
+                if content is None:
                     # Try with latin-1 as fallback (can decode any byte sequence)
                     self.logger.warning(
                         f"Failed to decode '{self.config.input_file}' as UTF-8, "
                         f"trying latin-1 encoding..."
                     )
-                    content = self.config.input_file.read_text(encoding="latin-1")
+                    content = safe_read_text(
+                        self.config.input_file, logger=self.logger, encoding="latin-1"
+                    )
+                    if content is None:
+                        raise FileParsingError(
+                            f"Permission denied or failed to read input file '{self.config.input_file}'",
+                            str(self.config.input_file),
+                        )
 
             # Check if the file is empty
             if not content.strip():
@@ -624,7 +721,8 @@ class FileSplitter:
                     str(self.config.input_file),
                 )
 
-            file_size = self.config.input_file.stat().st_size
+            stat_info = safe_stat(self.config.input_file, logger=self.logger)
+            file_size = stat_info.st_size if stat_info else 0
             self.logger.info(
                 f"Read input file '{self.config.input_file}' "
                 f"({format_size(file_size)})"
@@ -748,18 +846,63 @@ class ChecksumMismatchError(S1FError):
 """Logging configuration for s1f."""
 
 import logging
-import sys
-from dataclasses import dataclass
-from typing import Optional, Dict, Any, List
+from typing import Optional
 from pathlib import Path
 
+# Try different import strategies for shared logging
 try:
-    from colorama import init, Fore, Style
-
-    COLORAMA_AVAILABLE = True
-    init(autoreset=True)
+    from ..shared.logging import (
+        LoggerManager as SharedLoggerManager,
+        setup_logging as shared_setup_logging,
+        get_logger as shared_get_logger,
+    )
 except ImportError:
-    COLORAMA_AVAILABLE = False
+    import os
+    import sys
+
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from tools.shared.logging import (
+        LoggerManager as SharedLoggerManager,
+        setup_logging as shared_setup_logging,
+        get_logger as shared_get_logger,
+    )
+
+# Use unified colorama module for legacy compatibility
+try:
+    # Try absolute import first (when running as installed package)
+    from tools.shared.colors import (
+        Colors,
+        ColoredFormatter as BaseColoredFormatter,
+        COLORAMA_AVAILABLE,
+    )
+except ImportError:
+    # Try relative import (when running from within package)
+    try:
+        from ..shared.colors import (
+            Colors,
+            ColoredFormatter as BaseColoredFormatter,
+            COLORAMA_AVAILABLE,
+        )
+    except ImportError:
+        # Fallback: define minimal stubs if colors module is not available
+        COLORAMA_AVAILABLE = False
+
+        class Colors:
+            BLUE = ""
+            GREEN = ""
+            YELLOW = ""
+            RED = ""
+            BOLD = ""
+            RESET = ""
+
+        class BaseColoredFormatter(logging.Formatter):
+            pass
+
+
+# Legacy log level configuration - kept for backward compatibility
+from dataclasses import dataclass
 
 
 @dataclass
@@ -773,20 +916,27 @@ class LogLevel:
 
 LOG_LEVELS = {
     "DEBUG": LogLevel(
-        "DEBUG", logging.DEBUG, Fore.BLUE if COLORAMA_AVAILABLE else None
+        "DEBUG", logging.DEBUG, Colors.BLUE if COLORAMA_AVAILABLE else None
     ),
-    "INFO": LogLevel("INFO", logging.INFO, Fore.GREEN if COLORAMA_AVAILABLE else None),
+    "INFO": LogLevel(
+        "INFO", logging.INFO, Colors.GREEN if COLORAMA_AVAILABLE else None
+    ),
     "WARNING": LogLevel(
-        "WARNING", logging.WARNING, Fore.YELLOW if COLORAMA_AVAILABLE else None
+        "WARNING", logging.WARNING, Colors.YELLOW if COLORAMA_AVAILABLE else None
     ),
-    "ERROR": LogLevel("ERROR", logging.ERROR, Fore.RED if COLORAMA_AVAILABLE else None),
+    "ERROR": LogLevel(
+        "ERROR", logging.ERROR, Colors.RED if COLORAMA_AVAILABLE else None
+    ),
     "CRITICAL": LogLevel(
-        "CRITICAL", logging.CRITICAL, Fore.RED if COLORAMA_AVAILABLE else None
+        "CRITICAL",
+        logging.CRITICAL,
+        Colors.RED + Colors.BOLD if COLORAMA_AVAILABLE else None,
     ),
 }
 
 
-class ColoredFormatter(logging.Formatter):
+# Legacy ColoredFormatter - kept for backward compatibility
+class ColoredFormatter(BaseColoredFormatter):
     """Custom formatter that adds color to log messages."""
 
     def format(self, record: logging.LogRecord) -> str:
@@ -796,52 +946,39 @@ class ColoredFormatter(logging.Formatter):
             level_name = record.levelname
             if level_name in LOG_LEVELS and LOG_LEVELS[level_name].color:
                 color = LOG_LEVELS[level_name].color
-                record.levelname = f"{color}{level_name}{Style.RESET_ALL}"
+                record.levelname = f"{color}{level_name}{Colors.RESET}"
 
         return super().format(record)
 
 
-class LoggerManager:
-    """Manages logging configuration and logger instances."""
+class LoggerManager(SharedLoggerManager):
+    """S1F-specific logger manager that extends the shared LoggerManager."""
 
     def __init__(self, verbose: bool = False):
-        self.verbose = verbose
-        self.loggers: Dict[str, logging.Logger] = {}
-        self._setup_root_logger()
+        """Initialize the S1F logger manager.
 
-    def _setup_root_logger(self):
-        """Setup the root logger with appropriate handlers."""
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.DEBUG if self.verbose else logging.INFO)
+        Args:
+            verbose: Enable verbose logging
+        """
 
-        # Remove existing handlers
-        for handler in root_logger.handlers[:]:
-            root_logger.removeHandler(handler)
+        # Create a simple config object for compatibility with shared LoggerManager
+        class SimpleConfig:
+            def __init__(self, verbose: bool):
+                self.verbose = verbose
+                self.quiet = False
+                self.log_file = None
+                self.log_level = None
 
-        # Create console handler
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(logging.DEBUG if self.verbose else logging.INFO)
+        config = SimpleConfig(verbose)
+        super().__init__(config)
+        self.verbose = verbose  # Store for backward compatibility
 
-        # Set formatter
-        if COLORAMA_AVAILABLE:
-            formatter = ColoredFormatter("%(levelname)-8s: %(message)s")
-        else:
-            formatter = logging.Formatter("%(levelname)-8s: %(message)s")
-
-        console_handler.setFormatter(formatter)
-        root_logger.addHandler(console_handler)
-
-    def get_logger(self, name: str) -> logging.Logger:
-        """Get or create a logger with the given name."""
-        if name not in self.loggers:
-            logger = logging.getLogger(name)
-            self.loggers[name] = logger
-        return self.loggers[name]
+        # Legacy attribute for backward compatibility
+        self.loggers = self._loggers
 
     async def cleanup(self):
         """Cleanup logging resources."""
-        # Nothing to cleanup for now, but might be needed in the future
-        pass
+        await super().cleanup()
 
 
 def setup_logging(config) -> LoggerManager:
@@ -851,7 +988,8 @@ def setup_logging(config) -> LoggerManager:
 
 def get_logger(name: str) -> logging.Logger:
     """Get a logger instance."""
-    return logging.getLogger(name)
+    # Use shared get_logger for consistency
+    return shared_get_logger(name)
 
 ======= s1f/models.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -1798,6 +1936,14 @@ from .utils import (
 )
 from .exceptions import FileWriteError, ChecksumMismatchError
 
+from m1f.file_operations import (
+    safe_exists,
+    safe_mkdir,
+    safe_open,
+    safe_write_text,
+    safe_read_text,
+)
+
 try:
     import aiofiles
 
@@ -1866,7 +2012,7 @@ class FileWriter:
                     return
 
                 # Check if file exists
-                is_overwrite = output_path.exists()
+                is_overwrite = safe_exists(output_path, logger=self.logger)
 
                 if is_overwrite and not self.config.force_overwrite:
                     if not await self._confirm_overwrite_async(output_path):
@@ -1881,8 +2027,19 @@ class FileWriter:
                     file_data.content, encoding, file_data.path
                 )
 
-                async with aiofiles.open(output_path, "wb") as f:
-                    await f.write(content_bytes)
+                # Use safe_open for the aiofiles case
+                # Note: We need to handle this differently since safe_open doesn't support async
+                # For now, keep the aiofiles.open but add error handling
+                try:
+                    async with aiofiles.open(output_path, "wb") as f:
+                        await f.write(content_bytes)
+                except PermissionError as e:
+                    self.logger.warning(
+                        f"Permission denied writing to '{output_path}': {e}"
+                    )
+                    async with self._counter_lock:
+                        result.files_failed += 1
+                    return
 
                 # Update result with thread-safe counter increment
                 async with self._counter_lock:
@@ -1920,7 +2077,7 @@ class FileWriter:
                 return
 
             # Check if file exists
-            is_overwrite = output_path.exists()
+            is_overwrite = safe_exists(output_path, logger=self.logger)
 
             if is_overwrite and not self.config.force_overwrite:
                 if not self._confirm_overwrite_sync(output_path):
@@ -1934,7 +2091,16 @@ class FileWriter:
             content_bytes = await self._encode_content(
                 file_data.content, encoding, file_data.path
             )
-            output_path.write_bytes(content_bytes)
+            # Use safe file operations for sync write
+            try:
+                output_path.write_bytes(content_bytes)
+            except PermissionError as e:
+                self.logger.warning(
+                    f"Permission denied writing to '{output_path}': {e}"
+                )
+                async with self._counter_lock:
+                    result.files_failed += 1
+                return
 
             # Update result with thread-safe counter increment
             async with self._counter_lock:
@@ -1971,10 +2137,12 @@ class FileWriter:
         output_path = self.config.destination_directory / relative_path
 
         # Create parent directories
-        try:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            self.logger.error(f"Failed to create directory for '{file_data.path}': {e}")
+        if not safe_mkdir(
+            output_path.parent, logger=self.logger, parents=True, exist_ok=True
+        ):
+            self.logger.error(
+                f"Failed to create directory for '{file_data.path}': Permission denied"
+            )
             return None
 
         self.logger.debug(f"Preparing to write: {output_path}")
@@ -2068,9 +2236,16 @@ class FileWriter:
 
             sha256_hash = hashlib.sha256()
 
-            async with aiofiles.open(path, "rb") as f:
-                while chunk := await f.read(8192):  # Read in 8KB chunks
-                    sha256_hash.update(chunk)
+            # Use aiofiles but add permission error handling
+            try:
+                async with aiofiles.open(path, "rb") as f:
+                    while chunk := await f.read(8192):  # Read in 8KB chunks
+                        sha256_hash.update(chunk)
+            except PermissionError as e:
+                self.logger.warning(
+                    f"Permission denied reading '{path}' for checksum verification: {e}"
+                )
+                return
 
             calculated_checksum = sha256_hash.hexdigest()
             expected_checksum = file_data.metadata.checksum_sha256
@@ -2089,7 +2264,12 @@ class FileWriter:
     def _verify_checksum_sync(self, path: Path, file_data: ExtractedFile):
         """Verify file checksum synchronously."""
         try:
-            content_bytes = path.read_bytes()
+            # Use safe file operations for reading
+            try:
+                content_bytes = path.read_bytes()
+            except PermissionError as e:
+                self.logger.warning(f"Permission denied reading '{path}': {e}")
+                return
             calculated_checksum = calculate_sha256(content_bytes)
             expected_checksum = file_data.metadata.checksum_sha256
 

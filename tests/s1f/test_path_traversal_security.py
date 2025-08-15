@@ -95,9 +95,7 @@ daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
                 [
                     sys.executable,
                     str(s1f_script),
-                    "-i",
                     str(combined_file),
-                    "-d",
                     str(output_dir),
                     "-f",
                 ],
@@ -159,9 +157,7 @@ sensitive information
                 [
                     sys.executable,
                     str(s1f_script),
-                    "-i",
                     str(combined_file),
-                    "-d",
                     str(output_dir),
                     "-f",
                 ],

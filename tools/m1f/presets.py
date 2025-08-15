@@ -26,6 +26,11 @@ import yaml
 import fnmatch
 import logging
 from enum import Enum
+from .file_operations import (
+    safe_open,
+    safe_stat,
+    safe_exists,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -272,15 +277,16 @@ class PresetManager:
 
         # Check file size limit (10MB max for preset files)
         MAX_PRESET_SIZE = 10 * 1024 * 1024  # 10MB
-        if preset_path.stat().st_size > MAX_PRESET_SIZE:
+        file_stat = safe_stat(preset_path, logger=logger)
+        if file_stat and file_stat.st_size > MAX_PRESET_SIZE:
             raise ValueError(
                 f"Preset file {preset_path} is too large "
-                f"({preset_path.stat().st_size / 1024 / 1024:.1f}MB). "
+                f"({file_stat.st_size / 1024 / 1024:.1f}MB). "
                 f"Maximum size is {MAX_PRESET_SIZE / 1024 / 1024}MB"
             )
 
         try:
-            with open(preset_path, "r", encoding="utf-8") as f:
+            with safe_open(preset_path, "r", encoding="utf-8", logger=logger) as f:
                 data = yaml.safe_load(f)
 
             if not isinstance(data, dict):
@@ -1064,7 +1070,7 @@ def load_presets(
 
     # Load each file
     for path in all_preset_files:
-        if path.exists():
+        if safe_exists(path, logger):
             manager.load_preset_file(path)
             logger.debug(f"Loaded preset file: {path}")
         else:

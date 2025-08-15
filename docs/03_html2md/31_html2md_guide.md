@@ -68,37 +68,75 @@ m1f-html2md config -o config.yaml
 
 ## Command Line Usage
 
-The tool provides three main commands:
+The tool provides three main commands with beautifully formatted help output:
+
+- **Colored Output**: Uses colorama for colored help text and error messages
+- **Organized Parameters**: Arguments grouped by functionality
+- **Consistent Style**: Matches the m1f tool's help formatting
+
+### Global Options
+
+```bash
+m1f-html2md [options] COMMAND ...
+
+Options:
+  -h, --help           Show help message and exit
+  --version            Show program version and exit
+
+Output Control:
+  -v, --verbose        Enable verbose output
+  -q, --quiet          Suppress all output except errors
+  --log-file LOG_FILE  Write logs to file
+```
 
 ### `convert` - Convert Files or Directories
 
 ```bash
 m1f-html2md convert [source] -o [output] [options]
 
-Options:
-  -c, --config FILE         Configuration file (YAML format)
-  --format FORMAT          Output format (markdown, m1f_bundle, json)
-  --content-selector SEL    CSS selector for main content
-  --ignore-selectors SEL    CSS selectors to ignore (space-separated)
-  --heading-offset N        Offset heading levels by N
-  --no-frontmatter         Don't add YAML frontmatter
-  --parallel               Enable parallel processing
-  --extractor FILE         Path to custom extractor Python file
-  --log-file FILE          Log to file
-  -v, --verbose            Enable verbose output
-  -q, --quiet              Suppress all output except errors
+Positional Arguments:
+  source                Source HTML file or directory
+  -o, --output          Output file or directory (required)
+
+Configuration:
+  -c, --config          Configuration file (YAML/JSON/TOML)
+  --format              Output format (markdown, m1f_bundle, json)
+                        Default: markdown
+
+Content Extraction:
+  --content-selector    CSS selector for main content area
+  --ignore-selectors    CSS selectors to ignore (nav, header, footer, etc.)
+  --extractor          Path to custom extractor Python file
+
+Processing Options:
+  --heading-offset     Offset heading levels by N (default: 0)
+  --no-frontmatter     Don't add YAML frontmatter to output
+  --parallel           Enable parallel processing for multiple files
+
+Claude AI Options:
+  --claude             Use Claude AI for intelligent HTML to Markdown conversion
+  --model              Claude model to use (opus, sonnet) Default: sonnet
+  --sleep              Delay between Claude API calls in seconds (default: 1.0)
 ```
 
 ### `analyze` - Analyze HTML Structure
 
 ```bash
-m1f-html2md analyze [files] [options]
+m1f-html2md analyze [paths] [options]
 
-Options:
-  --show-structure         Show detailed HTML structure
-  --common-patterns        Find common patterns across files
-  --suggest-selectors      Suggest CSS selectors (default)
-  -v, --verbose            Enable verbose output
+Positional Arguments:
+  paths                HTML files or directories to analyze
+
+Analysis Options:
+  --show-structure     Show detailed HTML structure analysis
+  --common-patterns    Find common patterns across multiple files
+  --suggest-selectors  Suggest CSS selectors for content extraction
+
+Claude AI Options:
+  --claude             Use Claude AI for intelligent analysis and selector suggestions
+  --analyze-files      Number of files to analyze with Claude (1-20, default: 5)
+  --parallel-workers   Number of parallel Claude sessions (1-10, default: 5)
+  --project-description Project description for Claude context
 ```
 
 ### `config` - Generate Configuration File
@@ -106,9 +144,10 @@ Options:
 ```bash
 m1f-html2md config [options]
 
-Options:
-  -o, --output FILE        Output file (default: config.yaml)
-  --format FORMAT          Config format (yaml, toml, json)
+Configuration Options:
+  -o, --output         Output configuration file (default: config.yaml)
+  --format             Configuration file format (yaml, toml, json)
+                       Default: yaml
 ```
 
 ## Configuration
@@ -418,6 +457,58 @@ m1f-html2md convert ./html \
   --content-selector "main.content" \
   --ignore-selectors nav footer
 ```
+
+### Example 4: Claude Code Documentation Bundle
+
+A complete example for scraping Claude Code documentation is available in `examples/claude_code_doc/`:
+
+```bash
+# Fast mode with existing config (saves 5-8 minutes!)
+source .venv/bin/activate
+python examples/claude_code_doc/scrape_claude_code_docs.py ~/claude-docs \
+    --use-config examples/claude_code_doc/html2md_claude_code_doc.config.yml
+
+# Or let Claude AI analyze and create config automatically
+python examples/claude_code_doc/scrape_claude_code_docs.py ~/claude-docs
+```
+
+This example:
+- Scrapes ~31 HTML pages from docs.anthropic.com/claude-code
+- Uses optimized config or Claude AI analysis for content extraction
+- Creates clean Markdown documentation bundle
+- Supports both fast mode (with config) and full analysis mode
+
+See `examples/claude_code_doc/README.md` for details.
+
+### Example 5: Tailscale Documentation Bundle
+
+A complete example for scraping and bundling documentation is available in `examples/tailscale_doc/`:
+
+```bash
+# Download ~422 HTML files and create 11 thematic bundles
+python examples/tailscale_doc/scrape_tailscale_docs.py ~/tailscale-docs
+
+# Or skip download if HTML already exists
+python examples/tailscale_doc/scrape_tailscale_docs.py ~/tailscale-docs --skip-download
+```
+
+This example demonstrates:
+- Scraping ~422 HTML pages with respectful delays
+- Converting HTML to Markdown with optimized selectors
+- Creating 11 thematic bundles (2.4MB total):
+  - Complete documentation bundle
+  - Getting started guide (27KB)
+  - Platform installations (374KB)  
+  - Networking & DNS (200KB)
+  - Authentication & Security (418KB)
+  - And 6 more specialized bundles
+
+The configuration files showcase:
+- Custom HTML extraction selectors for Tailscale's documentation structure
+- Intelligent bundle organization for LLM consumption
+- Parallel processing for faster conversion
+
+See `examples/tailscale_doc/README.md` for full details.
 
 ## Troubleshooting
 

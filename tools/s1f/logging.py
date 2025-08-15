@@ -15,18 +15,63 @@
 """Logging configuration for s1f."""
 
 import logging
-import sys
-from dataclasses import dataclass
-from typing import Optional, Dict, Any, List
+from typing import Optional
 from pathlib import Path
 
+# Try different import strategies for shared logging
 try:
-    from colorama import init, Fore, Style
-
-    COLORAMA_AVAILABLE = True
-    init(autoreset=True)
+    from ..shared.logging import (
+        LoggerManager as SharedLoggerManager,
+        setup_logging as shared_setup_logging,
+        get_logger as shared_get_logger,
+    )
 except ImportError:
-    COLORAMA_AVAILABLE = False
+    import os
+    import sys
+
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from tools.shared.logging import (
+        LoggerManager as SharedLoggerManager,
+        setup_logging as shared_setup_logging,
+        get_logger as shared_get_logger,
+    )
+
+# Use unified colorama module for legacy compatibility
+try:
+    # Try absolute import first (when running as installed package)
+    from tools.shared.colors import (
+        Colors,
+        ColoredFormatter as BaseColoredFormatter,
+        COLORAMA_AVAILABLE,
+    )
+except ImportError:
+    # Try relative import (when running from within package)
+    try:
+        from ..shared.colors import (
+            Colors,
+            ColoredFormatter as BaseColoredFormatter,
+            COLORAMA_AVAILABLE,
+        )
+    except ImportError:
+        # Fallback: define minimal stubs if colors module is not available
+        COLORAMA_AVAILABLE = False
+
+        class Colors:
+            BLUE = ""
+            GREEN = ""
+            YELLOW = ""
+            RED = ""
+            BOLD = ""
+            RESET = ""
+
+        class BaseColoredFormatter(logging.Formatter):
+            pass
+
+
+# Legacy log level configuration - kept for backward compatibility
+from dataclasses import dataclass
 
 
 @dataclass
@@ -40,20 +85,27 @@ class LogLevel:
 
 LOG_LEVELS = {
     "DEBUG": LogLevel(
-        "DEBUG", logging.DEBUG, Fore.BLUE if COLORAMA_AVAILABLE else None
+        "DEBUG", logging.DEBUG, Colors.BLUE if COLORAMA_AVAILABLE else None
     ),
-    "INFO": LogLevel("INFO", logging.INFO, Fore.GREEN if COLORAMA_AVAILABLE else None),
+    "INFO": LogLevel(
+        "INFO", logging.INFO, Colors.GREEN if COLORAMA_AVAILABLE else None
+    ),
     "WARNING": LogLevel(
-        "WARNING", logging.WARNING, Fore.YELLOW if COLORAMA_AVAILABLE else None
+        "WARNING", logging.WARNING, Colors.YELLOW if COLORAMA_AVAILABLE else None
     ),
-    "ERROR": LogLevel("ERROR", logging.ERROR, Fore.RED if COLORAMA_AVAILABLE else None),
+    "ERROR": LogLevel(
+        "ERROR", logging.ERROR, Colors.RED if COLORAMA_AVAILABLE else None
+    ),
     "CRITICAL": LogLevel(
-        "CRITICAL", logging.CRITICAL, Fore.RED if COLORAMA_AVAILABLE else None
+        "CRITICAL",
+        logging.CRITICAL,
+        Colors.RED + Colors.BOLD if COLORAMA_AVAILABLE else None,
     ),
 }
 
 
-class ColoredFormatter(logging.Formatter):
+# Legacy ColoredFormatter - kept for backward compatibility
+class ColoredFormatter(BaseColoredFormatter):
     """Custom formatter that adds color to log messages."""
 
     def format(self, record: logging.LogRecord) -> str:
@@ -63,52 +115,39 @@ class ColoredFormatter(logging.Formatter):
             level_name = record.levelname
             if level_name in LOG_LEVELS and LOG_LEVELS[level_name].color:
                 color = LOG_LEVELS[level_name].color
-                record.levelname = f"{color}{level_name}{Style.RESET_ALL}"
+                record.levelname = f"{color}{level_name}{Colors.RESET}"
 
         return super().format(record)
 
 
-class LoggerManager:
-    """Manages logging configuration and logger instances."""
+class LoggerManager(SharedLoggerManager):
+    """S1F-specific logger manager that extends the shared LoggerManager."""
 
     def __init__(self, verbose: bool = False):
-        self.verbose = verbose
-        self.loggers: Dict[str, logging.Logger] = {}
-        self._setup_root_logger()
+        """Initialize the S1F logger manager.
 
-    def _setup_root_logger(self):
-        """Setup the root logger with appropriate handlers."""
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.DEBUG if self.verbose else logging.INFO)
+        Args:
+            verbose: Enable verbose logging
+        """
 
-        # Remove existing handlers
-        for handler in root_logger.handlers[:]:
-            root_logger.removeHandler(handler)
+        # Create a simple config object for compatibility with shared LoggerManager
+        class SimpleConfig:
+            def __init__(self, verbose: bool):
+                self.verbose = verbose
+                self.quiet = False
+                self.log_file = None
+                self.log_level = None
 
-        # Create console handler
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(logging.DEBUG if self.verbose else logging.INFO)
+        config = SimpleConfig(verbose)
+        super().__init__(config)
+        self.verbose = verbose  # Store for backward compatibility
 
-        # Set formatter
-        if COLORAMA_AVAILABLE:
-            formatter = ColoredFormatter("%(levelname)-8s: %(message)s")
-        else:
-            formatter = logging.Formatter("%(levelname)-8s: %(message)s")
-
-        console_handler.setFormatter(formatter)
-        root_logger.addHandler(console_handler)
-
-    def get_logger(self, name: str) -> logging.Logger:
-        """Get or create a logger with the given name."""
-        if name not in self.loggers:
-            logger = logging.getLogger(name)
-            self.loggers[name] = logger
-        return self.loggers[name]
+        # Legacy attribute for backward compatibility
+        self.loggers = self._loggers
 
     async def cleanup(self):
         """Cleanup logging resources."""
-        # Nothing to cleanup for now, but might be needed in the future
-        pass
+        await super().cleanup()
 
 
 def setup_logging(config) -> LoggerManager:
@@ -118,4 +157,5 @@ def setup_logging(config) -> LoggerManager:
 
 def get_logger(name: str) -> logging.Logger:
     """Get a logger instance."""
-    return logging.getLogger(name)
+    # Use shared get_logger for consistency
+    return shared_get_logger(name)

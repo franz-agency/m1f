@@ -58,12 +58,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from tools.html2md_tool import HTML2MDConverter, ConversionOptions
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from tools.shared.colors import error
 
-class TestServer:
+
+class HTML2MDTestServer:
     """Manages the test server lifecycle with robust startup and cleanup."""
 
     def __init__(self, port: Optional[int] = None, startup_timeout: int = 30):
-        """Initialize TestServer.
+        """Initialize HTML2MDTestServer.
 
         Args:
             port: Specific port to use, or None for dynamic allocation
@@ -392,7 +396,7 @@ class TestServer:
                     pass
 
         except Exception as e:
-            print(f"Error during process cleanup: {e}")
+            error(f"Error during process cleanup: {e}")
 
         finally:
             self.process = None
@@ -450,7 +454,7 @@ def test_server():
     Uses function scope to avoid port conflicts between tests.
     Each test gets its own server instance with a unique port.
     """
-    server = TestServer()
+    server = HTML2MDTestServer()
 
     # Try to start the server with retries
     import asyncio
@@ -502,7 +506,7 @@ async def async_test_server():
     """
     server = None
     try:
-        server = TestServer()
+        server = HTML2MDTestServer()
         if not await server.start():
             error_msg = f"Failed to start test server on port {server.port}"
             if server._server_output:

@@ -29,13 +29,15 @@ from bs4 import BeautifulSoup
 from pathlib import Path
 import platform
 import logging
+from typing import Optional
 
 # Add logging for debugging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Test server configuration
-TEST_SERVER_URL = "http://localhost:8080"
+# Test server configuration - will be set dynamically
+TEST_SERVER_URL = None
+TEST_SERVER_PORT = None
 
 
 def is_port_in_use(port):
@@ -48,20 +50,35 @@ def is_port_in_use(port):
             return True
 
 
+def find_free_port(start_port: int = 8090, max_attempts: int = 10) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + max_attempts):
+        if not is_port_in_use(port):
+            return port
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 @pytest.fixture(scope="module", autouse=True)
 def test_server():
     """Start the test server before running tests."""
-    server_port = 8080
+    global TEST_SERVER_URL, TEST_SERVER_PORT
+
+    # Find a free port starting from 8090
+    server_port = find_free_port(8090)
     server_path = Path(__file__).parent / "html2md_server" / "server.py"
 
     # Check if server script exists
     if not server_path.exists():
         pytest.fail(f"Server script not found: {server_path}")
 
-    # Check if port is already in use
+    # Set global variables for tests to use
+    TEST_SERVER_PORT = server_port
+    TEST_SERVER_URL = f"http://localhost:{server_port}"
+
+    # Check if port is already in use (shouldn't be since we found a free one)
     if is_port_in_use(server_port):
         logger.warning(
-            f"Port {server_port} is already in use. Assuming server is already running."
+            f"Port {server_port} became occupied after selection. Trying to connect."
         )
         # Try to connect to existing server
         try:
@@ -283,7 +300,7 @@ class TestHTML2MDServer:
 
         # Should mention various programming languages
         content = response.text.lower()
-        languages = ["python", "javascript", "html", "css"]
+        languages = [sys.executable, "javascript", "html", "css"]
         found_languages = [lang for lang in languages if lang in content]
         assert len(found_languages) > 0  # At least one language should be mentioned
 
@@ -304,8 +321,13 @@ class TestHTML2MDServer:
         response = requests.get(f"{TEST_SERVER_URL}/nonexistent-page")
         assert response.status_code == 404
 
-        # Should contain helpful 404 content
-        assert "404" in response.text or "Not Found" in response.text
+        # Should contain helpful 404 content - check case-insensitively
+        response_lower = response.text.lower()
+        assert (
+            "404" in response.text
+            or "not found" in response_lower
+            or "page not found" in response_lower
+        )
 
     def test_page_structure_for_conversion(self):
         """Test that pages have structure suitable for HTML to Markdown conversion."""

@@ -23,6 +23,10 @@ from pathlib import Path
 import tempfile
 import pytest
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from tools.shared.colors import info
+
 
 def cleanup_windows_file_handles():
     """Clean up file handles on Windows to prevent WinError 32."""
@@ -254,7 +258,7 @@ class TestParallelProcessing:
 
         # Parallel should be faster (or at least not significantly slower)
         # We can't guarantee it's always faster due to overhead, but it shouldn't be much slower
-        print(f"Sequential time: {time_seq:.3f}s, Parallel time: {time_par:.3f}s")
+        info(f"Sequential time: {time_seq:.3f}s, Parallel time: {time_par:.3f}s")
 
         # Both files should have approximately the same size (small differences due to timestamps/processing)
         seq_size = config_seq.output.output_file.stat().st_size

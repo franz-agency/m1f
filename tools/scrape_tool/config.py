@@ -28,22 +28,37 @@ class ScraperBackend(str, Enum):
     BS4 = "bs4"  # Alias for beautifulsoup
     SELECTOLAX = "selectolax"
     HTTPX = "httpx"
-    SCRAPY = "scrapy"
     PLAYWRIGHT = "playwright"
 
 
 class CrawlerConfig(BaseModel):
     """Configuration for web crawler."""
 
-    max_depth: int = Field(default=5, ge=1, le=20, description="Maximum crawl depth")
+    max_depth: int = Field(
+        default=5,
+        ge=-1,
+        le=1000,
+        description="Maximum crawl depth (-1 for unlimited)",
+    )
     max_pages: int = Field(
-        default=1000, ge=1, le=10000, description="Maximum pages to crawl"
+        default=10000,
+        ge=-1,
+        le=10000000,
+        description="Maximum pages to crawl (-1 for unlimited)",
     )
     follow_external_links: bool = Field(
         default=False, description="Follow links to external domains"
     )
     allowed_domains: Optional[list[str]] = Field(
         default=None, description="List of allowed domains to crawl"
+    )
+    allowed_path: Optional[str] = Field(
+        default=None,
+        description="Restrict crawling to this path/URL and its subdirectories (e.g., /docs/ or https://example.com/docs/)",
+    )
+    allowed_paths: Optional[list[str]] = Field(
+        default=None,
+        description="List of paths/URLs to restrict crawling to (alternative to allowed_path)",
     )
     excluded_paths: list[str] = Field(
         default_factory=list, description="URL paths to exclude from crawling"
@@ -55,10 +70,10 @@ class CrawlerConfig(BaseModel):
         default_factory=dict, description="Backend-specific configuration"
     )
     request_delay: float = Field(
-        default=15.0,
+        default=5.0,
         ge=0,
         le=60,
-        description="Delay between requests in seconds (default: 15s for Cloudflare)",
+        description="Delay between requests in seconds (default: 5s for rate limiting)",
     )
     concurrent_requests: int = Field(
         default=2,
@@ -88,6 +103,59 @@ class CrawlerConfig(BaseModel):
     check_content_duplicates: bool = Field(
         default=True,
         description="Skip pages with duplicate content (based on text-only checksum)",
+    )
+    check_ssrf: bool = Field(
+        default=True,
+        description="Check for SSRF vulnerabilities by blocking private IP addresses",
+    )
+    force_rescrape: bool = Field(
+        default=False,
+        description="Force re-scraping of all URLs, ignoring database cache",
+    )
+    download_assets: bool = Field(
+        default=False,
+        description="Download linked assets like images, PDFs, and other files",
+    )
+    download_external_assets: bool = Field(
+        default=True,
+        description="Allow downloading assets from external domains (CDNs, etc.)",
+    )
+    asset_types: list[str] = Field(
+        default_factory=lambda: [
+            # Images (safe)
+            ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico",
+            # Stylesheets and fonts (safe)
+            ".css", ".woff", ".woff2", ".ttf", ".eot",
+            # Documents (potentially risky but commonly needed)
+            ".pdf", ".txt", ".md", ".csv",
+            # Data formats (safe)
+            ".json", ".xml",
+            # Note: .js removed by default for security
+            # Note: Office files removed by default (.doc, .docx, .xls, .xlsx, .ppt, .pptx)
+            # Note: Archives removed by default (.zip, .tar, .gz, .rar, .7z)
+            # Note: Media files removed by default (.mp4, .webm, .mp3, .wav, .ogg)
+        ],
+        description="File extensions to download when download_assets is enabled (security-filtered defaults)",
+    )
+    max_asset_size: int = Field(
+        default=50 * 1024 * 1024,  # 50MB
+        ge=0,
+        le=1024 * 1024 * 1024,  # 1GB max
+        description="Maximum file size in bytes for asset downloads",
+    )
+    assets_subdirectory: str = Field(
+        default="assets",
+        description="Subdirectory name for storing downloaded assets",
+    )
+    max_assets_per_page: int = Field(
+        default=-1,  # -1 means no limit
+        ge=-1,
+        description="Maximum number of assets to download per page (-1 for unlimited)",
+    )
+    total_assets_limit: int = Field(
+        default=-1,  # -1 means no limit
+        ge=-1,
+        description="Maximum total number of assets to download in a session (-1 for unlimited)",
     )
 
 

@@ -34,12 +34,65 @@ import asyncio
 import anyio
 import signal
 from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
+import tempfile
+
+# Use unified colorama module
+try:
+    from .shared.colors import (
+        Colors,
+        ColoredHelpFormatter,
+        success,
+        error,
+        warning,
+        info,
+        header,
+        COLORAMA_AVAILABLE,
+    )
+except ImportError:
+    # Try direct import if running as script
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from tools.shared.colors import (
+        Colors,
+        ColoredHelpFormatter,
+        success,
+        error,
+        warning,
+        info,
+        header,
+        COLORAMA_AVAILABLE,
+    )
 
 # Handle both module and direct script execution
 try:
     from .m1f_claude_runner import M1FClaudeRunner
 except ImportError:
     from m1f_claude_runner import M1FClaudeRunner
+
+# Import safe file operations
+try:
+    from .m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+        safe_is_dir,
+        safe_read_text,
+        safe_write_text,
+        safe_open,
+        safe_mkdir,
+        safe_iterdir,
+        safe_stat,
+    )
+except ImportError:
+    from tools.m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+        safe_is_dir,
+        safe_read_text,
+        safe_write_text,
+        safe_open,
+        safe_mkdir,
+        safe_iterdir,
+        safe_stat,
+    )
 
 # Configure logging
 logging.basicConfig(
@@ -50,13 +103,13 @@ logger = logging.getLogger(__name__)
 
 def find_claude_executable() -> Optional[str]:
     """Find the Claude executable in various possible locations."""
-    # First check if claude is available via npx
+    # First check if claude is directly available in PATH
     try:
         result = subprocess.run(
-            ["npx", "claude", "--version"], capture_output=True, text=True, timeout=5
+            ["claude", "--version"], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
-            return "npx claude"
+            return "claude"
     except:
         pass
 
@@ -102,7 +155,7 @@ def find_claude_executable() -> Optional[str]:
                 continue
         else:
             # Check as file path
-            if path.exists() and path.is_file():
+            if safe_exists(path, logger) and safe_is_file(path, logger):
                 try:
                     result = subprocess.run(
                         [str(path), "--version"],
@@ -131,35 +184,54 @@ class M1FClaude:
         self,
         project_path: Path = None,
         allowed_tools: str = "Read,Edit,MultiEdit,Write,Glob,Grep,Bash",
+        disallowed_tools: str = None,
         debug: bool = False,
         verbose: bool = False,
         project_description: str = None,
         project_priorities: str = None,
+        permission_mode: str = "default",
+        append_system_prompt: str = None,
+        output_format: str = "text",
+        input_format: str = "auto",
+        mcp_config: str = None,
+        cwd: Path = None,
     ):
         """Initialize m1f-claude with project context."""
-        self.project_path = project_path or Path.cwd()
+        # Always use current working directory - no searching for project roots!
+        self.project_path = Path.cwd()
         self.m1f_root = Path(__file__).parent.parent
         self.session_id = None  # Store session ID for conversation continuity
         self.conversation_started = False  # Track if conversation has started
         self.allowed_tools = allowed_tools  # Tools to allow in Claude Code
+        self.disallowed_tools = disallowed_tools  # Tools to disallow
         self.debug = debug  # Enable debug output
         self.verbose = verbose  # Show all prompts and parameters
         self.project_description = (
             project_description  # User-provided project description
         )
         self.project_priorities = project_priorities  # User-provided project priorities
+        self.permission_mode = permission_mode  # Permission handling mode
+        self.append_system_prompt = append_system_prompt  # Additional system prompt
+        self.output_format = output_format  # Output format (text, json, stream-json)
+        self.input_format = input_format  # Input format
+        self.mcp_config = mcp_config  # MCP configuration file
+        self.cwd = (
+            cwd if cwd is not None else Path.cwd()
+        )  # Use provided cwd or current working directory
 
         # Check for m1f documentation in various locations
-        self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"
-        self.m1f_docs_direct = self.project_path / "m1f" / "m1f.txt"
+        self.m1f_docs_link = Path.cwd() / "m1f" / "m1f.txt"
+        self.m1f_docs_direct = Path.cwd() / "m1f" / "m1f.txt"
 
         # Check if m1f-link has been run or docs exist directly
-        self.has_m1f_docs = self.m1f_docs_link.exists() or self.m1f_docs_direct.exists()
+        self.has_m1f_docs = safe_exists(self.m1f_docs_link, logger) or safe_exists(
+            self.m1f_docs_direct, logger
+        )
 
         # Use whichever path exists
-        if self.m1f_docs_link.exists():
+        if safe_exists(self.m1f_docs_link, logger):
             self.m1f_docs_path = self.m1f_docs_link
-        elif self.m1f_docs_direct.exists():
+        elif safe_exists(self.m1f_docs_direct, logger):
             self.m1f_docs_path = self.m1f_docs_direct
         else:
             self.m1f_docs_path = self.m1f_docs_link  # Default to expected symlink path
@@ -173,7 +245,7 @@ class M1FClaude:
         enhanced = []
 
         # Add m1f context
-        enhanced.append("🚀 m1f Context Enhancement Active\n")
+        enhanced.append("[m1f Context Enhancement Active]\n")
         enhanced.append("=" * 50)
 
         # Check if user wants to set up m1f
@@ -199,12 +271,12 @@ class M1FClaude:
             import tempfile
 
             # Check if m1f/ directory exists
-            m1f_dir = self.project_path / "m1f"
-            if not m1f_dir.exists():
+            m1f_dir = Path.cwd() / "m1f"
+            if not safe_exists(m1f_dir, logger):
                 # Call m1f-link to create the symlink
                 logger.info("m1f/ directory not found. Creating with m1f-link...")
                 try:
-                    subprocess.run(["m1f-link"], cwd=self.project_path, check=True)
+                    subprocess.run(["m1f-link"], cwd=Path.cwd(), check=True)
                 except subprocess.CalledProcessError:
                     logger.warning(
                         "Failed to run m1f-link. Continuing without m1f/ directory."
@@ -226,7 +298,7 @@ class M1FClaude:
                 cmd = [
                     "m1f",
                     "-s",
-                    str(self.project_path),
+                    str(Path.cwd()),
                     "-o",
                     tmp_path,
                     "--skip-output-file",
@@ -243,12 +315,14 @@ class M1FClaude:
                 files_list = []
                 dirs_list = []
 
-                if filelist_path.exists():
-                    files_list = filelist_path.read_text().strip().split("\n")
+                if safe_exists(filelist_path, logger):
+                    content = safe_read_text(filelist_path, logger)
+                    files_list = content.strip().split("\n") if content else []
                     filelist_path.unlink()  # Clean up
 
-                if dirlist_path.exists():
-                    dirs_list = dirlist_path.read_text().strip().split("\n")
+                if safe_exists(dirlist_path, logger):
+                    content = safe_read_text(dirlist_path, logger)
+                    dirs_list = content.strip().split("\n") if content else []
                     dirlist_path.unlink()  # Clean up
 
                 # Clean up temp file
@@ -325,7 +399,7 @@ CRITICAL CONFIG RULES:
 - Separator: Use "Standard" (or omit), NOT "Detailed"
 - ALWAYS test with m1f-update after creating/editing configs!
 
-📝 PROJECT CONTEXT FOR m1f SETUP:
+[PROJECT CONTEXT FOR m1f SETUP]:
 
 **Project Analysis Results:**
 - Total Files: {project_context.get('total_files', 'Unknown')}
@@ -427,9 +501,9 @@ bundles:
         if self.has_m1f_docs:
             enhanced.append(
                 f"""
-📚 Complete m1f documentation is available at: @{self.m1f_docs_path.relative_to(self.project_path)}
+[INFO] Complete m1f documentation is available at: @{self.m1f_docs_path.relative_to(self.project_path)}
 
-⚡ ALWAYS consult @m1f/m1f.txt for:
+[IMPORTANT] ALWAYS consult @m1f/m1f.txt for:
 - Exact command syntax and parameters
 - Configuration file formats
 - Preset definitions and usage
@@ -439,7 +513,7 @@ bundles:
         else:
             enhanced.append(
                 """
-⚠️  m1f documentation not linked yet. Run 'm1f-link' first to give me full context!
+[WARNING] m1f documentation not linked yet. Run 'm1f-link' first to give me full context!
 """
             )
 
@@ -451,11 +525,11 @@ bundles:
 
         # Add user's original prompt
         enhanced.append("\n" + "=" * 50)
-        enhanced.append("\n🎯 User Request:\n")
+        enhanced.append("\n[User Request]:\n")
         enhanced.append(user_prompt)
 
         # Add action plan
-        enhanced.append("\n\n💡 m1f Action Plan:")
+        enhanced.append("\n\n[m1f Action Plan]:")
         if wants_setup:
             enhanced.append(
                 """
@@ -481,7 +555,7 @@ Start with Task 1: Project Analysis
         enhanced.append("- Lines 421-459: Best practices for AI context")
         enhanced.append("- Lines 461-494: Project-specific patterns")
         enhanced.append(
-            "\n⚠️ REMEMBER: Keep configs MINIMAL - don't repeat default excludes!"
+            "\n[REMEMBER]: Keep configs MINIMAL - don't repeat default excludes!"
         )
 
         return "\n".join(enhanced)
@@ -493,7 +567,7 @@ Start with Task 1: Project Analysis
         # Check for AI context files first
         ai_files = {
             "CLAUDE.md": "🤖 Claude instructions found",
-            ".cursorrules": "🖱️ Cursor rules found",
+            ".cursorrules": "[Cursor rules found]",
             ".windsurfrules": "🌊 Windsurf rules found",
             ".aiderignore": "🤝 Aider configuration found",
             ".copilot-instructions.md": "🚁 Copilot instructions found",
@@ -501,7 +575,7 @@ Start with Task 1: Project Analysis
 
         ai_context_found = []
         for file, desc in ai_files.items():
-            if (self.project_path / file).exists():
+            if safe_exists(self.project_path / file, logger):
                 ai_context_found.append(f"  {desc} - READ THIS FIRST!")
 
         if ai_context_found:
@@ -510,19 +584,19 @@ Start with Task 1: Project Analysis
 
         # Check for common project files
         config_files = {
-            ".m1f.config.yml": "✅ Auto-bundle config found",
-            "package.json": "📦 Node.js project detected",
+            ".m1f.config.yml": "[OK] Auto-bundle config found",
+            "package.json": "[Node.js project detected]",
             "requirements.txt": "🐍 Python project detected",
             "composer.json": "🎼 PHP project detected",
             "Gemfile": "💎 Ruby project detected",
             "Cargo.toml": "🦀 Rust project detected",
             "go.mod": "🐹 Go project detected",
-            ".git": "📚 Git repository",
+            ".git": "[Git repository]",
         }
 
         detected = []
         for file, desc in config_files.items():
-            if (self.project_path / file).exists():
+            if safe_exists(self.project_path / file, logger):
                 detected.append(f"  {desc}")
 
         if detected:
@@ -532,10 +606,10 @@ Start with Task 1: Project Analysis
 
         # Check for m1f bundles
         m1f_dir = self.project_path / "m1f"
-        if m1f_dir.exists() and m1f_dir.is_dir():
+        if safe_exists(m1f_dir, logger) and safe_is_dir(m1f_dir, logger):
             bundles = list(m1f_dir.glob("*.txt"))
             if bundles:
-                context_parts.append(f"\n📦 Existing m1f bundles: {len(bundles)} found")
+                context_parts.append(f"\n[INFO] Existing m1f bundles: {len(bundles)} found")
                 for bundle in bundles[:3]:  # Show first 3
                     context_parts.append(f"  • {bundle.name}")
                 if len(bundles) > 3:
@@ -545,32 +619,32 @@ Start with Task 1: Project Analysis
 
     def _get_m1f_recommendations(self) -> str:
         """Provide m1f setup recommendations based on project type."""
-        recommendations = ["\n🎯 m1f Setup Recommendations:"]
+        recommendations = ["\n[m1f Setup Recommendations]:"]
 
         # Check if .m1f.config.yml exists
         m1f_config = self.project_path / ".m1f.config.yml"
-        if m1f_config.exists():
-            recommendations.append("  ✅ Auto-bundle config found (.m1f.config.yml)")
+        if safe_exists(m1f_config, logger):
+            recommendations.append("  [OK] Auto-bundle config found (.m1f.config.yml)")
             recommendations.append("     Run 'm1f-update' to generate bundles")
         else:
             recommendations.append(
-                "  📝 No .m1f.config.yml found - I'll help create one!"
+                "  [INFO] No .m1f.config.yml found - I'll help create one!"
             )
 
         # Check for m1f directory
         m1f_dir = self.project_path / "m1f"
-        if m1f_dir.exists():
+        if safe_exists(m1f_dir, logger):
             bundle_count = len(list(m1f_dir.glob("*.txt")))
             if bundle_count > 0:
                 recommendations.append(
-                    f"  📦 Found {bundle_count} existing m1f bundles"
+                    f"  [INFO] Found {bundle_count} existing m1f bundles"
                 )
         else:
             recommendations.append("  📁 'mkdir m1f' to create bundle output directory")
 
         # Suggest project-specific setup
-        if (self.project_path / "package.json").exists():
-            recommendations.append("\n  🔧 Node.js project detected:")
+        if safe_exists(self.project_path / "package.json", logger):
+            recommendations.append("\n  [Node.js project detected]:")
             recommendations.append(
                 "     - Bundle source code separately from node_modules"
             )
@@ -581,9 +655,9 @@ Start with Task 1: Project Analysis
                 "     - Use minification presets for production code"
             )
 
-        if (self.project_path / "requirements.txt").exists() or (
-            self.project_path / "setup.py"
-        ).exists():
+        if safe_exists(self.project_path / "requirements.txt", logger) or safe_exists(
+            self.project_path / "setup.py", logger
+        ):
             recommendations.append("\n  🐍 Python project detected:")
             recommendations.append("     - Exclude __pycache__ and .pyc files")
             recommendations.append(
@@ -591,15 +665,18 @@ Start with Task 1: Project Analysis
             )
             recommendations.append("     - Use comment removal for cleaner context")
 
-        if (self.project_path / "composer.json").exists():
+        if safe_exists(self.project_path / "composer.json", logger):
             recommendations.append("\n  🎼 PHP project detected:")
             recommendations.append("     - Exclude vendor/ directory")
             recommendations.append("     - Bundle by MVC structure if applicable")
 
         # Check for WordPress
         wp_indicators = ["wp-content", "wp-config.php", "functions.php", "style.css"]
-        if any((self.project_path / indicator).exists() for indicator in wp_indicators):
-            recommendations.append("\n  🎨 WordPress project detected:")
+        if any(
+            safe_exists(self.project_path / indicator, logger)
+            for indicator in wp_indicators
+        ):
+            recommendations.append("\n  [WordPress project detected]:")
             recommendations.append("     - Use --preset wordpress for optimal bundling")
             recommendations.append("     - Separate theme/plugin bundles")
             recommendations.append("     - Exclude uploads and cache directories")
@@ -884,25 +961,25 @@ I'll analyze your project and create an optimal m1f configuration that:
             context["ci_cd"] = "Configure Jenkins pipeline for auto-bundling"
 
         # Check existing project structure for more context
-        if (self.project_path / "package.json").exists():
+        if safe_exists(self.project_path / "package.json", logger):
             if context["type"] == "Not specified":
                 context["type"] = "Node.js/JavaScript Project"
                 context["languages"] = "JavaScript/TypeScript"
-        elif (self.project_path / "requirements.txt").exists() or (
-            self.project_path / "setup.py"
-        ).exists():
+        elif safe_exists(self.project_path / "requirements.txt", logger) or safe_exists(
+            self.project_path / "setup.py", logger
+        ):
             if context["type"] == "Not specified":
                 context["type"] = "Python Project"
                 context["languages"] = "Python"
-        elif (self.project_path / "composer.json").exists():
+        elif safe_exists(self.project_path / "composer.json", logger):
             if context["type"] == "Not specified":
                 context["type"] = "PHP Project"
                 context["languages"] = "PHP"
-        elif (self.project_path / "Cargo.toml").exists():
+        elif safe_exists(self.project_path / "Cargo.toml", logger):
             if context["type"] == "Not specified":
                 context["type"] = "Rust Project"
                 context["languages"] = "Rust"
-        elif (self.project_path / "go.mod").exists():
+        elif safe_exists(self.project_path / "go.mod", logger):
             if context["type"] == "Not specified":
                 context["type"] = "Go Project"
                 context["languages"] = "Go"
@@ -1131,11 +1208,21 @@ I'll analyze your project and create an optimal m1f configuration that:
                 resume=(
                     self.session_id if not is_first_prompt and self.session_id else None
                 ),
-                # Enable file permissions for initialization
-                allow_write_files=True,
-                allow_read_files=True,
-                allow_edit_files=True,
+                # Use proper SDK parameters
+                allowed_tools=(
+                    self.allowed_tools.split(",") if self.allowed_tools else None
+                ),
+                permission_mode=self.permission_mode,
+                cwd=str(self.cwd) if self.cwd else None,
             )
+
+            # Add optional parameters if provided
+            if self.append_system_prompt:
+                options.system_prompt = self.append_system_prompt
+            if self.disallowed_tools:
+                options.disallowed_tools = self.disallowed_tools.split(",")
+            if self.mcp_config:
+                options.mcp_config = self.mcp_config
 
             async with anyio.create_task_group() as tg:
 
@@ -1152,7 +1239,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                             # Show progress for init prompts
                             if is_first_prompt and message_count % 3 == 0:
                                 logger.info(
-                                    f"📝 Processing... ({message_count} messages received)"
+                                    f"[Processing...] ({message_count} messages received)"
                                 )
 
                             # Extract session ID from ResultMessage - handle missing fields gracefully
@@ -1164,10 +1251,16 @@ I'll analyze your project and create an optimal m1f configuration that:
                                         logger.info(
                                             "🔗 Session established with Claude Code"
                                         )
-                                # Handle cost field gracefully
+                                # Extract metadata from ResultMessage
                                 if hasattr(message, "cost_usd"):
                                     if self.debug:
                                         logger.info(f"Cost: ${message.cost_usd}")
+                                if hasattr(message, "duration"):
+                                    if self.debug:
+                                        logger.info(f"Duration: {message.duration}s")
+                                if hasattr(message, "num_turns"):
+                                    if self.debug:
+                                        logger.info(f"Turns: {message.num_turns}")
                     except Exception as e:
                         if self.debug:
                             logger.error(f"SDK error during message collection: {e}")
@@ -1233,24 +1326,39 @@ I'll analyze your project and create an optimal m1f configuration that:
             # Send to Claude Code using --print for non-interactive mode
             logger.info("\n🤖 Displaying prompt for manual use...\n")
             logger.info(
-                "⚠️  Due to subprocess limitations, please run the following command manually:"
+                "[WARNING] Due to subprocess limitations, please run the following command manually:"
             )
             logger.info("")
 
             # Prepare command with proper tools and directory access
             # Note: For initialization, we'll display the command rather than execute it
-            cmd_display = f"claude --add-dir {self.project_path} --allowedTools Read,Write,Edit,MultiEdit"
+            cmd_parts = [
+                "claude",
+                f"--add-dir {self.project_path}",
+                f"--allowedTools {self.allowed_tools}",
+            ]
+
+            if self.permission_mode != "default":
+                cmd_parts.append(f"--permission-mode {self.permission_mode}")
+            if self.append_system_prompt:
+                cmd_parts.append(
+                    f'--append-system-prompt "{self.append_system_prompt}"'
+                )
+            if self.mcp_config:
+                cmd_parts.append(f"--mcp-config {self.mcp_config}")
+
+            cmd_display = " ".join(cmd_parts)
 
             # Display the command and prompt for manual execution
-            print(f"\n{'='*60}")
-            print("📋 Copy and run this command:")
-            print(f"{'='*60}")
-            print(f"\n{cmd_display}\n")
-            print(f"{'='*60}")
-            print("📝 Then paste this prompt:")
-            print(f"{'='*60}")
-            print(f"\n{enhanced_prompt}\n")
-            print(f"{'='*60}")
+            info(f"\n{Colors.CYAN}{'='*60}{Colors.RESET}")
+            header("📋 Copy and run this command:")
+            info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
+            info(f"\n{Colors.GREEN}{cmd_display}{Colors.RESET}\n")
+            info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
+            header("[Then paste this prompt]:")
+            info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
+            info(f"\n{Colors.YELLOW}{enhanced_prompt}{Colors.RESET}\n")
+            info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
 
             # Return a message indicating manual steps required
             return "Manual execution required - see instructions above"
@@ -1266,13 +1374,17 @@ I'll analyze your project and create an optimal m1f configuration that:
 
     def interactive_mode(self):
         """Run in interactive mode with proper session management."""
-        print("\n🤖 m1f-claude Interactive Mode")
-        print("=" * 50)
-        print("I'll enhance your prompts with m1f knowledge!")
-        print("Commands: 'help', 'context', 'examples', 'quit', '/e'\n")
+        header("🤖 m1f-claude Interactive Mode")
+        info(f"{Colors.CYAN}{'=' * 50}{Colors.RESET}")
+        info(
+            f"{Colors.BOLD}I'll enhance your prompts with m1f knowledge!{Colors.RESET}"
+        )
+        info(
+            f"Commands: {Colors.GREEN}'help'{Colors.RESET}, {Colors.GREEN}'context'{Colors.RESET}, {Colors.GREEN}'examples'{Colors.RESET}, {Colors.GREEN}'quit'{Colors.RESET}, {Colors.GREEN}'/e'{Colors.RESET}\n"
+        )
 
         if not self.has_m1f_docs:
-            print("💡 Tip: Run 'm1f-link' first for better assistance!\n")
+            warning("Tip: Run 'm1f-link' first for better assistance!\n")
 
         session_id = None
         first_prompt = True
@@ -1290,7 +1402,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                     user_input.lower() in ["quit", "exit", "q"]
                     or user_input.strip() == "/e"
                 ):
-                    print("\n👋 Happy bundling!")
+                    success("\n👋 Happy bundling!")
                     break
 
                 if user_input.lower() == "help":
@@ -1298,7 +1410,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                     continue
 
                 if user_input.lower() == "context":
-                    print(self._analyze_project_context())
+                    info(self._analyze_project_context())
                     continue
 
                 if user_input.lower() == "examples":
@@ -1312,7 +1424,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                     prompt_to_send = user_input
 
                 # Send to Claude using subprocess
-                print("\n🤖 Claude is thinking...", end="", flush=True)
+                print("🤖 Claude is thinking...", end="", flush=True)
                 response, new_session_id = self._send_with_session(
                     prompt_to_send, session_id
                 )
@@ -1329,133 +1441,116 @@ I'll analyze your project and create an optimal m1f configuration that:
 
                     # Check if we should ask about continuing
                     if interaction_count >= 10 and interaction_count % 10 == 0:
-                        print(
-                            f"\n⚠️  You've had {interaction_count} interactions in this session."
+                        warning(
+                            f"You've had {interaction_count} interactions in this session."
                         )
                         continue_choice = input("Continue? (y/n) [y]: ").strip().lower()
                         if continue_choice in ["n", "no"]:
-                            print("\n👋 Session ended by user. Happy bundling!")
+                            success("Session ended by user. Happy bundling!")
                             break
                 else:
-                    print(
-                        "\r❌ Failed to send to Claude Code. Check your connection.\n"
-                    )
+                    error("Failed to send to Claude Code. Check your connection.")
 
             except KeyboardInterrupt:
-                print("\n\nUse 'quit' or '/e' to exit properly")
+                warning("Use 'quit' or '/e' to exit properly")
             except Exception as e:
                 logger.error(f"Error: {e}")
 
     def setup(self):
         """Run setup with Claude Code for topic-specific bundles."""
-        print("\n🤖 m1f Setup with Claude")
-        print("=" * 50)
+        header("🤖 m1f Setup with Claude")
+        info("=" * 50)
 
-        print("\nThis command adds topic-specific bundles to your existing m1f setup.")
-        print("\n✅ Prerequisites:")
-        print("  • Run 'm1f-init' first to create basic bundles")
-        print("  • Claude Code must be installed")
-        print("  • .m1f.config.yml should exist")
-        print()
+        info("\nThis command adds topic-specific bundles to your existing m1f setup.")
+        info("\n[Prerequisites]:")
+        info("  • Run 'm1f-init' first to create basic bundles")
+        info("  • Claude Code must be installed")
+        info("  • .m1f.config.yml should exist")
+        info("")
 
         # Collect project description and priorities if not provided via CLI
         if not self.project_description and not self.project_priorities:
-            print("\n📝 Project Information")
-            print("=" * 50)
-            print(
+            header("[Project Information]")
+            info("=" * 50)
+            info(
                 "Please provide some information about your project to help create better bundles."
             )
-            print()
+            info("")
 
             # Interactive project description input
             if not self.project_description:
-                print("📋 Project Description")
-                print(
-                    "Describe your project briefly (what it does, main technologies):"
-                )
+                info("📋 Project Description")
+                info("Describe your project briefly (what it does, main technologies):")
                 self.project_description = input("> ").strip()
                 if not self.project_description:
                     self.project_description = "Not provided"
 
             # Interactive project priorities input
             if not self.project_priorities:
-                print("\n🎯 Project Priorities")
-                print(
+                info("\n[Project Priorities]")
+                info(
                     "What's important for this project? (e.g., performance, security, maintainability, documentation):"
                 )
                 self.project_priorities = input("> ").strip()
                 if not self.project_priorities:
                     self.project_priorities = "Not provided"
 
-            print()
+            info("")
 
-        # Check if we're in a git repository
-        git_root = self.project_path
-        if (self.project_path / ".git").exists():
-            print(f"✅ Git repository detected: {self.project_path}")
-        else:
-            # Look for git root in parent directories
-            current = self.project_path
-            while current != current.parent:
-                if (current / ".git").exists():
-                    git_root = current
-                    print(f"✅ Git repository detected: {git_root}")
-                    break
-                current = current.parent
-            else:
-                print(
-                    f"⚠️  No git repository found - initializing in current directory: {self.project_path}"
-                )
+        # Store the actual working directory for analysis
+        working_dir = Path.cwd()
+        info(f"Working in: {working_dir}")
 
         # Check if m1f documentation is available
         if not self.has_m1f_docs:
-            print(f"⚠️  m1f documentation not found - please run 'm1f-init' first!")
+            warning("m1f documentation not found - please run 'm1f-init' first!")
             return
         else:
-            print(f"✅ m1f documentation available")
+            success("m1f documentation available")
 
-        # Check for existing .m1f.config.yml
-        config_path = self.project_path / ".m1f.config.yml"
-        if config_path.exists():
-            print(f"✅ m1f configuration found: {config_path.name}")
+        # Check for existing .m1f.config.yml in current directory
+        config_path = working_dir / ".m1f.config.yml"
+        if safe_exists(config_path, logger):
+            success(f"m1f configuration found: {config_path.name}")
         else:
-            print(f"⚠️  No m1f configuration found - will help you create one")
+            warning("No m1f configuration found - will help you create one")
 
         # Check for Claude Code availability
         has_claude_code = False
         claude_path = find_claude_executable()
 
         if claude_path:
-            print(f"✅ Claude Code is available")
+            success("Claude Code is available")
             has_claude_code = True
         else:
-            print(
-                f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code"
+            warning(
+                "Claude Code not found - install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code"
             )
             return
 
-        print(f"\n📊 Project Analysis")
-        print("=" * 30)
+        header("📊 Project Analysis")
+        info("=" * 30)
 
         # Run m1f to generate file and directory lists using intelligent filtering
         import tempfile
 
-        print("Analyzing project structure...")
+        info(f"Analyzing project structure in: {working_dir}")
 
-        # Create m1f directory if it doesn't exist
-        m1f_dir = self.project_path / "m1f"
-        if not m1f_dir.exists():
-            m1f_dir.mkdir(parents=True, exist_ok=True)
+        # Create m1f directory if it doesn't exist (in current working directory)
+        m1f_dir = working_dir / "m1f"
+        if not safe_exists(m1f_dir, logger):
+            safe_mkdir(m1f_dir, logger, parents=True, exist_ok=True)
 
         # Use a file in the m1f directory for analysis
         analysis_path = m1f_dir / "project_analysis.txt"
 
         try:
             # Run m1f with --skip-output-file to generate only auxiliary files
+            # IMPORTANT: Analyze the current working directory, not the git root
             cmd = [
                 "m1f",
                 "-s",
-                str(self.project_path),
+                str(working_dir),  # Use working directory instead of project_path
                 "-o",
                 str(analysis_path),
                 "--skip-output-file",
@@ -1475,17 +1570,19 @@ I'll analyze your project and create an optimal m1f configuration that:
             files_list = []
             dirs_list = []
 
-            if filelist_path.exists():
-                content = filelist_path.read_text().strip()
+            if safe_exists(filelist_path, logger):
+                content = safe_read_text(filelist_path, logger)
+                content = content.strip() if content else ""
                 if content:
                     files_list = content.split("\n")
-                print(f"📄 Created file list: {filelist_path.name}")
+                info(f"📄 Created file list: {filelist_path.name}")
 
-            if dirlist_path.exists():
-                content = dirlist_path.read_text().strip()
+            if safe_exists(dirlist_path, logger):
+                content = safe_read_text(dirlist_path, logger)
+                content = content.strip() if content else ""
                 if content:
                     dirs_list = content.split("\n")
-                print(f"📁 Created directory list: {dirlist_path.name}")
+                info(f"📁 Created directory list: {dirlist_path.name}")
 
             # Note: We keep the analysis files in m1f/ directory for reference
             # No cleanup needed - these are useful project analysis artifacts
@@ -1500,155 +1597,168 @@ I'll analyze your project and create an optimal m1f configuration that:
                 context["user_priorities"] = self.project_priorities
 
             # Display analysis results
-            print(
-                f"✅ Found {context.get('total_files', 0)} files in {context.get('total_dirs', 0)} directories"
+            success(
+                f"Found {context.get('total_files', 0)} files in {context.get('total_dirs', 0)} directories"
             )
-            print(f"📁 Project Type: {context.get('type', 'Unknown')}")
-            print(f"💻 Languages: {context.get('languages', 'Unknown')}")
+            info(f"📁 Project Type: {context.get('type', 'Unknown')}")
+            info(f"[Languages]: {context.get('languages', 'Unknown')}")
             if context.get("main_code_dirs"):
-                print(f"📂 Code Dirs: {', '.join(context['main_code_dirs'][:3])}")
+                info(f"📂 Code Dirs: {', '.join(context['main_code_dirs'][:3])}")
 
             # Display user-provided info
             if self.project_description:
-                print(f"\n📝 User Description: {self.project_description}")
+                info(f"\n[User Description]: {self.project_description}")
             if self.project_priorities:
-                print(f"🎯 User Priorities: {self.project_priorities}")
+                info(f"[User Priorities]: {self.project_priorities}")
 
         except Exception as e:
-            print(f"⚠️  Failed to analyze project structure: {e}")
+            warning(f"Failed to analyze project structure: {e}")
             # Fallback to basic analysis
             context = self._analyze_project_context()
-            print(context)
+            info(context)
 
-        # Check if basic bundles exist
-        project_name = self.project_path.name
-        if not (m1f_dir / f"{project_name}_complete.txt").exists():
-            print(f"\n⚠️  Basic bundles not found. Please run 'm1f-init' first!")
-            print(f"\nExpected to find:")
-            print(f"  • m1f/{project_name}_complete.txt")
-            print(f"  • m1f/{project_name}_docs.txt")
+        # Check if basic bundles exist - either complete or docs
+        # Use the current directory name, not the git root
+        project_name = working_dir.name
+        complete_bundle = m1f_dir / f"{project_name}_complete.txt"
+        docs_bundle = m1f_dir / f"{project_name}_docs.txt"
+
+        if not safe_exists(complete_bundle, logger) and not safe_exists(
+            docs_bundle, logger
+        ):
+            warning("Basic bundles not found. Please run 'm1f-init' first!")
+            info("\nExpected to find at least one of:")
+            info(f"  • m1f/{project_name}_complete.txt (for code projects)")
+            info(f"  • m1f/{project_name}_docs.txt (for documentation projects)")
             return
 
         # Run advanced segmentation with Claude
-        print(f"\n🤖 Creating Topic-Specific Bundles")
-        print("─" * 50)
-        print(f"Claude will analyze your project and create focused bundles.")
+        header("🤖 Creating Topic-Specific Bundles")
+        info("─" * 50)
+        info("Claude will analyze your project and create focused bundles.")
 
         # Create segmentation prompt focused on advanced bundling
         segmentation_prompt = self._create_segmentation_prompt(context)
 
         # Show prompt in verbose mode
         if self.verbose:
-            print(f"\n📝 PHASE 1 PROMPT (Segmentation):")
-            print("=" * 80)
-            print(segmentation_prompt)
-            print("=" * 80)
-            print()
+            header("[PHASE 1 PROMPT (Segmentation)]:")
+            info("=" * 80)
+            info(segmentation_prompt)
+            info("=" * 80)
+            info("")
 
-        # Execute Claude directly with the prompt
-        print(f"\n🤖 Sending to Claude Code...")
-        print(
-            f"⏳ Claude will now analyze your project and create topic-specific bundles..."
-        )
-        print(f"\n⚠️  IMPORTANT: This process may take 1-3 minutes as Claude:")
-        print(f"   • Reads and analyzes all project files")
-        print(f"   • Understands your project structure")
-        print(f"   • Creates intelligent bundle configurations")
-        print(f"\n🔄 Please wait while Claude works...\n")
+        # Execute Claude with JSON streaming for real-time progress
+        info("\n🤖 Analyzing project and creating bundles...")
+        info("─" * 50)
+        info("⏳ This will take 1-2 minutes...")
+        info("")
 
         try:
-            # PHASE 1: Run Claude with streaming output
+            # PHASE 1: Run Claude with JSON streaming (but without Task/subagents)
             runner = M1FClaudeRunner(claude_binary=claude_path)
 
-            # Execute with streaming and timeout handling
-            returncode, stdout, stderr = runner.run_claude_streaming(
-                prompt=segmentation_prompt,
-                working_dir=str(self.project_path),
-                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep",
-                add_dir=str(self.project_path),
-                timeout=300,  # 5 minutes timeout
-                show_output=True,
-            )
+            # Use standard tools for setup (no Task or subagents)
+            setup_allowed_tools = "Edit,Glob,Grep,LS,MultiEdit,Read,Write"
+
+            # Build kwargs for JSON streaming
+            run_kwargs = {
+                "prompt": segmentation_prompt,
+                "working_dir": str(working_dir),  # Use current working directory
+                "allowed_tools": setup_allowed_tools,
+                "add_dir": str(
+                    working_dir
+                ),  # Add current directory to Claude's context
+                "timeout": 300,  # 5 minutes timeout
+                "show_progress": True,
+            }
+
+            # Add optional parameters
+            if self.permission_mode != "default":
+                run_kwargs["permission_mode"] = self.permission_mode
+            if self.append_system_prompt:
+                run_kwargs["append_system_prompt"] = self.append_system_prompt
+            if self.mcp_config:
+                run_kwargs["mcp_config"] = self.mcp_config
+            if self.disallowed_tools:
+                run_kwargs["disallowed_tools"] = self.disallowed_tools
+            if self.cwd:
+                run_kwargs["cwd"] = str(self.cwd)
+
+            # Execute with JSON streaming for real-time progress
+            returncode, stdout, stderr = runner.run_claude_streaming_json(**run_kwargs)
 
             result = type("Result", (), {"returncode": returncode})
 
             if result.returncode == 0:
-                print(f"\n✅ Phase 1 complete: Topic-specific bundles added!")
-                print(
-                    f"📝 Claude has analyzed your project and updated .m1f.config.yml"
-                )
+                success("Phase 1 complete: Topic-specific bundles added!")
+                info("[INFO] Claude has analyzed your project and updated .m1f.config.yml")
             else:
-                print(f"\n⚠️  Claude exited with code {result.returncode}")
-                print(f"Please check your .m1f.config.yml manually.")
+                warning(f"Claude exited with code {result.returncode}")
+                info("Please check your .m1f.config.yml manually.")
                 return
 
             # PHASE 2: Run m1f-update and have Claude verify the results
-            print(f"\n🔄 Phase 2: Generating bundles and verifying configuration...")
-            print(f"⏳ Running m1f-update to generate bundles...")
+            info("\n[Phase 2]: Generating bundles and verifying configuration...")
+            info("⏳ Running m1f-update to generate bundles...")
 
-            # Run m1f-update to generate the bundles
+            # Run m1f-update to generate the bundles in current directory
             update_result = subprocess.run(
-                ["m1f-update"], cwd=self.project_path, capture_output=True, text=True
+                ["m1f-update"], cwd=working_dir, capture_output=True, text=True
             )
 
             if update_result.returncode != 0:
-                print(f"\n⚠️  m1f-update failed:")
-                print(update_result.stderr)
-                print(f"\n📝 Running verification anyway to help fix issues...")
+                warning("m1f-update failed:")
+                error(update_result.stderr)
+                info("\n[INFO] Running verification anyway to help fix issues...")
             else:
-                print(f"✅ Bundles generated successfully!")
+                success("Bundles generated successfully!")
 
             # Create verification prompt
             verification_prompt = self._create_verification_prompt(context)
 
             # Show prompt in verbose mode
             if self.verbose:
-                print(f"\n📝 PHASE 2 PROMPT (Verification):")
-                print("=" * 80)
-                print(verification_prompt)
-                print("=" * 80)
-                print()
+                header("[PHASE 2 PROMPT (Verification)]:")
+                info("=" * 80)
+                info(verification_prompt)
+                info("=" * 80)
+                info("")
 
-            print(
-                f"\n🤖 Phase 2: Claude will now verify and improve the configuration..."
+            info(
+                "\n🤖 Phase 2: Claude will now verify and improve the configuration..."
             )
-            print(
-                f"⏳ This includes checking bundle quality and fixing any issues...\n"
-            )
+            info("⏳ This includes checking bundle quality and fixing any issues...\n")
 
-            # Run Claude again to verify and improve
+            # Run Claude again to verify and improve with JSON streaming
+            run_kwargs["prompt"] = verification_prompt
+            # Keep using the same standard tools for verification
+
             returncode_verify, stdout_verify, stderr_verify = (
-                runner.run_claude_streaming(
-                    prompt=verification_prompt,
-                    working_dir=str(self.project_path),
-                    allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
-                    add_dir=str(self.project_path),
-                    timeout=300,  # 5 minutes timeout
-                    show_output=True,
-                )
+                runner.run_claude_streaming_json(**run_kwargs)
             )
 
             verify_result = type("Result", (), {"returncode": returncode_verify})
 
             if verify_result.returncode == 0:
-                print(f"\n✅ Phase 2 complete: Configuration verified and improved!")
+                success("Phase 2 complete: Configuration verified and improved!")
             else:
-                print(
-                    f"\n⚠️  Verification phase exited with code {verify_result.returncode}"
+                warning(
+                    f"Verification phase exited with code {verify_result.returncode}"
                 )
 
         except FileNotFoundError:
-            print(f"\n❌ Claude Code not found. Please install it first:")
-            print(f"npm install -g @anthropic-ai/claude-code")
+            error("Claude Code not found. Please install it first:")
+            info("npm install -g @anthropic-ai/claude-code")
         except Exception as e:
-            print(f"\n❌ Error running Claude: {e}")
+            error(f"Error running Claude: {e}")
             # Fall back to showing manual instructions
             self.send_to_claude_code_subprocess(segmentation_prompt)
 
-        print(f"\n🚀 Next steps:")
-        print(f"• Your .m1f.config.yml has been created and verified")
-        print(f"• Run 'm1f-update' to regenerate bundles with any improvements")
-        print(f"• Use topic-specific bundles with your AI tools")
+        info("\n[Next steps]:")
+        info("• Your .m1f.config.yml has been created and verified")
+        info("• Run 'm1f-update' to regenerate bundles with any improvements")
+        info("• Use topic-specific bundles with your AI tools")
 
     def _create_basic_config_with_docs(
         self, config_path: Path, doc_extensions: List[str], project_name: str
@@ -1698,8 +1808,10 @@ bundles:
 # - etc.
 """
 
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(yaml_content)
+        if safe_write_text(config_path, yaml_content, logger):
+            success(f"Configuration saved to: {config_path}")
+        else:
+            error(f"Failed to write configuration to: {config_path}")
 
     def _load_prompt_template(
         self, template_name: str, variables: Dict[str, str]
@@ -1708,7 +1820,7 @@ bundles:
         prompt_dir = Path(__file__).parent / "m1f" / "prompts"
         template_path = prompt_dir / f"{template_name}.md"
 
-        if not template_path.exists():
+        if not safe_exists(template_path, logger):
             raise FileNotFoundError(f"Prompt template not found: {template_path}")
 
         # Read the template
@@ -1792,31 +1904,36 @@ bundles:
                 return None, None
 
             # Build command - use stream-json for real-time feedback
-            if claude_cmd == "npx claude":
-                cmd = [
-                    "npx",
-                    "claude",
-                    "--print",
-                    "--verbose",  # Required for stream-json
-                    "--output-format",
-                    "stream-json",
-                    "--allowedTools",
-                    self.allowed_tools,
-                ]
-            else:
-                cmd = [
-                    claude_cmd,
-                    "--print",
-                    "--verbose",  # Required for stream-json
-                    "--output-format",
-                    "stream-json",
-                    "--allowedTools",
-                    self.allowed_tools,
-                ]
+            cmd = [
+                claude_cmd,
+                "--print",
+                (
+                    "--verbose" if self.output_format == "stream-json" else None
+                ),  # Required for stream-json
+                "--output-format",
+                self.output_format,
+                "--allowedTools",
+                self.allowed_tools,
+            ]
+
+            # Filter out None values
+            cmd = [x for x in cmd if x is not None]
+
+            # Add optional parameters
+            if self.disallowed_tools:
+                cmd.extend(["--disallowedTools", self.disallowed_tools])
+            if self.permission_mode != "default":
+                cmd.extend(["--permission-mode", self.permission_mode])
+            if self.append_system_prompt:
+                cmd.extend(["--append-system-prompt", self.append_system_prompt])
+            if self.mcp_config:
+                cmd.extend(["--mcp-config", self.mcp_config])
+            if self.cwd and self.cwd != self.project_path:
+                cmd.extend(["--cwd", str(self.cwd)])
 
             # Note: --debug flag interferes with JSON parsing, only use in stderr
             if self.debug:
-                print(f"[DEBUG] Command: {' '.join(cmd)}")
+                info(f"[DEBUG] Command: {' '.join(cmd)}")
 
             if session_id:
                 cmd.extend(["-r", session_id])
@@ -1853,7 +1970,7 @@ bundles:
                 # Skip debug lines that start with [DEBUG]
                 if line.startswith("[DEBUG]"):
                     if self.debug:
-                        print(f"\n{line}")
+                        info(line)
                     continue
 
                 try:
@@ -1864,18 +1981,23 @@ bundles:
 
                     # Always show event types in verbose mode
                     if self.debug and event_type not in ["assistant", "system"]:
-                        print(f"\n[DEBUG] Event: {event_type} - {data}")
+                        info(f"[DEBUG] Event: {event_type} - {data}")
 
                     if event_type == "system":
                         if data.get("subtype") == "init":
                             # Initial system message with session info
                             new_session_id = data.get("session_id", session_id)
                             if self.debug:
-                                print(
-                                    f"\n[DEBUG] Session initialized: {new_session_id}"
-                                )
+                                info(f"[DEBUG] Session initialized: {new_session_id}")
+                        elif data.get("subtype") == "permission_prompt":
+                            # Handle permission prompt for MCP tools
+                            tool_name = data.get("tool_name", "Unknown")
+                            tool_params = data.get("parameters", {})
+                            warning(f"[WARNING: Permission required for {tool_name}]")
+                            if self.debug:
+                                info(f"[DEBUG] Parameters: {tool_params}")
                         elif self.debug:
-                            print(f"\n[DEBUG] System message: {data}")
+                            info(f"[DEBUG] System message: {data}")
 
                     elif event_type == "tool_use":
                         # Tool use events
@@ -1910,7 +2032,7 @@ bundles:
                             elif tool_name == "Task" and "description" in tool_input:
                                 param_info = f" → {tool_input['description']}"
 
-                        print(f"\n[🔧 {tool_name}]{param_info}", flush=True)
+                        info(f"[{tool_name}]{param_info}")
 
                     elif event_type == "tool_result":
                         # Tool result events
@@ -1925,27 +2047,33 @@ bundles:
                                         if len(lines[0]) > 80
                                         else lines[0]
                                     )
-                                    print(
-                                        f"[📄 {first_line} ... ({len(lines)} lines)]",
-                                        flush=True,
-                                    )
+                                    info(f"[📄 {first_line} ... ({len(lines)} lines)]")
                                 elif len(output) > 100:
                                     # Long single line
-                                    print(
-                                        f"[📄 {output[:80]}... ({len(output)} chars)]",
-                                        flush=True,
-                                    )
+                                    info(f"[📄 {output[:80]}... ({len(output)} chars)]")
                                 else:
                                     # Short output
-                                    print(f"[📄 {output}]", flush=True)
+                                    info(f"[📄 {output}]", flush=True)
                             elif output == True:
-                                print(f"[✓ Success]", flush=True)
+                                success("[Success]", flush=True)
                             elif output == False:
-                                print(f"[✗ Failed]", flush=True)
+                                error("[✗ Failed]", flush=True)
+
+                    elif event_type == "user":
+                        # User messages (for conversation tracking)
+                        if self.debug:
+                            user_content = data.get("content", "")
+                            info(
+                                f"[DEBUG] User: {user_content[:100]}..."
+                                if len(user_content) > 100
+                                else f"[DEBUG] User: {user_content}"
+                            )
 
                     elif event_type == "assistant":
                         # Assistant messages have a nested structure
-                        message_data = data.get("message", {})
+                        message_data = data.get(
+                            "message", data
+                        )  # Handle both nested and flat structures
                         content = message_data.get("content", [])
 
                         if isinstance(content, list):
@@ -2006,22 +2134,38 @@ bundles:
                             print(content, end="", flush=True)
 
                     elif event_type == "result":
-                        # Final result message
-                        new_session_id = data.get("session_id", session_id)
-                        # Show completion indicator
-                        print("\n[✅ Response complete]", flush=True)
-                        if self.debug:
-                            print(f"[DEBUG] Session ID: {new_session_id}")
-                            print(f"[DEBUG] Cost: ${data.get('total_cost_usd', 0):.4f}")
-                            print(f"[DEBUG] Turns: {data.get('num_turns', 0)}")
+                        # Final result message with various subtypes
+                        subtype = data.get("subtype", "")
+                        if subtype == "error":
+                            error(f"[ERROR: {data.get('error', 'Unknown error')}]")
+                        elif subtype == "cancelled":
+                            warning("[WARNING: Response cancelled]")
+                        else:
+                            # Normal completion
+                            new_session_id = data.get("session_id", session_id)
+                            # Show completion indicator
+                            success("[Response complete]", flush=True)
+                            if self.debug:
+                                info(f"[DEBUG] Session ID: {new_session_id}")
+                                info(
+                                    f"[DEBUG] Cost: ${data.get('total_cost_usd', 0):.4f}"
+                                )
+                                info(f"[DEBUG] Turns: {data.get('num_turns', 0)}")
+                                info(
+                                    f"[DEBUG] Duration: {data.get('duration', 0):.2f}s"
+                                )
 
                 except json.JSONDecodeError:
-                    if self.debug:
-                        print(f"\n[DEBUG] Non-JSON line: {line}")
+                    # Handle non-JSON output (might be plain text in some formats)
+                    if self.output_format == "text":
+                        response_text += line + "\n"
+                        print(line)
+                    elif self.debug:
+                        info(f"[DEBUG] Non-JSON line: {line}")
                 except Exception as e:
                     if self.debug:
-                        print(f"\n[DEBUG] Error processing line: {e}")
-                        print(f"[DEBUG] Line was: {line}")
+                        error(f"[DEBUG] Error processing line: {e}")
+                        info(f"[DEBUG] Line was: {line}")
 
             # Wait for process to complete
             if not cancelled:
@@ -2030,7 +2174,7 @@ bundles:
             # Check stderr for errors
             stderr_output = process.stderr.read()
             if stderr_output and self.debug:
-                print(f"\n[DEBUG] Stderr: {stderr_output}")
+                error(f"[DEBUG] Stderr: {stderr_output}")
 
             if cancelled:
                 logger.info("\nResponse cancelled by user.")
@@ -2104,9 +2248,9 @@ bundles:
 
     def _show_help(self):
         """Show help information."""
-        print(
+        info(
             """
-🎯 m1f-claude Help
+[m1f-claude Help]
 
 Commands:
   help     - Show this help
@@ -2125,9 +2269,9 @@ Tips:
 
     def _show_examples(self):
         """Show example prompts that work well."""
-        print(
+        info(
             """
-📚 Example Prompts That Work Great:
+[Example Prompts That Work Great]:
 
 1. "Help me set up m1f for my Django project with separate bundles for models, views, and templates"
 
@@ -2148,6 +2292,12 @@ Tips:
 
 def main():
     """Main entry point for m1f-claude."""
+    
+    # Import version
+    try:
+        from _version import __version__
+    except ImportError:
+        __version__ = "dev"
 
     # Check if running on Windows/PowerShell
     import platform
@@ -2155,51 +2305,58 @@ def main():
     if platform.system() == "Windows" or (
         os.environ.get("PSModulePath") and sys.platform == "win32"
     ):
-        print("\n⚠️  Windows/PowerShell Notice")
-        print("=" * 50)
-        print("Claude Code doesn't run on Windows yet!")
+        warning("Windows/PowerShell Notice")
+        info("=" * 50)
+        error("Claude Code doesn't run on Windows yet!")
         print("")
-        print("📚 Alternative approaches:")
-        print("1. Use m1f-init for basic setup:")
-        print("   - m1f-init                  # Initialize project")
-        print("   - m1f-update                # Auto-bundle your project")
+        info("[Alternative approaches]:")
+        info("1. Use m1f-init for basic setup:")
+        info("   - m1f-init                  # Initialize project")
+        info("   - m1f-update                # Auto-bundle your project")
         print("")
-        print("2. Create .m1f.config.yml manually:")
-        print("   - See docs: https://github.com/franzundfranz/m1f")
-        print("   - Run: m1f-init            # Get documentation and basic setup")
+        info("2. Create .m1f.config.yml manually:")
+        info("   - See docs: https://github.com/franz-agency/m1f/tree/main/docs")
+        info("   - Run: m1f-init            # Get documentation and basic setup")
         print("")
-        print("3. Use WSL (Windows Subsystem for Linux) for full Claude Code support")
+        info("3. Use WSL (Windows Subsystem for Linux) for full Claude Code support")
         print("")
-        print("For detailed setup instructions, see:")
-        print("docs/01_m1f/21_development_workflow.md")
-        print("=" * 50)
+        info("For detailed setup instructions, see:")
+        info("docs/01_m1f/21_development_workflow.md")
+        info("=" * 50)
         print("")
 
     parser = argparse.ArgumentParser(
         description="Enhance your Claude prompts with m1f knowledge",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  m1f-claude "Help me bundle my Python project"
-  m1f-claude -i                    # Interactive mode
-  m1f-claude --setup     # Add topic bundles to existing setup
-  m1f-claude --check              # Check setup status
+        formatter_class=ColoredHelpFormatter,
+        epilog=f"""
+{Colors.BOLD}Examples:{Colors.RESET}
+  {Colors.CYAN}m1f-claude "Help me bundle my Python project"{Colors.RESET}
+  {Colors.CYAN}m1f-claude -i{Colors.RESET}                    # Interactive mode
+  {Colors.CYAN}m1f-claude --setup{Colors.RESET}     # Add topic bundles to existing setup
+  {Colors.CYAN}m1f-claude --check{Colors.RESET}              # Check setup status
   
-Initialization workflow:
-  1. Run 'm1f-init' first to create basic bundles
-  2. Run 'm1f-claude --setup' for topic-specific bundles
+{Colors.BOLD}Initialization workflow:{Colors.RESET}
+  1. Run {Colors.CYAN}'m1f-init'{Colors.RESET} first to create basic bundles
+  2. Run {Colors.CYAN}'m1f-claude --setup'{Colors.RESET} for topic-specific bundles
   
-Note: m1f-init works on all platforms (Windows, Linux, Mac)
+{Colors.BOLD}Note:{Colors.RESET} {Colors.CYAN}m1f-init{Colors.RESET} works on all platforms (Windows, Linux, Mac)
   
-💡 Recommended: Use Claude Code with a subscription plan due to 
+{Colors.YELLOW}[Recommended]:{Colors.RESET} Use Claude Code with a subscription plan due to 
    potentially high token usage during project setup and configuration.
   
-First time? Run 'm1f-init' to set up your project!
+{Colors.GREEN}First time? Run 'm1f-init' to set up your project!{Colors.RESET}
 """,
     )
 
     parser.add_argument(
         "prompt", nargs="*", help="Your prompt to enhance with m1f context"
+    )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"m1f-claude {__version__}",
+        help="Show version information"
     )
 
     parser.add_argument(
@@ -2266,6 +2423,46 @@ First time? Run 'm1f-init' to set up your project!
         help="What's important for this project (performance, security, maintainability, etc.)",
     )
 
+    parser.add_argument(
+        "--permission-mode",
+        type=str,
+        default="default",
+        choices=["default", "acceptEdits", "plan", "bypassPermissions"],
+        help="Permission handling mode (default: default)",
+    )
+
+    parser.add_argument(
+        "--output-format",
+        type=str,
+        default="text",
+        choices=["text", "json", "stream-json"],
+        help="Output format (default: text)",
+    )
+
+    parser.add_argument(
+        "--append-system-prompt",
+        type=str,
+        help="Additional system prompt to append",
+    )
+
+    parser.add_argument(
+        "--mcp-config",
+        type=str,
+        help="Path to MCP configuration JSON file",
+    )
+
+    parser.add_argument(
+        "--cwd",
+        type=str,
+        help="Working directory for Claude (defaults to project path)",
+    )
+
+    parser.add_argument(
+        "--disallowed-tools",
+        type=str,
+        help="Comma-separated list of disallowed tools",
+    )
+
     args = parser.parse_args()
 
     # Handle /setup command in prompt
@@ -2276,33 +2473,39 @@ First time? Run 'm1f-init' to set up your project!
     # Initialize m1f-claude
     m1f_claude = M1FClaude(
         allowed_tools=args.allowed_tools,
+        disallowed_tools=args.disallowed_tools,
         debug=args.debug,
         verbose=args.verbose,
         project_description=args.project_description,
         project_priorities=args.project_priorities,
+        permission_mode=args.permission_mode,
+        append_system_prompt=args.append_system_prompt,
+        output_format=args.output_format,
+        mcp_config=args.mcp_config,
+        cwd=Path(args.cwd) if args.cwd else None,
     )
 
     # Check status
     if args.check:
-        print("\n🔍 m1f-claude Status Check")
-        print("=" * 50)
-        print(f"✅ m1f-claude installed and ready")
-        print(f"📁 Working directory: {m1f_claude.project_path}")
+        header("🔍 m1f-claude Status Check")
+        info("=" * 50)
+        success("m1f-claude installed and ready")
+        info(f"📁 Working directory: {m1f_claude.project_path}")
 
         if m1f_claude.has_m1f_docs:
-            print(
-                f"✅ m1f docs found at: {m1f_claude.m1f_docs_path.relative_to(m1f_claude.project_path)}"
+            success(
+                f"m1f docs found at: {m1f_claude.m1f_docs_path.relative_to(m1f_claude.project_path)}"
             )
         else:
-            print(f"⚠️  m1f docs not found - run 'm1f-init' first!")
+            warning("m1f docs not found - run 'm1f-init' first!")
 
         # Check for Claude Code
         claude_path = find_claude_executable()
         if claude_path:
-            print(f"✅ Claude Code is installed")
+            success("Claude Code is installed")
         else:
-            print(
-                f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code"
+            warning(
+                "Claude Code not found - install with: npm install -g @anthropic-ai/claude-code"
             )
 
         return
@@ -2326,7 +2529,7 @@ First time? Run 'm1f-init' to set up your project!
             prompt, max_turns=args.max_turns, is_first_prompt=True
         )
         if response:
-            print(response)
+            info(response)
         else:
             logger.error("Failed to send to Claude Code")
             sys.exit(1)
@@ -2335,17 +2538,17 @@ First time? Run 'm1f-init' to set up your project!
         enhanced = m1f_claude.create_enhanced_prompt(prompt)
 
         if args.no_send:
-            print("\n--- Enhanced Prompt ---")
-            print(enhanced)
+            header("--- Enhanced Prompt ---")
+            info(enhanced)
         else:
             response = m1f_claude.send_to_claude_code(
                 enhanced, max_turns=args.max_turns, is_first_prompt=True
             )
             if response:
-                print(response)
+                info(response)
             else:
-                print("\n--- Enhanced Prompt (copy this to Claude) ---")
-                print(enhanced)
+                header("--- Enhanced Prompt (copy this to Claude) ---")
+                info(enhanced)
 
 
 if __name__ == "__main__":

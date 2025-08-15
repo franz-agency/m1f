@@ -14,13 +14,7 @@ except ImportError:
     SELECTOLAX_AVAILABLE = False
     SelectolaxScraper = None
 
-try:
-    from .scrapy_scraper import ScrapyScraper
-
-    SCRAPY_AVAILABLE = True
-except ImportError:
-    SCRAPY_AVAILABLE = False
-    ScrapyScraper = None
+# Scrapy removed - use other scrapers instead
 
 try:
     from .playwright import PlaywrightScraper
@@ -39,7 +33,6 @@ __all__ = [
     "BeautifulSoupScraper",
     "HTTrackScraper",
     "SelectolaxScraper",
-    "ScrapyScraper",
     "PlaywrightScraper",
 ]
 
@@ -55,8 +48,6 @@ if SELECTOLAX_AVAILABLE:
     SCRAPER_REGISTRY["selectolax"] = SelectolaxScraper
     SCRAPER_REGISTRY["httpx"] = SelectolaxScraper  # Alias
 
-if SCRAPY_AVAILABLE:
-    SCRAPER_REGISTRY["scrapy"] = ScrapyScraper
 
 if PLAYWRIGHT_AVAILABLE:
     SCRAPER_REGISTRY["playwright"] = PlaywrightScraper

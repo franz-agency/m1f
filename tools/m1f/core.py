@@ -45,6 +45,11 @@ from .utils import (
     sort_files_by_depth_and_name,
     sort_directories_by_depth_and_name,
 )
+from .file_operations import (
+    safe_exists,
+    safe_open,
+    safe_mkdir,
+)
 
 
 @dataclass
@@ -204,10 +209,12 @@ class FileCombiner:
 
         if self.config.source_directories:
             for source_dir in self.config.source_directories:
-                if not source_dir.exists():
+                if not safe_exists(source_dir, self.logger):
                     raise FileNotFoundError(f"Source directory not found: {source_dir}")
 
-        if self.config.input_file and not self.config.input_file.exists():
+        if self.config.input_file and not safe_exists(
+            self.config.input_file, self.logger
+        ):
             raise FileNotFoundError(f"Input file not found: {self.config.input_file}")
 
     async def _prepare_output_path(self) -> Path:
@@ -223,7 +230,10 @@ class FileCombiner:
             self.logger.debug(f"Output filename with timestamp: {output_path.name}")
 
         # Handle existing file
-        if output_path.exists() and not self.config.output.skip_output_file:
+        if (
+            safe_exists(output_path, self.logger)
+            and not self.config.output.skip_output_file
+        ):
             if self.config.output.force_overwrite:
                 self.logger.warning(f"Overwriting existing file: {output_path}")
                 try:
@@ -264,10 +274,10 @@ class FileCombiner:
                     raise ValidationError("Operation cancelled by user")
 
         # Ensure parent directory exists
-        try:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            raise PermissionError(f"Cannot create output directory: {e}")
+        if not safe_mkdir(output_path.parent, self.logger, parents=True, exist_ok=True):
+            raise PermissionError(
+                f"Cannot create output directory: {output_path.parent}"
+            )
 
         return output_path
 
@@ -419,11 +429,20 @@ class FileCombiner:
                 # Sort directories by depth and name
                 sorted_paths = sort_directories_by_depth_and_name(list(unique_dirs))
 
+            # Only write if there's content to write
+            if not sorted_paths:
+                return
+
             # Write to file
             def write_file():
-                with open(path, "w", encoding="utf-8") as f:
-                    for p in sorted_paths:
-                        f.write(f"{p}\n")
+                with safe_open(path, "w", self.logger, encoding="utf-8") as f:
+                    if f is not None:
+                        for p in sorted_paths:
+                            f.write(f"{p}\n")
+                    else:
+                        raise PermissionError(
+                            f"Cannot write {list_type} list to {path}"
+                        )
                 # Explicitly ensure file handle is released
                 f = None
 
@@ -445,8 +464,13 @@ class FileCombiner:
             content = f"# No files processed from {source}\n"
 
             def write_empty():
-                with open(output_path, "w", encoding="utf-8") as f:
-                    f.write(content)
+                with safe_open(output_path, "w", self.logger, encoding="utf-8") as f:
+                    if f is not None:
+                        f.write(content)
+                    else:
+                        raise PermissionError(
+                            f"Cannot create output file: {output_path}"
+                        )
                 # Explicitly ensure file handle is released
                 f = None
 
@@ -468,8 +492,14 @@ class FileCombiner:
             # Read file content
             def read_file():
                 content = None
-                with open(output_path, "r", encoding="utf-8") as f:
-                    content = f.read()
+                with safe_open(output_path, "r", self.logger, encoding="utf-8") as f:
+                    if f is not None:
+                        content = f.read()
+                    else:
+                        self.logger.warning(
+                            f"Cannot read output file for token counting: {output_path}"
+                        )
+                        return None
                 # Explicitly ensure file handle is released
                 f = None
                 return content

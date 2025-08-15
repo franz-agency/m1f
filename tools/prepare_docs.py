@@ -28,6 +28,27 @@ Usage:
 
 import argparse
 import logging
+
+# Use unified colorama module
+try:
+    from .shared.colors import warning
+except ImportError:
+    import os
+    import sys
+
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from tools.shared.colors import warning
+
+# Import safe file operations
+try:
+    from .m1f.file_operations import safe_exists
+except ImportError:
+    import os
+    import sys
+
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from tools.m1f.file_operations import safe_exists
+
 import os
 import subprocess
 import sys
@@ -53,7 +74,7 @@ BUNDLE_OUTPUT = (
 
 def ensure_dir(directory: Path) -> None:
     """Ensure a directory exists, creating it if necessary."""
-    if not directory.exists():
+    if not safe_exists(directory, logger):
         directory.mkdir(parents=True)
         logger.info(f"Created directory: {directory}")
 
@@ -83,7 +104,7 @@ def convert_html_to_markdown() -> bool:
     # Build command for mf1-html2md.py
     html2md_script = BASE_DIR / "tools" / "mf1-html2md.py"
 
-    if not html2md_script.exists():
+    if not safe_exists(html2md_script, logger):
         logger.error(f"HTML to Markdown conversion script not found: {html2md_script}")
         return False
 
@@ -150,7 +171,7 @@ def build_documentation_bundle() -> bool:
     logger.info("Creating documentation bundle...")
 
     # Check if Markdown directory exists and has files
-    if not MD_DOCS_DIR.exists():
+    if not safe_exists(MD_DOCS_DIR, logger):
         logger.warning(f"Markdown directory not found: {MD_DOCS_DIR}")
         logger.info("Run with --convert-html first to create Markdown files")
         return False
@@ -163,7 +184,7 @@ def build_documentation_bundle() -> bool:
     # Build command for m1f.py
     m1f_script = BASE_DIR / "tools" / "m1f.py"
 
-    if not m1f_script.exists():
+    if not safe_exists(m1f_script, logger):
         logger.error(f"m1f script not found: {m1f_script}")
         return False
 
@@ -217,6 +238,8 @@ def build_documentation_bundle() -> bool:
 
 def main() -> None:
     """Main entry point for the script."""
+    global HTML_DOCS_DIR, MD_DOCS_DIR, BUNDLE_OUTPUT
+
     parser = argparse.ArgumentParser(
         description="Documentation preparation tool",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -257,7 +280,6 @@ def main() -> None:
     args = parser.parse_args()
 
     # Override directories if specified
-    global HTML_DOCS_DIR, MD_DOCS_DIR, BUNDLE_OUTPUT
     if args.html_dir:
         HTML_DOCS_DIR = Path(args.html_dir)
     if args.markdown_dir:
@@ -311,7 +333,7 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\nOperation cancelled by user.")
+        warning("\nOperation cancelled by user.")
         sys.exit(130)  # Standard exit code for Ctrl+C
     except Exception as e:
         logger.critical(f"An unexpected error occurred: {e}", exc_info=True)

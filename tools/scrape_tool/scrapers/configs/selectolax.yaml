@@ -3,7 +3,7 @@
 
 # Basic scraper settings
 max_depth: 10
-max_pages: 1000
+max_pages: 10000
 request_delay: 0.1  # Minimal delay for high performance
 concurrent_requests: 20  # Higher concurrency for speed
 respect_robots_txt: true

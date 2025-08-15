@@ -50,6 +50,13 @@ function m1f-scrape {
 # Alias for backwards compatibility
 Set-Alias -Name webscraper -Value m1f-scrape
 
+# AI Research tool
+function m1f-research {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.research @args
+}
+
 # Token counter
 function m1f-token-counter {
     Activate-M1FEnvironment
@@ -135,6 +142,7 @@ function m1f-help {
     Write-Host "  m1f-s1f           - Split combined files back to original structure" -ForegroundColor Green
     Write-Host "  m1f-html2md       - Convert HTML to Markdown" -ForegroundColor Green
     Write-Host "  m1f-scrape        - Download websites for offline viewing" -ForegroundColor Green
+    Write-Host "  m1f-research      - AI-powered research and content analysis" -ForegroundColor Green
     Write-Host "  m1f-token-counter - Count tokens in files" -ForegroundColor Green
     Write-Host "  m1f-update        - Update m1f bundle files" -ForegroundColor Green
     Write-Host "  m1f-init          - Initialize m1f for your project" -ForegroundColor Green

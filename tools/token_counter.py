@@ -15,6 +15,17 @@
 import argparse
 import tiktoken
 import os
+import sys
+
+# Use unified colorama module
+try:
+    from .shared.colors import Colors, ColoredHelpFormatter, success, error, info
+    from .m1f.file_operations import safe_exists, safe_open
+except ImportError:
+    # Try direct import if running as script
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from tools.shared.colors import Colors, ColoredHelpFormatter, success, error, info
+    from tools.m1f.file_operations import safe_exists, safe_open
 
 
 def count_tokens_in_file(file_path: str, encoding_name: str = "cl100k_base") -> int:
@@ -33,15 +44,19 @@ def count_tokens_in_file(file_path: str, encoding_name: str = "cl100k_base") -> 
         FileNotFoundError: If the specified file does not exist.
         Exception: For other issues like encoding errors or tiktoken issues.
     """
-    if not os.path.exists(file_path):
+    if not safe_exists(file_path):
         raise FileNotFoundError(f"Error: File not found at {file_path}")
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with safe_open(file_path, "r", encoding="utf-8") as f:
+            if f is None:
+                raise Exception(f"Permission denied accessing file {file_path}")
             text_content = f.read()
     except UnicodeDecodeError:
         # Fallback to reading as bytes if UTF-8 fails, then decode with replacement
-        with open(file_path, "rb") as f:
+        with safe_open(file_path, "rb") as f:
+            if f is None:
+                raise Exception(f"Permission denied accessing file {file_path}")
             byte_content = f.read()
         text_content = byte_content.decode("utf-8", errors="replace")
     except Exception as e:
@@ -64,12 +79,28 @@ def main():
     """
     Main function to parse arguments and print token count.
     """
+    # Import version
+    try:
+        from _version import __version__
+    except ImportError:
+        __version__ = "dev"
+    
     parser = argparse.ArgumentParser(
         description="Count tokens in a text file using OpenAI's tiktoken library.",
-        epilog="Example: python token_counter.py myfile.txt -e p50k_base",
+        formatter_class=ColoredHelpFormatter,
+        epilog=f"""
+{Colors.BOLD}Example:{Colors.RESET}
+  {Colors.CYAN}python token_counter.py myfile.txt -e p50k_base{Colors.RESET}
+""",
     )
     parser.add_argument(
         "file_path", type=str, help="Path to the text file (txt, php, md, etc.)."
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"m1f-token-counter {__version__}",
+        help="Show version information"
     )
     parser.add_argument(
         "-e",
@@ -83,13 +114,13 @@ def main():
 
     try:
         token_count = count_tokens_in_file(args.file_path, args.encoding)
-        print(
+        success(
             f"The file '{args.file_path}' contains approximately {token_count} tokens (using '{args.encoding}' encoding)."
         )
     except FileNotFoundError as e:
-        print(e)
+        error(str(e))
     except Exception as e:
-        print(f"An error occurred: {e}")
+        error(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":

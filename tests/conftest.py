@@ -21,10 +21,18 @@ import shutil
 import tempfile
 import gc
 import time
+import socket
+import subprocess
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+import requests
+
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from tools.shared.colors import warning
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Callable
@@ -291,7 +299,7 @@ def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
         except (OSError, PermissionError) as e:
             if attempt == max_retries - 1:
                 # Final attempt failed, log warning but don't raise
-                print(f"Warning: Could not clean up test directory {directory}: {e}")
+                warning(f"Could not clean up test directory {directory}: {e}")
                 return
 
             # Wait with exponential backoff
@@ -333,6 +341,75 @@ def _remove_readonly_attributes(directory: Path) -> None:
                     pass  # Ignore errors, best effort
     except (OSError, PermissionError):
         pass  # Ignore errors, best effort
+
+
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
+@pytest.fixture(scope="session")
+def html2md_test_server():
+    """Provide a test server for HTML2MD integration tests."""
+    # Find a free port
+    server_port = find_free_port(8090)
+    server_url = f"http://localhost:{server_port}"
+    
+    # Set up environment
+    env = os.environ.copy()
+    env["FLASK_ENV"] = "testing"
+    env["HTML2MD_SERVER_PORT"] = str(server_port)
+    env.pop("WERKZEUG_RUN_MAIN", None)
+    env.pop("WERKZEUG_SERVER_FD", None)
+
+    # Start server
+    server_path = Path(__file__).parent / "html2md_server" / "server.py"
+    process = subprocess.Popen(
+        [sys.executable, str(server_path)],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    # Wait for server to start
+    max_attempts = 30
+    for i in range(max_attempts):
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            pytest.fail(f"Server process terminated: {stderr.decode() if stderr else 'Unknown error'}")
+            
+        try:
+            response = requests.get(server_url, timeout=2)
+            if response.status_code == 200:
+                break
+        except requests.ConnectionError:
+            pass
+        time.sleep(0.5)
+    else:
+        process.terminate()
+        pytest.fail("Test server failed to start within timeout")
+
+    # Yield server info
+    yield {
+        "url": server_url,
+        "port": server_port,
+        "process": process
+    }
+
+    # Cleanup
+    try:
+        process.terminate()
+        process.wait(timeout=5)
+    except Exception:
+        process.kill()
+        process.wait()
 
 
 @pytest.fixture

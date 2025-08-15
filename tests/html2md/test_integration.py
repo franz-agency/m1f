@@ -27,6 +27,9 @@ from pathlib import Path
 # Add the parent directory to sys.path so we can import the module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+# Add colorama imports
+from tools.shared.colors import info, error
+
 
 def normalize_path_for_subprocess(path):
     """Normalize path for cross-platform subprocess usage."""
@@ -97,9 +100,9 @@ class TestIntegration(unittest.TestCase):
                 env=env,
             )
         except subprocess.CalledProcessError as e:
-            print(f"Command failed with return code {e.returncode}")
-            print(f"STDOUT: {e.stdout}")
-            print(f"STDERR: {e.stderr}")
+            error(f"Command failed with return code {e.returncode}")
+            info(f"STDOUT: {e.stdout}")
+            error(f"STDERR: {e.stderr}")
             raise
 
         # Check that the command completed successfully
@@ -152,9 +155,9 @@ class TestIntegration(unittest.TestCase):
                 env=env,
             )
         except subprocess.CalledProcessError as e:
-            print(f"Command failed with return code {e.returncode}")
-            print(f"STDOUT: {e.stdout}")
-            print(f"STDERR: {e.stderr}")
+            error(f"Command failed with return code {e.returncode}")
+            info(f"STDOUT: {e.stdout}")
+            error(f"STDERR: {e.stderr}")
             raise
 
         # Check output
@@ -209,9 +212,9 @@ class TestIntegration(unittest.TestCase):
                 env=env,
             )
         except subprocess.CalledProcessError as e:
-            print(f"Command failed with return code {e.returncode}")
-            print(f"STDOUT: {e.stdout}")
-            print(f"STDERR: {e.stderr}")
+            error(f"Command failed with return code {e.returncode}")
+            info(f"STDOUT: {e.stdout}")
+            error(f"STDERR: {e.stderr}")
             raise
 
         # Check output

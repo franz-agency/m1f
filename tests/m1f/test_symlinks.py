@@ -162,7 +162,8 @@ class TestSymlinkHandling(unittest.TestCase):
             "symlink_to_file1.txt", content
         )  # Symlink file should be excluded
 
-        # 2. Now with --include-symlinks (should include non-circular symlinks)
+        # 2. Now with --include-symlinks and --allow-duplicate-files 
+        # (should include all non-circular symlinks, including internal ones)
         output_file2 = Path(self.temp_dir) / "output_with_symlinks.txt"
         result = subprocess.run(
             [
@@ -174,6 +175,7 @@ class TestSymlinkHandling(unittest.TestCase):
                 str(output_file2),
                 "--force",
                 "--include-symlinks",
+                "--allow-duplicate-files",  # Allow internal symlinks to be included
                 "--verbose",  # Added for debugging
             ],
             check=True,
@@ -199,8 +201,15 @@ class TestSymlinkHandling(unittest.TestCase):
         for i, line in enumerate(content.splitlines()):
             if "file3.txt" in line:
                 print(f"Line {i+1}: {line[:100]}...")
-                # If the line contains "FILE: " it's a file path in the header
-                if "FILE: " in line:
+                # Check for different separator formats
+                # Standard format: ======= path ======
+                if line.startswith("=======") and "file3.txt" in line:
+                    # Extract path from standard separator
+                    file_path = line.replace("=======", "").strip().rstrip("=").strip()
+                    if file_path and file_path not in file3_paths:
+                        file3_paths.append(file_path)
+                # Detailed format: == FILE: path
+                elif "FILE: " in line:
                     file_path = line.split("FILE: ")[1].split()[0]
                     if file_path not in file3_paths:
                         file3_paths.append(file_path)

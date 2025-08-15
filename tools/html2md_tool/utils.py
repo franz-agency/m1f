@@ -15,12 +15,13 @@
 """Utility functions for mf1-html2md."""
 
 import logging
-import sys
 from pathlib import Path
 from typing import Optional
 
-from rich.console import Console
-from rich.logging import RichHandler
+from shared.logging import (
+    get_logger as shared_get_logger,
+    configure_logging as shared_configure_logging,
+)
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -32,7 +33,7 @@ def get_logger(name: str) -> logging.Logger:
     Returns:
         Logger instance
     """
-    return logging.getLogger(name)
+    return shared_get_logger(name)
 
 
 def configure_logging(
@@ -45,44 +46,10 @@ def configure_logging(
         quiet: Suppress all but error messages
         log_file: Optional log file path
     """
-    # Determine log level
-    if quiet:
-        level = logging.ERROR
-    elif verbose:
-        level = logging.DEBUG
-    else:
-        level = logging.INFO
+    # Use the shared configure_logging function
+    shared_configure_logging(verbose=verbose, quiet=quiet, log_file=log_file)
 
-    # Create handlers
-    handlers = []
-
-    # Console handler with rich formatting
-    console_handler = RichHandler(
-        console=Console(stderr=True),
-        show_path=verbose,
-        show_time=verbose,
-    )
-    console_handler.setLevel(level)
-    handlers.append(console_handler)
-
-    # File handler if specified
-    if log_file:
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.DEBUG)
-        file_formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        file_handler.setFormatter(file_formatter)
-        handlers.append(file_handler)
-
-    # Configure root logger
-    logging.basicConfig(
-        level=logging.DEBUG,
-        handlers=handlers,
-        force=True,
-    )
-
-    # Suppress some noisy loggers
+    # Suppress some noisy loggers specific to html2md
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)
 
@@ -166,8 +133,8 @@ def convert_html(
     Returns:
         Markdown content
     """
-    from .config.models import ExtractorConfig, ProcessorConfig
-    from .core import HTMLParser, MarkdownConverter
+    from html2md_tool.config.models import ExtractorConfig, ProcessorConfig
+    from html2md_tool.core import HTMLParser, MarkdownConverter
 
     # Create default configs
     extractor_config = ExtractorConfig()
@@ -215,15 +182,15 @@ def convert_html(
     return result
 
 
-def adjust_internal_links(content, base_path: str = "") -> None:
-    """Adjust internal links in HTML content (BeautifulSoup object).
+def adjust_internal_links(content, base_path: str = ""):
+    """Adjust internal links in HTML/Markdown content.
 
     Args:
-        content: BeautifulSoup object or string
+        content: BeautifulSoup object or Markdown string
         base_path: Base path for links
 
     Returns:
-        None (modifies in place)
+        Modified string if content is string, None if BeautifulSoup (modifies in place)
     """
     from bs4 import BeautifulSoup
 
@@ -246,9 +213,11 @@ def adjust_internal_links(content, base_path: str = "") -> None:
             if base_path and not url.startswith("/"):
                 url = f"{base_path}/{url}"
 
-            # Convert .html to .md
+            # Convert .html/.htm to .md
             if url.endswith(".html"):
                 url = url[:-5] + ".md"
+            elif url.endswith(".htm"):
+                url = url[:-4] + ".md"
 
             return f"[{text}]({url})"
 
@@ -264,9 +233,11 @@ def adjust_internal_links(content, base_path: str = "") -> None:
                     if base_path and not href.startswith("/"):
                         href = f"{base_path}/{href}"
 
-                    # Convert .html to .md
+                    # Convert .html/.htm to .md
                     if href.endswith(".html"):
                         href = href[:-5] + ".md"
+                    elif href.endswith(".htm"):
+                        href = href[:-4] + ".md"
 
                     link["href"] = href
 
@@ -309,29 +280,13 @@ def extract_title_from_html(html_content) -> Optional[str]:
     return None
 
 
-def create_progress_bar() -> "Progress":
-    """Create a rich progress bar.
+def create_progress_bar():
+    """Create a simple text-based progress indicator.
+
+    Note: Rich progress bars are no longer used. This returns None
+    and calling code should handle progress display differently.
 
     Returns:
-        Progress instance
+        None
     """
-    from rich.progress import (
-        BarColumn,
-        MofNCompleteColumn,
-        Progress,
-        SpinnerColumn,
-        TextColumn,
-        TimeElapsedColumn,
-        TimeRemainingColumn,
-    )
-
-    return Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        MofNCompleteColumn(),
-        TimeElapsedColumn(),
-        TimeRemainingColumn(),
-        console=Console(),
-        transient=True,
-    )
+    return None

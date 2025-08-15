@@ -20,9 +20,18 @@ import os
 import re
 from setuptools import setup, find_packages
 
+# Import safe file operations for consistency
+try:
+    from tools.m1f.file_operations import safe_open
+except ImportError:
+    # Fallback to regular open if safe_open is not available during setup
+    def safe_open(path, mode="r", **kwargs):
+        return open(path, mode, **kwargs)
+
+
 # Read version from _version.py
 version_file = os.path.join(os.path.dirname(__file__), "_version.py")
-with open(version_file, "r", encoding="utf-8") as f:
+with safe_open(version_file, "r", encoding="utf-8") as f:
     version_match = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE
     )
@@ -41,7 +50,20 @@ setup(
     packages=find_packages(),
     entry_points={
         "console_scripts": [
+            # Core tools
             "m1f=m1f:main",
+            "s1f=s1f.cli:main",
+            "m1f-html2md=html2md_tool.cli:main",
+            "m1f-scrape=scrape_tool.cli:main",
+            "m1f-research=research.cli:main",
+            # Utility tools
+            "m1f-claude=m1f_claude:main",
+            "m1f-help=m1f_help:main",
+            "m1f-init=m1f_init:main",
+            "m1f-token-counter=token_counter:main",
+            "m1f-update=m1f_update:main",
+            # Alias for backwards compatibility
+            "m1f-s1f=s1f.cli:main",
         ],
     },
     python_requires=">=3.10",

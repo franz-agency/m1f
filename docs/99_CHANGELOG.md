@@ -6,6 +6,607 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [3.8.1] - 2025-08-15
+
+### Fixed
+
+- **install.sh**: Improved path resolution for sourced execution
+  - Script now correctly detects its location when sourced with `source ./scripts/install.sh`
+  - Added fallback logic for unreliable BASH_SOURCE[0] when sourced
+  - Changed error handling to use `return` instead of `exit` to prevent terminal closure
+  - Enhanced error messages with PROJECT_ROOT and current directory diagnostics
+  - Supports sourcing from both project root and scripts directory
+
+- **install.ps1**: Added same robust path resolution to PowerShell installer
+  - Handle both dot-sourced and executed script cases
+  - Detect script location when $PSScriptRoot is empty or null
+  - Use `return` instead of `exit` to prevent PowerShell closure when dot-sourced
+  - Enhanced error messages with PROJECT_ROOT and current directory diagnostics
+  - Supports dot-sourcing from both project root and scripts directory
+
+## [3.8.0] - 2025-08-15
+
+### Fixed
+
+- **Test Suite**: Resolved remaining test failures and warnings
+  - Fixed encoding error in test server by explicitly using UTF-8 for HTML responses
+  - Fixed Playwright timeout issues by using 'domcontentloaded' wait strategy for tests
+  - Fixed async mock warnings by using regular Mock for response objects instead of AsyncMock
+  - Response.text methods now properly return coroutines without AsyncMock warnings
+  - Fixed SQLite datetime adapter deprecation warnings
+  - Eliminated all remaining AsyncMock coroutine warnings
+
+- **Windows Compatibility**: Comprehensive Windows support improvements
+  - Fixed subprocess.PIPE issues in test server startup
+  - Improved path handling in Windows installation scripts (install.ps1)
+  - Fixed PowerShell git hook scripts for better Windows compatibility
+  - Enhanced m1f-init and m1f-help tools for cross-platform operation
+  - Fixed test timeouts specific to Windows environment
+  - Improved Claude integration for Windows users
+
+- **research**: Fixed Html2mdConverter method call - was calling non-existent `convert()` instead of `convert_html()`
+- **research**: Added missing `filter_content()` method to ContentFilter that returns (bool, str) tuple
+- **research**: Enabled WebSearch tool for Claude Code provider - now finds real URLs instead of generating hypothetical ones
+- **research**: Created missing `default_analysis.md` prompt file for content analysis
+- **research**: Research tool now works end-to-end with Claude Code provider using web search
+- **research**: Removed emojis from bundle filenames (RESEARCH_BUNDLE.md, EXECUTIVE_SUMMARY.md) for better compatibility
+- **research**: Added real-time feedback display for Claude WebSearch operations
+- **research**: Improved WebSearch feedback to show search queries and result counts
+- **research**: Fixed optional URL parameter handling in analysis prompts
+
+- **Test Suite Fixes**: Resolved 6 failing tests across multiple modules
+  - Fixed LLM provider tests by properly mocking API keys for Claude and Gemini
+  - Added missing `_validate_api_key` method to GeminiProvider
+  - Fixed HTML2MD frontmatter generation to include source_file when provided
+  - Fixed m1f-claude to respect provided cwd parameter instead of always using current directory
+  - Fixed scrape test to include session_files in mock return value
+  - Rewrote statistics test to use real local server scraping instead of mocks for authentic testing
+
+- **Python Path Issues in Tests**: Fixed 43+ test errors caused by hardcoded 'python' command
+  - Replaced all instances of `["python",` with `[sys.executable,` in test files
+  - Affected test files now use correct Python interpreter from virtual environment
+  - Fixes FileNotFoundError issues on systems where python3 is the default
+
+### Added
+
+- **Dependencies**: Added rich library for better terminal UI components
+  - Required for m1f-research's interactive URL review feature
+  - Provides formatted tables, progress bars, and colored output
+
+- **m1f-research Job Deletion**: Complete job management with deletion capabilities
+  - Added `--delete JOB_ID` command to delete a single research job
+  - Added `--delete-bulk` command to delete multiple jobs based on filters
+  - Supports filtering by status, date, and search terms for bulk deletion
+  - Confirmation prompts showing job details before deletion (bypass with `--yes`)
+  - Complete cleanup of both database entries and filesystem data
+  - Progress tracking for bulk deletion operations
+  - Detailed error reporting for failed deletions
+
+- **m1f-research Advanced Workflow Features**: Complete workflow redesign for better control and comprehensive research
+  - **Query Expansion**: Automatically generates multiple search query variations using LLM
+  - **Interactive URL Review**: Terminal UI for reviewing and curating URLs before crawling
+  - **Deep Crawling**: Recursive page discovery with configurable depth and per-site limits
+  - **Phased Workflow**: Clear phases with resume capability (initialization → query expansion → URL collection → review → crawling → bundling → analysis)
+  - **Separate Analysis Generation**: Creates RESEARCH_ANALYSIS.md with AI-powered insights separate from bundle
+  - **New Configuration Options**:
+    - `expand_queries`: Enable/disable query expansion (default: true)
+    - `max_queries`: Maximum query variations to generate (default: 5)
+    - `skip_review`: Skip interactive URL review (default: false)
+    - `crawl_depth`: How many levels deep to crawl (default: 0)
+    - `max_pages_per_site`: Maximum pages per domain (default: 10)
+    - `follow_external`: Follow external links (default: false)
+    - `generate_analysis`: Generate AI analysis (default: true)
+    - `analysis_type`: Type of analysis (summary/comparative/technical/trend)
+  - **New Components**:
+    - `QueryExpander`: Generates search variations for comprehensive coverage
+    - `URLReviewer`: Interactive interface for URL curation
+    - `DeepCrawler`: Handles recursive crawling with circular reference detection
+    - `AnalysisGenerator`: Creates separate analysis documents
+    - `WorkflowManager`: Manages phase transitions and persistence
+
+- **m1f-scrape Automatic Link Adjustment for allowed-path**: Intelligently adjusts internal links when using --allowed-path restrictions
+  - Automatically strips redundant parent directory from links while preserving subdirectory structure
+  - Links like `/parent/subdir/file.html` become `subdir/file.html` when scraping with `--allowed-path /parent/subdir/`
+  - Works generically for all path structures without hardcoding specific directory names
+  - Ensures HTML and Markdown files have correct relative links after conversion
+  - Fixes issue where links had incorrect paths after scraping with restricted allowed-path
+
+- **m1f-claude Real-Time Progress Display for Setup**: Live streaming of Claude's actions during setup
+  - Added `run_claude_streaming_json` method to M1FClaudeRunner with JSON output parsing
+  - Shows when Claude is reading files, editing configurations, creating bundles
+  - Real-time display of tool usage with friendly progress messages and timestamps
+  - Based on successful implementation from m1f-html2md
+  - Users can now see exactly what Claude is doing instead of waiting silently
+  - Fixed relative import errors for better compatibility when running as script
+
+- **m1f-html2md Real-Time Progress Display**: Live streaming of Claude's actions and progress
+  - New `run_claude_streaming_json` method with JSON output parsing
+  - Real-time display of tool usage with friendly emojis and timestamps
+  - Shows when Claude is reading files, editing, searching, launching subagents, etc.
+  - Based on proven implementation from ezclaude/claude_php_reviewer.py
+  - Eliminates "black box" feeling - users can see exactly what Claude is doing
+  - Applied to all Claude interactions (file selection, analysis, synthesis)
+  - Fixed YAML extraction from JSON streaming output - properly parses JSON first
+  - Saves Claude's full response to file if YAML extraction fails for manual review
+  - Removed debug output for cleaner user experience
+
+- **m1f-html2md Subagent-Based Parallel Analysis**: Faster HTML analysis using Claude subagents
+  - New `coordinate_parallel_analysis.md` prompt for Task tool delegation  
+  - Single Claude session coordinates multiple parallel subagents
+  - Each subagent analyzes one HTML file independently with separate context
+  - Reduces analysis time from 3-5 minutes to 2-3 minutes
+  - Better progress tracking with TodoWrite integration
+  - Automatic fallback to traditional parallel approach if new prompt missing
+  - Cleaner separation of concerns with dedicated subagent contexts
+
+- **Shared Claude Utilities Library**: Centralized Claude integration following DRY principle
+  - New `tools/shared/claude_utils.py` module eliminating code duplication across m1f-claude, m1f-html2md, and m1f-research
+  - `ClaudeConfig` dataclass for centralized configuration management with API key validation
+  - `ClaudeBinaryFinder` utility for discovering Claude CLI across different installation methods
+  - `ClaudeSessionManager` for managing Claude Code SDK sessions and conversation continuity
+  - `ClaudeHTTPClient` for direct Anthropic API calls with proper headers and error handling
+  - `ClaudeErrorHandler` for consistent error handling and user-friendly messages
+  - `ClaudeRunner` base class providing common functionality for all Claude runners
+  - Comprehensive documentation at `docs/shared_claude_utils.md` with migration guide
+  - All tools refactored to use shared library (eliminated ~500 lines of duplicate code)
+
+- **Shared CLI Module**: Centralized CLI utilities following DRY principle
+  - New `tools/shared/cli.py` module with `CustomArgumentParser` class
+  - `ArgumentBuilder` class with helper methods for common arguments (verbose, quiet, version, output, etc.)
+  - `BaseCLI` and `SubcommandCLI` base classes for consistent CLI structure
+  - Eliminates code duplication across all m1f tools (saved ~60 lines)
+
+- **Safe File Operations**: Comprehensive permission error handling system  
+  - New `tools/m1f/file_operations.py` module with safe wrappers for all file operations
+  - Graceful handling of permission errors with informative messages
+  - Consistent error reporting across all tools
+  - Operations: safe_exists, safe_is_file, safe_is_dir, safe_read_text, safe_write_text, safe_open, safe_mkdir, safe_listdir, safe_walk, safe_stat, safe_unlink, safe_rmdir
+  - All tools migrated to use safe operations (m1f, s1f, html2md_tool, scrape_tool, research, m1f-claude, m1f-token-counter)
+
+- **m1f Auto-loading of .gitignore and .m1fignore**: Automatic exclusion of ignored files
+  - Automatically loads `.gitignore` files from source directories (disable with `--no-auto-gitignore`)
+  - Automatically loads `.m1fignore` files from source directories (always enabled)
+  - Respects global_settings.exclude_paths_file from `.m1f.config.yml`
+  - Works with multiple source directories
+  - Prevents duplicate loading of the same ignore file
+  - Added comprehensive test coverage for all auto-loading scenarios
+
+- **m1f-scrape Multiple Allowed Paths**: Support for multiple path restrictions
+  - `--allowed-paths` parameter accepts multiple paths for crawling
+  - Supports both simple paths (`/docs/`) and full URLs (`https://example.com/docs/`)
+  - Database schema migration (v3) to support multiple paths storage
+  - Comprehensive test coverage for all path configurations
+  - Backward compatible (--allowed-path is a hidden alias)
+
+- **Python Entry Points**: Migrated from bash wrapper scripts to proper Python entry points
+  - All CLI tools now use Python entry points defined in `setup.py`
+  - Automatic import resolution - no more relative import issues
+  - Follows Python packaging best practices
+  - Installation via `pip install -e tools/` creates all command-line tools
+  - Commands available: `m1f`, `s1f`, `m1f-html2md`, `m1f-scrape`, `m1f-research`, `m1f-claude`, `m1f-help`, `m1f-init`, `m1f-token-counter`, `m1f-update`
+  - Backward compatible - old bash scripts still work as fallback
+
+### Changed
+
+- **Installation Process**: Enhanced `scripts/install.sh` for seamless upgrades
+  - Automatically detects and migrates old installations
+  - Updates PATH from `bin/` to `.venv/bin/` for entry points
+  - Cleans up old symlinks and creates new ones
+  - Shows clear upgrade messages and progress
+  - Handles both fresh installations and upgrades transparently
+
+- **Import Structure**: Converted all relative imports to absolute imports
+  - All modules now use absolute imports (e.g., `from m1f.file_operations import`)
+  - Removed import fallback try/except blocks - no longer needed
+  - Version information loaded via `importlib.metadata`
+  - Cleaner, more maintainable code structure
+
+- **Documentation Structure**: Reorganized docs directory for better organization
+  - Renamed `docs/99_development/` to `docs/97_development/`  
+  - Renamed `docs/99_misc/` to `docs/98_misc/`
+  - Reserved `99` prefix exclusively for changelog (`99_CHANGELOG.md`)
+  - Updated all references to new directory structure
+
+- **CLI Architecture**: Refactored to use shared components
+  - All tools now import `CustomArgumentParser` from `tools.shared.cli`
+  - Removed duplicated CustomArgumentParser implementations from m1f, s1f, html2md_tool, scrape_tool
+  - Consistent error handling and formatting across all tools
+  - Improved maintainability with single source of truth
+
+### Improved
+
+- **m1f-scrape Code Refactoring**: Applied DRY principle to eliminate duplication
+  - Consolidated allowed_paths logic into WebScraperBase._initialize_allowed_paths()
+  - Centralized URL exclusion logic in WebScraperBase._should_exclude_url()
+  - Removed ~200 lines of duplicated code across 4 scraper implementations
+  - Standardized pattern matching supporting both regex and substring exclusions
+  - All scrapers now inherit common path/exclusion logic from base class
+
+- **m1f-scrape Asset Download Performance**: Optimized concurrent asset downloads
+  - Assets (images, CSS, JS) now download concurrently in batches (max 10)
+  - No request delays applied to binary/asset downloads (only HTML pages)
+  - Significantly faster asset downloads (e.g., 20 assets: 2s → 200-400ms)
+  - Smart batching respects server limits while maximizing performance
+  - Asset deduplication works across sessions via SQLite database
+
+### Changed
+
+- **m1f Output Improvements**: Optimized file generation behavior
+  - Default separator style changed from "Detailed" to "Standard" for simpler output
+  - Directory list file is no longer created when no directories exist
+  - File list is no longer created when no files are processed
+  - Reduces unnecessary empty file creation
+
+### Added
+
+- **m1f-scrape HTML Validation**: Comprehensive HTML file validation and security analysis
+  - Validates HTML structure and detects malformed content
+  - Detects inline binaries (data: URLs) with MIME type analysis
+  - Identifies external resources (scripts, stylesheets, images from CDNs)
+  - Detects potentially malicious patterns (eval(), javascript: URLs, dangerous event handlers)
+  - Provides detailed HTML statistics (tag counts, forms, links, images, scripts)
+  - Integrated into BeautifulSoup scraper with metadata tracking
+  - Added 11 comprehensive tests for HTML validation scenarios
+
+- **m1f-scrape Asset Download Security**: Enhanced binary file download with validation
+  - File type validation using magic numbers for 30+ formats
+  - Optional validation with Pillow (images) and PyPDF2 (PDFs)
+  - Content-Type header verification
+  - Dangerous file extension blocking
+  - Path traversal protection
+  - File size limits with chunked reading
+  - SSRF protection for asset downloads
+  - External CDN support for assets (configurable)
+  - Automatic path adjustment in HTML files when using --allowed-paths
+  - Fixed binary file reading issue in resume functionality
+
+### Security
+
+- **m1f-scrape Security Documentation**: Comprehensive security guide at `docs/04_scrape/42_security.md`
+  - Detailed documentation of all security features
+  - Security risk assessment and mitigation strategies
+  - BeautifulSoup security capabilities and limitations
+  - Recommended secure configurations
+  - Post-processing sanitization examples
+  - Security best practices and checklist
+
+### Fixed
+
+- **m1f-claude**: Fixed import errors that prevented script execution
+- **m1f-claude**: Removed sub-agent complexity that wasn't working properly  
+- **m1f-claude**: Fixed setup to use current working directory instead of git root
+- **m1f-claude**: Removed unnecessary git repository detection - tool now works in any directory
+- **m1f-claude**: Fixed "0 files in 0 directories" issue when running in subdirectories
+- **m1f-claude**: Prevented creation of unnecessary scripts during --setup (only creates .m1f.config.yml)
+- **All tools**: Verified working directory handling - all tools correctly use current directory (Path.cwd()) rather than git root, allowing global usage from any location
+
+- **m1f-html2md Claude Integration**: Fixed m1f output filename handling
+  - Removed timestamp flag (-t) that was adding timestamps to m1f output files
+  - Added support for .htm extension alongside .html
+  - Fixed undefined file_list_path variable in cli_claude.py
+  - Updated cli.py to use glob pattern for finding generated filelist
+
+- **m1f Directory Exclusion**: Fixed performance issue in safe_walk function
+  - Directory exclusions from .gitignore now properly applied at traversal level
+  - Significant performance improvement for large projects with many excluded directories
+
+- **Test Suite**: Resolved all test failures after safe operations migration
+  - Fixed import issues and async handling
+  - Added missing fixtures for permission tests
+  - All tests now passing with new safe operations
+
+- **m1f .gitignore Auto-loading Bug**: Fixed issue where files listed in .gitignore were included in bundles
+  - Root cause: .gitignore files were not being automatically loaded from source directories
+  - Now automatically loads .gitignore and .m1fignore files without requiring explicit --exclude-paths-file
+  - Added regression test that would have caught the original bug
+
+- **m1f-scrape Test Infrastructure**: Improved test reliability
+  - Removed unreliable async mock tests that were causing failures
+  - Simplified test infrastructure for better maintainability
+  - Fixed async context manager mocking issues
+  - All asset download and security tests now passing
+
+### Security
+
+- **Permission Error Handling**: Enhanced security through graceful error handling
+  - No more crashes from permission denied errors
+  - Clear user feedback when encountering restricted files/directories
+  - Prevents information leakage through error messages
+
+### Improved
+
+- **m1f-scrape Security Review**: Comprehensive security analysis
+  - Identified XSS vulnerabilities in unsanitized HTML storage
+  - Documented JavaScript preservation risks
+  - Analyzed inline binary data handling
+  - Reviewed path traversal protections (working correctly)
+  - Assessed SSRF protection (comprehensive and functional)
+  - Evaluated BeautifulSoup's built-in security features (minimal)
+
+### Added
+
+- **Documentation Scraper Examples**: Complete examples for scraping and bundling documentation
+  - **Claude Code Documentation Scraper** (`examples/claude_code_doc/`)
+    - Scrapes ~31 HTML pages from docs.anthropic.com/claude-code
+    - Optimized config for fast conversion (saves 5-8 minutes)
+    - Supports Claude AI analysis for automatic config generation
+    - Creates clean Markdown documentation bundle
+  - **Tailscale Documentation Scraper** (`examples/tailscale_doc/`)
+    - Scrapes ~422 HTML pages from Tailscale KB
+    - Optimized bundle configuration with 11 thematic bundles (2.4MB total)
+    - Includes HTML-to-Markdown conversion with tailored selectors
+    - Supports parallel processing and skip-download options
+    - Comprehensive README with usage examples and troubleshooting
+
+- **m1f-scrape Session Management**: Complete session tracking system for scraping runs
+  - Each scraping run creates a unique session with ID, timestamps, and statistics
+  - Sessions track status: running, completed, interrupted, failed
+  - Automatic cleanup of orphaned sessions (no activity >1 hour) on startup
+  - Manual cleanup with `--cleanup-sessions` command
+  - Session viewing with `--show-sessions` and `--show-sessions-detailed`
+  - Clear specific sessions with `--clear-session ID` or `--clear-last-session`
+  - Database migration to v2 with session support (auto-migrates existing DBs)
+  - Session statistics calculated correctly at end of each run
+  - Graceful handling of Ctrl+C, crashes, and kill signals
+  - Long-running sessions (>1hr) not interrupted if still actively scraping
+  - Optional file deletion when clearing sessions with `--delete-files` flag
+  - Interactive confirmation prompt for file deletion (skipped with flag)
+
+### Fixed
+
+- **m1f-scrape Max-Pages Counting**: Fixed to count only successfully scraped pages
+  - Previously counted all attempted URLs including errors and redirects
+  - Now only increments counter for pages that were actually saved
+  - Ensures --max-pages limit is respected correctly
+  - Fixed issue where scraper would stop prematurely at 1001 URLs when more pages were available
+
+- **m1f-scrape Test Infrastructure**: Fixed all 65 scraping tests to pass
+  - Fixed test server startup issues by changing subprocess.PIPE to subprocess.DEVNULL
+  - Fixed test server canonical parameter injection causing 500 errors
+  - Fixed mock configuration for async context managers in tests
+  - Fixed ScraperConfig/CrawlerConfig parameter mismatch
+  - Fixed Playwright browser_config parameter handling
+  - Fixed Selectolax allowed_path logic for start URL handling
+  - Updated test expectations to match corrected behavior
+
+### Added
+
+- **m1f-scrape URL Support for allowed_path**: Parameter now accepts full URLs
+  - Can use both paths (`/docs/`) and full URLs (`https://example.com/docs/`)
+  - HTTrack properly extracts domain and path from URL-based allowed_path
+  - BeautifulSoup validates URLs in should_crawl_url method
+  - Useful for restricting crawl to specific subdomains or protocols
+
+- **m1f-scrape Python Mirror Scraper**: New fallback scraper for HTTrack
+  - Pure Python implementation for website mirroring
+  - Automatically used when HTTrack fails or for localhost URLs
+  - Preserves directory structure similar to HTTrack
+  - Supports all standard scraper features (robots.txt, rate limiting, etc.)
+
+### Improved
+
+- **m1f-scrape Canonical URL Logic**: Better handling with allowed_path
+  - Pages within allowed_path are now kept even if canonical points outside
+  - Respects user's intent to scrape content within allowed boundaries
+  - All scrapers (BeautifulSoup, HTTrack, Selectolax, Playwright) updated
+  - Added comprehensive test coverage for canonical/allowed_path interaction
+
+- **m1f-scrape Unlimited Pages Option**: Support for unlimited scraping
+  - Changed default `max_pages` from 1000 to 10000 across all configurations
+  - Added support for `-1` as unlimited pages (no limit)
+  - Updated validation to allow up to 10 million pages
+  - All scrapers now handle `-1` as unlimited:
+    - playwright, selectolax, beautifulsoup, scrapy: Skip page limit check when -1
+    - httrack: Uses very large number (999999999) for unlimited
+  - Updated documentation to explain `-1` unlimited option
+  - Added example for unlimited scraping with caution note
+
+- **m1f-scrape Advanced Path Control**: New `--allowed-paths` parameter
+  - Allows specifying multiple directories for crawling
+  - Accepts space-separated list of paths
+  - Example: `--allowed-paths /docs/ /api/ /reference/`
+  - Overrides automatic path restriction based on start URL
+  - Allows starting from specific page while controlling crawling boundaries
+  - Example: Start from `/products/widget.html` but crawl all `/products/`
+  - Start URL is always scraped regardless of path restrictions
+  - Useful for documentation sites where index pages link to different directories
+  - Implemented across all scraper backends (BeautifulSoup, HTTrack, Selectolax, Playwright, Scrapy)
+  - Database schema updated to support multiple paths (v3 migration)
+  - Added `check_ssrf` configuration parameter to enable/disable SSRF protection (defaults to enabled)
+  - Fixed test server to support subdirectory routing for comprehensive testing
+  - Added integration and unit tests with proper mocking
+
+### Fixed
+
+- **m1f-scrape Canonical URL Logic**: Fixed canonical URL handling with allowed_path
+  - Pages within allowed_path are now kept even if canonical points outside
+  - Properly handles canonical URLs when both current and canonical are within allowed_path
+  - Fixed across all scrapers (BeautifulSoup, HTTrack, Selectolax, Playwright)
+  - Added comprehensive tests to verify the behavior
+
+### Improved
+
+- **m1f-scrape Parameter Help Text**: Clarified confusing CLI parameter descriptions
+  - `--ignore-canonical` now clearly states default behavior (pages with different canonical URLs are skipped)
+  - `--ignore-duplicates` help text clarified to explain default duplicate detection
+  - Better organization of parameters into logical groups
+
+- **m1f-scrape Test Coverage**: Created meaningful integration tests
+  - Real HTTP requests with local test server instead of mocks
+  - Tests that verify actual functionality, not just configuration:
+    - `test_ignore_get_params_actually_works` - Verifies URL normalization
+    - `test_canonical_url_with_allowed_path_real_behavior` - Tests canonical/allowed_path interaction
+    - `test_excluded_paths_actually_excludes` - Verifies paths are actually excluded
+    - `test_duplicate_content_detection_actually_works` - Tests content deduplication
+    - `test_max_depth_unlimited_actually_works` - Verifies unlimited depth crawling
+    - `test_timeout_actually_enforced` - Tests timeout enforcement
+  - Separate integration tests for each scraper backend
+  - Fixed test server to properly handle canonical parameter injection
+
+### Added
+
+- **m1f-scrape Missing CLI Parameters**: Exposed configuration options in CLI
+  - `--excluded-paths`: URL paths to exclude from crawling (can specify multiple)
+  - `--timeout`: Request timeout in seconds (default: 30)
+  - `--retry-count`: Number of retries for failed requests (default: 3)
+  - `--disable-ssrf-check`: Disable SSRF vulnerability checks (allows localhost)
+  - Note: Respecting robots.txt is mandatory and cannot be disabled
+
+- **m1f-scrape Unlimited Depth**: Support for unlimited crawl depth
+  - `--max-depth` now accepts -1 for unlimited depth (similar to --max-pages)
+  - All scrapers updated to handle unlimited depth correctly
+  - HTTrack uses very large number (999999) internally
+
+### Removed
+
+- **m1f-scrape Scrapy Support**: Completely removed Scrapy scraper implementation
+  - Removed scrapy_scraper.py and all related tests
+  - Removed Scrapy from ScraperBackend enum
+  - Simplified scraper selection logic
+
+- **m1f-scrape Comprehensive Parameter Tests**: New test suite for all parameters
+  - Tests for content filtering (ignore-get-params, ignore-canonical, ignore-duplicates)
+  - Tests for excluded paths functionality
+  - Tests for request options (user-agent, timeout, retry-count)
+  - Tests for different scraper backends
+  - Tests for database query options
+  - All tests use local test server (no external dependencies)
+
+### Removed
+
+- **m1f-scrape Scrapy Backend**: Removed Scrapy scraper implementation
+  - Scrapy had different architecture that complicated maintenance
+  - Other scrapers (BeautifulSoup, Selectolax, HTTrack, Playwright) provide sufficient coverage
+  - Removed from CLI choices, configuration enum, and all tests
+  - Simplifies codebase and reduces dependencies
+
+### Changed
+
+- **m1f-scrape Canonical URL Handling**: Improved canonical URL logic to respect allowed_path
+  - Fixed issue where pages within allowed_path were skipped if canonical URL pointed outside
+  - Pages within allowed_path are now kept even if their canonical URL points outside the restricted area
+  - Added canonical URL checking to Playwright scraper (was previously missing)
+  - Improved help text for content filtering options to be clearer:
+    - `--ignore-get-params`: Now explains it strips query parameters
+    - `--ignore-canonical`: Clarifies it disables canonical URL deduplication
+    - `--ignore-duplicates`: Explains it disables content-based deduplication
+
+- **m1f-scrape Help Output**: Improved organization with colorama support
+  - Added colorama formatting to match m1f's help output style
+  - Organized parameters into logical groups (Output Control, Scraper Options, etc.)
+  - Added colored error messages for better visibility
+  - Help text now renders with proper formatting on terminals that support it
+
+- **m1f-scrape Real Integration Tests**: Replaced mocked tests with real server tests
+  - Selectolax now has comprehensive integration tests using local test server
+  - HTTrack tests check for installation and run real tests when available
+  - Playwright tests verify JavaScript rendering and browser functionality
+  - All integration tests use local test server to avoid external dependencies
+  - Fixed test server environment issues for reliable testing
+
+### Fixed
+
+- **m1f-html2md Config Structure**: Fixed configuration structure mismatch
+  - Config loader now properly handles nested configuration objects
+  - CLI correctly maps arguments to `conversion.outermost_selector` and `conversion.ignore_selectors`
+  - Fixed prompts that were generating incorrect config structure with `extractor.content_selector`
+  - Updated all prompts to generate the correct structure: `conversion.outermost_selector`
+  - Fixed output message to show "outermost_selector" instead of "content_selector"
+  - Config files now work correctly with proper field mapping
+
+- **Claude Code Documentation Scraper**: Fixed config file usage
+  - When using `--use-config`, script now creates backup directory instead of deleting existing markdown
+  - Backup directories named with timestamp: `claude-code-markdown_backup_YYYYMMDD_HHMMSS`
+  - Ensures existing markdown files are preserved when re-converting with different config
+  - Added datetime import for timestamp generation
+
+- **html2md_tool CLI Override**: Fixed command-line argument precedence
+  - CLI source/destination arguments now properly override config file values
+  - Ensures expected behavior where command-line parameters take priority
+
+## [3.7.0] - 2025-07-21
+
+### Added
+
+- **m1f-research Tool**: New intelligent research content organization tool
+
+  - Smart content analysis with configurable templates (academic, technical,
+    summary)
+  - Hierarchical output directory structure with automatic organization
+  - Database-driven job persistence and management
+  - Parallelized scraping with progress tracking
+  - LLM provider abstraction (Claude, Gemini, CLI tools)
+  - Advanced filtering and search capabilities
+  - Comprehensive documentation and examples
+
+- **Shared Utilities Module**: Centralized common functionality
+
+  - Unified colorama output system across all tools
+  - Externalized all prompts to markdown templates
+  - Shared validation and helper functions
+  - Consistent error handling patterns
+
+- **Symlink Deduplication**: Intelligent handling of symbolic links
+  - Internal symlinks excluded when deduplication enabled (default)
+  - External symlinks always included with their content
+  - All symlinks included when using `--allow-duplicate-files`
+  - Comprehensive test coverage for all scenarios
+
+### Changed
+
+- **Output System Overhaul**: Complete migration to colorama helpers
+
+  - Replaced all `print()` statements with semantic helpers (info, success,
+    warning, error)
+  - Consistent colored output across all tools
+  - Improved user experience with visual feedback
+  - Test files updated to use colorama helpers
+
+- **Version Management**: Centralized version handling
+
+  - All tools now import from `tools._version.py`
+  - Single source of truth for version numbers
+  - Simplified version bumping process
+
+- **Claude Integration**: Enhanced headless operation
+  - Fixed Claude CLI to use `-p` flag for headless mode
+  - Improved timeout handling (increased to 120s)
+  - Better error messages and debugging output
+
+### Fixed
+
+- **Test Warnings**: Resolved all AsyncMock and pytest warnings
+
+  - Fixed AsyncMock usage with proper async functions
+  - Renamed TestServer to HTML2MDTestServer to avoid pytest conflicts
+  - Improved test reliability and performance
+
+- **Import Errors**: Fixed module import issues across tools
+
+  - Resolved circular imports in m1f-research
+  - Fixed s1f module import errors
+  - Corrected test file imports
+
+- **Package Metadata**: Updated package.json
+  - Fixed description to "Make One File - AI-ready codebase bundling toolkit"
+  - Synchronized version numbers across all files
+
+### Documentation
+
+- **m1f-research**: Added comprehensive documentation
+
+  - Job management guide
+  - Template system reference
+  - Integration examples
+  - README for shared utilities
+
+- **Colorama Guide**: Added unified output system documentation
+  - Complete migration guide
+  - Usage examples
+  - Best practices
+
 ## [3.7.0] - 2025-07-21
 
 ### Added

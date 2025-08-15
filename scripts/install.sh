@@ -73,13 +73,45 @@ for arg in "$@"; do
 done
 
 # Get the script directory and project root
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Handle both sourced and executed cases
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    # Script is being sourced
+    if [[ -n "${BASH_SOURCE[0]}" && "${BASH_SOURCE[0]}" != "bash" ]]; then
+        # BASH_SOURCE[0] is available and valid
+        SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    else
+        # BASH_SOURCE[0] is empty or unreliable when sourced
+        # Detect if we're being called from project root as 'source ./scripts/install.sh'
+        if [[ -f "./scripts/install.sh" && -f "./requirements.txt" ]]; then
+            SCRIPT_DIR="$(pwd)/scripts"
+        elif [[ -f "../scripts/install.sh" && -f "../requirements.txt" ]]; then
+            # Called from scripts directory as 'source ./install.sh'
+            SCRIPT_DIR="$(pwd)"
+        else
+            echo -e "${RED}Error: Cannot determine script location when sourced.${NC}"
+            echo -e "${YELLOW}Please run from project root as: source ./scripts/install.sh${NC}"
+            return 1 2>/dev/null || exit 1
+        fi
+    fi
+else
+    # Script is being executed normally
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+fi
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+# Use .venv/bin for entry points instead of bin/
+VENV_BIN_DIR="$PROJECT_ROOT/.venv/bin"
+# Keep old bin dir reference for backwards compatibility
 BIN_DIR="$PROJECT_ROOT/bin"
 
 echo -e "${BLUE}m1f Installation${NC}"
 echo -e "${BLUE}================${NC}"
 echo
+
+# Check if this is an upgrade from an old installation
+if [ -d ".venv" ] && [ -d "bin" ] && [ -f "bin/m1f" ]; then
+    echo -e "${YELLOW}📦 Upgrade detected: Migrating to Python entry points system${NC}"
+    echo
+fi
 
 # Check if running in virtual environment already
 if [ -n "$VIRTUAL_ENV" ]; then
@@ -97,7 +129,7 @@ elif command -v python &> /dev/null; then
 else
     echo -e "${RED}Error: Python is not installed. Please install Python 3.10 or higher.${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    exit 1
+    return 1 2>/dev/null || exit 1
 fi
 
 # Check Python version is 3.10+
@@ -108,7 +140,7 @@ PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.minor)")
 if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]; }; then
     echo -e "${RED}Error: Python 3.10 or higher is required. Found Python $PYTHON_VERSION${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    exit 1
+    return 1 2>/dev/null || exit 1
 fi
 
 echo -e "${GREEN}✓ Python $PYTHON_VERSION found${NC}"
@@ -139,10 +171,17 @@ if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt --quiet
     echo -e "${GREEN}✓ Dependencies installed${NC}"
 else
-    echo -e "${RED}Error: requirements.txt not found${NC}"
+    echo -e "${RED}Error: requirements.txt not found at $PROJECT_ROOT/requirements.txt${NC}"
+    echo -e "${YELLOW}PROJECT_ROOT is set to: $PROJECT_ROOT${NC}"
+    echo -e "${YELLOW}Current directory is: $(pwd)${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    exit 1
+    return 1 2>/dev/null || exit 1
 fi
+
+# Install m1f package in editable mode (creates all entry points)
+echo -e "${GREEN}Installing m1f package with all tools...${NC}"
+pip install -e tools/ --quiet
+echo -e "${GREEN}✓ m1f package installed with all entry points${NC}"
 
 # Step 3: Test m1f installation
 echo
@@ -175,12 +214,34 @@ else
     SHELL_CONFIG="$HOME/.bashrc"
 fi
 
-# PATH line to add
-PATH_LINE="export PATH=\"$BIN_DIR:\$PATH\"  # m1f tools"
+# PATH line to add (use venv bin for entry points)
+PATH_LINE="export PATH=\"$VENV_BIN_DIR:\$PATH\"  # m1f tools"
 
 # Check if already in PATH
 if grep -q "# m1f tools" "$SHELL_CONFIG" 2>/dev/null; then
-    echo -e "${YELLOW}m1f tools already in PATH${NC}"
+    # Update existing PATH entry if it points to old bin/ directory
+    if grep -q "$BIN_DIR" "$SHELL_CONFIG" 2>/dev/null; then
+        echo -e "${YELLOW}🔄 Detected old installation - upgrading to new entry point system${NC}"
+        sed -i.bak "s|$BIN_DIR|$VENV_BIN_DIR|g" "$SHELL_CONFIG"
+        echo -e "${GREEN}✓ Updated PATH from bin/ to .venv/bin/${NC}"
+        echo -e "${GREEN}✓ Your tools will now use Python entry points${NC}"
+        
+        # Clean up old symlinks if they exist
+        if [ -d "$HOME/.local/bin" ]; then
+            echo -e "${YELLOW}Cleaning up old symlinks...${NC}"
+            for old_link in "$HOME/.local/bin"/m1f*; do
+                if [ -L "$old_link" ] && readlink "$old_link" | grep -q "$BIN_DIR"; then
+                    rm -f "$old_link"
+                fi
+            done
+            if [ -L "$HOME/.local/bin/s1f" ] && readlink "$HOME/.local/bin/s1f" | grep -q "$BIN_DIR"; then
+                rm -f "$HOME/.local/bin/s1f"
+            fi
+            echo -e "${GREEN}✓ Old symlinks removed${NC}"
+        fi
+    else
+        echo -e "${YELLOW}m1f tools already in PATH${NC}"
+    fi
 else
     # Backup shell config
     cp "$SHELL_CONFIG" "$SHELL_CONFIG.m1f-backup-$(date +%Y%m%d%H%M%S)"
@@ -191,20 +252,35 @@ else
     echo -e "${GREEN}✓ Added m1f to PATH in $SHELL_CONFIG${NC}"
 fi
 
-# Step 5: Create symlinks (optional)
+# Step 5: Create symlinks (optional) - now using entry points from venv
 if [ -d "$HOME/.local/bin" ] || mkdir -p "$HOME/.local/bin" 2>/dev/null; then
     # Check if any m1f symlinks already exist
     if [ -L "$HOME/.local/bin/m1f" ]; then
-        echo -e "${YELLOW}Symlinks already exist in ~/.local/bin${NC}"
-    else
-        echo
-        echo -e "${YELLOW}Creating symlinks in ~/.local/bin for system-wide access...${NC}"
-        for cmd in "$BIN_DIR"/*; do
-            if [ -x "$cmd" ]; then
+        # Update existing symlinks to point to venv entry points
+        echo -e "${YELLOW}Updating symlinks in ~/.local/bin to use entry points...${NC}"
+        # Remove old symlinks
+        rm -f "$HOME/.local/bin"/m1f*
+        # Create new symlinks to venv entry points
+        for cmd in "$VENV_BIN_DIR"/m1f*; do
+            if [ -f "$cmd" ]; then
                 cmd_name=$(basename "$cmd")
                 ln -sf "$cmd" "$HOME/.local/bin/$cmd_name"
             fi
         done
+        echo -e "${GREEN}✓ Symlinks updated to use Python entry points${NC}"
+    else
+        echo
+        echo -e "${YELLOW}Creating symlinks in ~/.local/bin for system-wide access...${NC}"
+        for cmd in "$VENV_BIN_DIR"/m1f*; do
+            if [ -f "$cmd" ]; then
+                cmd_name=$(basename "$cmd")
+                ln -sf "$cmd" "$HOME/.local/bin/$cmd_name"
+            fi
+        done
+        # Also create symlinks for s1f
+        if [ -f "$VENV_BIN_DIR/s1f" ]; then
+            ln -sf "$VENV_BIN_DIR/s1f" "$HOME/.local/bin/s1f"
+        fi
         echo -e "${GREEN}✓ Symlinks created${NC}"
         
         # Check if ~/.local/bin is in PATH
@@ -225,6 +301,7 @@ echo "  • m1f               - Main m1f tool for combining files"
 echo "  • m1f-s1f           - Split combined files back to original structure"
 echo "  • m1f-html2md       - Convert HTML to Markdown"
 echo "  • m1f-scrape        - Download websites for offline viewing"
+echo "  • m1f-research      - AI-powered research and content analysis"
 echo "  • m1f-token-counter - Count tokens in files"
 echo "  • m1f-update        - Regenerate m1f bundles"
 echo "  • m1f-init          - Initialize m1f for your project"
@@ -235,7 +312,7 @@ echo
 # Try to make commands available immediately
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     # Script is being sourced, we can update the current shell
-    export PATH="$BIN_DIR:$PATH"
+    export PATH="$VENV_BIN_DIR:$PATH"
     echo -e "${GREEN}✓ Commands are available immediately in this shell${NC}"
     echo
     echo -e "${YELLOW}Test installation:${NC}"

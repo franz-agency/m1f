@@ -19,7 +19,10 @@ import sys
 from pathlib import Path
 from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
-from .utils import get_logger
+from html2md_tool.utils import get_logger
+
+# Import safe file operations
+from m1f.file_operations import safe_exists
 
 logger = get_logger(__name__)
 
@@ -80,7 +83,7 @@ def load_extractor(extractor_path: Path) -> BaseExtractor:
     Raises:
         ValueError: If extractor cannot be loaded
     """
-    if not extractor_path.exists():
+    if not safe_exists(extractor_path):
         raise ValueError(f"Extractor file not found: {extractor_path}")
 
     # Load the module dynamically

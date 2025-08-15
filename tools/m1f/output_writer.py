@@ -34,6 +34,10 @@ from .logging import LoggerManager
 from .separator_generator import SeparatorGenerator
 from .utils import calculate_checksum
 from .presets import PresetManager
+from .file_operations import (
+    safe_exists,
+    safe_open,
+)
 
 
 class OutputWriter:
@@ -229,11 +233,12 @@ class OutputWriter:
             # Open output file
             output_encoding = self.config.encoding.target_charset or "utf-8"
 
-            with open(
+            with safe_open(
                 output_path,
                 "w",
                 encoding=output_encoding,
                 newline=self.config.output.line_ending.value,
+                logger=self.logger,
             ) as outfile:
 
                 files_written = 0
@@ -308,11 +313,12 @@ class OutputWriter:
             # Now write all processed files sequentially to maintain order
             output_encoding = self.config.encoding.target_charset or "utf-8"
 
-            with open(
+            with safe_open(
                 output_path,
                 "w",
                 encoding=output_encoding,
                 newline=self.config.output.line_ending.value,
+                logger=self.logger,
             ) as outfile:
                 files_written = 0
 
@@ -473,7 +479,7 @@ class OutputWriter:
             return include_files
 
         for i, include_path in enumerate(self.config.input_include_files):
-            if not include_path.exists():
+            if not safe_exists(include_path, logger=self.logger):
                 self.logger.warning(f"Include file not found: {include_path}")
                 continue
 

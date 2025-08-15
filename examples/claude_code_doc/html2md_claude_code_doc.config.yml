@@ -1,0 +1,96 @@
+# Configuration file for m1f-html2md - https://docs.anthropic.com/de/docs/claude-code/overview
+
+# Extractor configuration
+extractor:
+  parser: "html.parser"  # BeautifulSoup parser
+  encoding: "utf-8"
+  decode_errors: "ignore"
+  prettify: false
+
+# Conversion options - Markdown formatting preferences
+conversion:
+  # Primary content selector (use comma-separated list for multiple)
+  outermost_selector: "div.max-w-8xl.px-4.mx-auto, div#content-container"
+  
+  # Elements to remove from the content
+  ignore_selectors:
+    # Navigation (found in 5/5 files)
+    - "#navbar"
+    - ".nav-tabs"
+    - "nav"
+    - "[role='navigation']"
+    
+    # Sidebar (found in 5/5 files)
+    - "#sidebar"
+    - "#sidebar-content"
+    - "[id='sidebar-content']"
+    
+    # Search UI (found in 5/5 files)
+    - "#search-bar-entry"
+    - "#search-bar-entry-mobile"
+    - "[id='search-bar-entry']"
+    - "[id='search-bar-entry-mobile']"
+    
+    # Table of Contents (found in 3/5 files)
+    - "#table-of-contents"
+    - "#table-of-contents-layout"
+    
+    # UI Controls (found in 4/5 files)
+    - "button[aria-label='Toggle dark mode']"
+    - "#topbar-cta-button"
+    - "#page-context-menu-button"
+    - "#page-context-menu"
+    
+    # Headers/Footers (found in 3/5 files)
+    - "#footer"
+    - "footer#footer"
+    - "footer"
+    - "header"
+    - "header#header > div#page-context-menu"
+    
+    # Metadata and Scripts (found in 5/5 files)
+    - "head"
+    - "script"
+    - "style"
+    - "noscript"
+    - "meta"
+    - "meta[name]"
+    - "link[rel='stylesheet']"
+    - "link[rel='canonical']"
+    - "script[src]"
+    
+    # Other UI Elements (found in 2/5 files)
+    - ".feedback-toolbar"
+    - "[id*='pagination']"
+    - ".breadcrumb"
+    - "[aria-label='breadcrumb']"
+    - "#navigation-items"
+
+  strip_tags: ["script", "style", "noscript"]
+  keep_html_tags: []  # HTML tags to preserve in output
+  heading_style: "atx"  # atx (###) or setext (underlines)
+  bold_style: "**"  # ** or __
+  italic_style: "*"  # * or _
+  link_style: "inline"  # inline or reference
+  list_marker: "-"  # -, *, or +
+  code_block_style: "fenced"  # fenced (```) or indented
+  heading_offset: 0  # Adjust heading levels (e.g., 1 = h1→h2)
+  generate_frontmatter: true  # Add YAML frontmatter with metadata
+  preserve_whitespace: false
+  wrap_width: 0  # 0 = no wrapping
+
+# Asset handling configuration
+assets:
+  download: false
+  directory: "images"
+  max_size: 10485760  # 10MB
+
+# File handling options
+file_extensions: [".html", ".htm"]
+exclude_patterns: [".*", "_*", "node_modules", "__pycache__"]
+target_encoding: "utf-8"
+
+# Processing options
+parallel: false  # Enable parallel processing
+max_workers: 4
+overwrite: false  # Overwrite existing files

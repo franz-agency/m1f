@@ -33,6 +33,14 @@ from .utils import (
 )
 from .exceptions import FileWriteError, ChecksumMismatchError
 
+from m1f.file_operations import (
+    safe_exists,
+    safe_mkdir,
+    safe_open,
+    safe_write_text,
+    safe_read_text,
+)
+
 try:
     import aiofiles
 
@@ -101,7 +109,7 @@ class FileWriter:
                     return
 
                 # Check if file exists
-                is_overwrite = output_path.exists()
+                is_overwrite = safe_exists(output_path, logger=self.logger)
 
                 if is_overwrite and not self.config.force_overwrite:
                     if not await self._confirm_overwrite_async(output_path):
@@ -116,8 +124,19 @@ class FileWriter:
                     file_data.content, encoding, file_data.path
                 )
 
-                async with aiofiles.open(output_path, "wb") as f:
-                    await f.write(content_bytes)
+                # Use safe_open for the aiofiles case
+                # Note: We need to handle this differently since safe_open doesn't support async
+                # For now, keep the aiofiles.open but add error handling
+                try:
+                    async with aiofiles.open(output_path, "wb") as f:
+                        await f.write(content_bytes)
+                except PermissionError as e:
+                    self.logger.warning(
+                        f"Permission denied writing to '{output_path}': {e}"
+                    )
+                    async with self._counter_lock:
+                        result.files_failed += 1
+                    return
 
                 # Update result with thread-safe counter increment
                 async with self._counter_lock:
@@ -155,7 +174,7 @@ class FileWriter:
                 return
 
             # Check if file exists
-            is_overwrite = output_path.exists()
+            is_overwrite = safe_exists(output_path, logger=self.logger)
 
             if is_overwrite and not self.config.force_overwrite:
                 if not self._confirm_overwrite_sync(output_path):
@@ -169,7 +188,16 @@ class FileWriter:
             content_bytes = await self._encode_content(
                 file_data.content, encoding, file_data.path
             )
-            output_path.write_bytes(content_bytes)
+            # Use safe file operations for sync write
+            try:
+                output_path.write_bytes(content_bytes)
+            except PermissionError as e:
+                self.logger.warning(
+                    f"Permission denied writing to '{output_path}': {e}"
+                )
+                async with self._counter_lock:
+                    result.files_failed += 1
+                return
 
             # Update result with thread-safe counter increment
             async with self._counter_lock:
@@ -206,10 +234,12 @@ class FileWriter:
         output_path = self.config.destination_directory / relative_path
 
         # Create parent directories
-        try:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            self.logger.error(f"Failed to create directory for '{file_data.path}': {e}")
+        if not safe_mkdir(
+            output_path.parent, logger=self.logger, parents=True, exist_ok=True
+        ):
+            self.logger.error(
+                f"Failed to create directory for '{file_data.path}': Permission denied"
+            )
             return None
 
         self.logger.debug(f"Preparing to write: {output_path}")
@@ -303,9 +333,16 @@ class FileWriter:
 
             sha256_hash = hashlib.sha256()
 
-            async with aiofiles.open(path, "rb") as f:
-                while chunk := await f.read(8192):  # Read in 8KB chunks
-                    sha256_hash.update(chunk)
+            # Use aiofiles but add permission error handling
+            try:
+                async with aiofiles.open(path, "rb") as f:
+                    while chunk := await f.read(8192):  # Read in 8KB chunks
+                        sha256_hash.update(chunk)
+            except PermissionError as e:
+                self.logger.warning(
+                    f"Permission denied reading '{path}' for checksum verification: {e}"
+                )
+                return
 
             calculated_checksum = sha256_hash.hexdigest()
             expected_checksum = file_data.metadata.checksum_sha256
@@ -324,7 +361,12 @@ class FileWriter:
     def _verify_checksum_sync(self, path: Path, file_data: ExtractedFile):
         """Verify file checksum synchronously."""
         try:
-            content_bytes = path.read_bytes()
+            # Use safe file operations for reading
+            try:
+                content_bytes = path.read_bytes()
+            except PermissionError as e:
+                self.logger.warning(f"Permission denied reading '{path}': {e}")
+                return
             calculated_checksum = calculate_sha256(content_bytes)
             expected_checksum = file_data.metadata.checksum_sha256
 

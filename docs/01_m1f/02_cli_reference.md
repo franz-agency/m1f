@@ -11,14 +11,14 @@ m1f [-h] [--version] [-s DIR] [-i FILE] -o FILE
     [--separator-style {Standard,Detailed,Markdown,MachineReadable,None}]
     [--line-ending {lf,crlf}] [-t] [--filename-mtime-hash]
     [--excludes [PATTERN ...]] [--exclude-paths-file FILE ...]
-    [--include-paths-file FILE ...]
+    [--include-paths-file FILE ...] [--includes [PATTERN ...]]
     [--include-extensions [EXT ...]] [--exclude-extensions [EXT ...]]
-    [--include-dot-paths] [--include-binary-files] [--include-symlinks]
-    [--max-file-size SIZE] [--no-default-excludes]
+    [--docs-only] [--include-dot-paths] [--include-binary-files] [--include-symlinks]
+    [--max-file-size SIZE] [--no-default-excludes] [--no-auto-gitignore]
     [--remove-scraped-metadata]
     [--convert-to-charset {utf-8,utf-16,utf-16-le,utf-16-be,ascii,latin-1,cp1252}]
     [--abort-on-encoding-error] [--no-prefer-utf8-for-text-files]
-    [--security-check {error,warn,skip}]
+    [--security-check {abort,skip,warn}]
     [--create-archive] [--archive-type {zip,tar.gz}] [-f]
     [--minimal-output] [--skip-output-file] [--allow-duplicate-files]
     [-v] [-q]
@@ -128,14 +128,23 @@ File(s) containing paths to exclude (supports gitignore format). Each pattern on
 a new line. Multiple files can be specified and will be merged. Non-existent
 files are skipped gracefully.
 
+**Automatic Loading**: m1f automatically loads `.gitignore` and `.m1fignore` files
+from source directories:
+- `.m1fignore` files are always loaded if present
+- `.gitignore` files are loaded by default (disable with `--no-auto-gitignore`)
+- These auto-loaded files are in addition to any explicitly specified with this option
+
 Examples:
 
 ```bash
-# Single file
-m1f -s . -o output.txt --exclude-paths-file .gitignore
+# Single file (plus auto-loaded .gitignore/.m1fignore)
+m1f -s . -o output.txt --exclude-paths-file custom-excludes.txt
 
 # Multiple files
 m1f -s . -o output.txt --exclude-paths-file .gitignore .m1fignore custom-excludes.txt
+
+# Disable automatic .gitignore loading
+m1f -s . -o output.txt --no-auto-gitignore
 ```
 
 ### `--include-paths-file FILE ...`
@@ -144,6 +153,13 @@ File(s) containing patterns to include (supports gitignore format). When
 specified, only files matching these patterns will be included (whitelist mode).
 Multiple files can be specified and will be merged. Non-existent files are
 skipped gracefully.
+
+### `--includes [PATTERN ...]`
+
+Include only files matching these patterns (gitignore format). Works similarly to
+`--include-paths-file` but patterns are specified directly on the command line.
+
+Example: `--includes "*.py" "src/**/*" "!test_*.py"`
 
 **Processing Order**:
 
@@ -191,6 +207,12 @@ Exclude files with these extensions.
 
 Example: `--exclude-extensions .pyc .pyo`
 
+### `--docs-only`
+
+Include only documentation files. This is a shortcut that includes 62 common
+documentation file extensions including .md, .txt, .rst, .adoc, .tex, and more.
+When used, this overrides any `--include-extensions` settings.
+
 ### `--include-dot-paths`
 
 Include files and directories starting with a dot (hidden files). By default,
@@ -204,6 +226,16 @@ output.
 ### `--include-symlinks`
 
 Follow symbolic links. Be careful of infinite loops!
+
+**Deduplication behavior**:
+
+- By default (without `--allow-duplicate-files`), m1f intelligently handles
+  symlinks:
+  - Internal symlinks (pointing to files within source directories) are excluded
+    to avoid duplicates
+  - External symlinks (pointing outside source directories) are included
+- With `--allow-duplicate-files`, all symlinks are included regardless of their
+  target
 
 ### `--max-file-size SIZE`
 
@@ -219,6 +251,13 @@ Disable default exclusions. By default, m1f excludes:
 - `node_modules/`, `venv/`, `.venv/`
 - `__pycache__/`, `*.pyc`
 - `.DS_Store`, `Thumbs.db`
+
+### `--no-auto-gitignore`
+
+Disable automatic loading of `.gitignore` files from source directories. By default,
+m1f automatically loads and applies `.gitignore` patterns from each source directory
+to exclude files that Git would ignore. `.m1fignore` files are still loaded even
+with this flag.
 
 ### `--remove-scraped-metadata`
 
@@ -246,11 +285,11 @@ contain UTF-8 emojis or special characters.
 
 ## Security Options
 
-### `--security-check {error,warn,skip}`
+### `--security-check {abort,skip,warn}`
 
 Check for sensitive information in files using detect-secrets.
 
-- **error**: Stop processing if secrets are found (default in v3.2)
+- **abort**: Stop processing if secrets are found
 - **warn**: Include files but show warnings
 - **skip**: Disable security scanning (not recommended)
 
@@ -284,6 +323,16 @@ Skip creating the main output file. Useful when only creating an archive.
 Allow files with identical content to be included in the output. By default, m1f
 deduplicates files based on their content checksum to save space and tokens.
 With this flag, all files are included even if they have identical content.
+
+**Special behavior with symlinks** (when used with `--include-symlinks`):
+
+- **Without** `--allow-duplicate-files`:
+  - Symlinks pointing to files **inside** the source directories are excluded
+    (the original file is already included)
+  - Symlinks pointing to files **outside** the source directories are included
+- **With** `--allow-duplicate-files`:
+  - All symlinks are included, regardless of where they point
+  - Both the original file and symlinks pointing to it can appear in the output
 
 ### `--verbose`, `-v`
 

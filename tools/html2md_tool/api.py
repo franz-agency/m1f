@@ -15,23 +15,45 @@
 """High-level API for HTML to Markdown conversion."""
 
 import asyncio
+import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from rich.console import Console
+# Import safe file operations
+from m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_open,
+    safe_read_text,
+    safe_write_text,
+)
+
 from rich.progress import Progress
 
-from .config import (
+# Use unified colorama module
+from shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
+
+from html2md_tool.config import (
     Config,
     ConversionOptions,
     OutputFormat,
     ExtractorConfig,
     ProcessorConfig,
 )
-from .core import HTMLParser, MarkdownConverter
-from .extractors import BaseExtractor, DefaultExtractor, load_extractor
-from .utils import configure_logging, get_logger
+from html2md_tool.core import HTMLParser, MarkdownConverter
+from html2md_tool.extractors import BaseExtractor, DefaultExtractor, load_extractor
+from html2md_tool.utils import configure_logging, get_logger
 
 logger = get_logger(__name__)
 
@@ -66,7 +88,7 @@ class Html2mdConverter:
         elif isinstance(config, dict):
             self.config = Config(**config)
         elif isinstance(config, (Path, str)):
-            from .config import load_config
+            from html2md_tool.config import load_config
 
             self.config = load_config(Path(config))
         else:
@@ -84,7 +106,7 @@ class Html2mdConverter:
         self._converter = MarkdownConverter(
             getattr(self.config, "processor", ProcessorConfig())
         )
-        self._console = Console()
+        # Console no longer needed with unified colorama
 
         # Initialize extractor
         if extractor is None:
@@ -117,14 +139,31 @@ class Html2mdConverter:
 
         # Apply preprocessing if configured
         if hasattr(self.config, "preprocessing") and self.config.preprocessing:
-            from .preprocessors import preprocess_html
+            from html2md_tool.preprocessors import preprocess_html
 
             html_content = preprocess_html(html_content, self.config.preprocessing)
 
         # Parse HTML
         parsed = self._parser.parse(html_content, base_url)
 
-        # Apply custom extractor
+        # IMPORTANT: Extract all H1 tags and title BEFORE any extraction or selector filtering
+        # This ensures we capture H1s from header, nav, or any other area
+        original_h1_tags = parsed.find_all("h1")
+        h1_contents = []
+
+        # Store all H1 contents from the original document
+        for h1 in original_h1_tags:
+            h1_text = h1.get_text(strip=True)
+            if h1_text and h1_text not in h1_contents:  # Remove duplicates
+                h1_contents.append(h1_text)
+
+        # Get title as fallback
+        title_content = None
+        title_tag = parsed.find("title")
+        if title_tag and title_tag.string:
+            title_content = title_tag.string.strip()
+
+        # Apply custom extractor AFTER we've saved H1s
         parsed = self._extractor.extract(parsed, self.config.__dict__)
 
         # Handle CSS selectors if specified (after extraction)
@@ -133,17 +172,91 @@ class Html2mdConverter:
 
             selected = parsed.select_one(self.config.conversion.outermost_selector)
             if selected:
-                # Remove ignored elements
+                # Remove ignored elements (but preserve H1)
                 if self.config.conversion.ignore_selectors:
                     for selector in self.config.conversion.ignore_selectors:
+                        # Skip H1 selector to preserve headings
+                        if selector.lower() in ["h1", "h1.*", "*h1*"]:
+                            continue
                         for elem in selected.select(selector):
-                            elem.decompose()
+                            # Double-check: don't remove H1 tags
+                            if elem.name != "h1":
+                                elem.decompose()
                 # Create new soup from selected element
                 parsed = BeautifulSoup(str(selected), "html.parser")
+
+                # Check if H1 is still present after selection
+                existing_h1s_after = parsed.find_all("h1")
+                existing_h1_texts = [
+                    h1.get_text(strip=True) for h1 in existing_h1s_after
+                ]
+
+                # Always ensure we have at least one H1
+                if h1_contents:
+                    # We had H1s in the original document
+                    if not existing_h1s_after:
+                        # All H1s were removed, restore them
+                        new_h1 = parsed.new_tag("h1")
+                        new_h1.string = h1_contents[0]
+                        parsed.insert(0, new_h1)
+
+                        # Add remaining H1s as H2
+                        for h1_text in h1_contents[1:]:
+                            new_h2 = parsed.new_tag("h2")
+                            new_h2.string = h1_text
+                            parsed.insert(1, new_h2)
+                    else:
+                        # Some H1s still exist, check if we need to add missing ones
+                        for h1_text in h1_contents:
+                            if h1_text not in existing_h1_texts:
+                                # This H1 was removed, add it back as first element
+                                new_h1 = parsed.new_tag("h1")
+                                new_h1.string = h1_text
+                                parsed.insert(0, new_h1)
+                                break  # Only add the first missing H1
+                elif not existing_h1s_after and title_content:
+                    # No H1 at all in original, create one from title
+                    new_h1 = parsed.new_tag("h1")
+                    new_h1.string = title_content
+                    parsed.insert(0, new_h1)
+        else:
+            # No outermost_selector, but still ensure H1 exists
+            if not parsed.find("h1") and title_content:
+                # No H1 in document, create one from title
+                new_h1 = parsed.new_tag("h1")
+                new_h1.string = title_content
+                # Try to insert at the beginning of body, or just at the beginning
+                body = parsed.find("body")
+                if body:
+                    body.insert(0, new_h1)
+                else:
+                    parsed.insert(0, new_h1)
 
         # Remove script and style tags that may have been missed
         for tag in parsed.find_all(["script", "style", "noscript"]):
             tag.decompose()
+
+        # Handle multiple H1 tags - convert duplicates and additional H1s to H2
+        all_h1s = parsed.find_all("h1")
+        if len(all_h1s) > 1:
+            seen_h1_texts = set()
+            first_h1_kept = False
+
+            for h1 in all_h1s:
+                h1_text = h1.get_text(strip=True)
+
+                # Remove duplicate H1s
+                if h1_text in seen_h1_texts:
+                    h1.decompose()
+                    continue
+
+                seen_h1_texts.add(h1_text)
+
+                # Keep first unique H1, convert rest to H2
+                if not first_h1_kept:
+                    first_h1_kept = True
+                else:
+                    h1.name = "h2"
 
         # Apply heading offset if specified
         if self.config.conversion.heading_offset:
@@ -175,7 +288,7 @@ class Html2mdConverter:
                 if title_tag and title_tag.string:
                     frontmatter["title"] = title_tag.string.strip()
 
-            # Add source file if provided
+            # Add source file to frontmatter if provided
             if source_file and "source_file" not in frontmatter:
                 frontmatter["source_file"] = source_file
 
@@ -191,6 +304,11 @@ class Html2mdConverter:
             markdown = self._convert_absolute_paths_to_relative(
                 markdown, source_file, self.config.destination
             )
+
+        # Adjust internal links to convert .html to .md
+        from html2md_tool.utils import adjust_internal_links
+
+        markdown = adjust_internal_links(markdown)
 
         return markdown
 
@@ -307,7 +425,7 @@ class Html2mdConverter:
                     # Check if the linked file exists with .md extension
                     # (it's probably been converted from .html to .md)
                     md_link = link_path.with_suffix(".md")
-                    if md_link.exists() or link_path.suffix in [".html", ".htm"]:
+                    if safe_exists(md_link) or link_path.suffix in [".html", ".htm"]:
                         # Use .md extension for converted files
                         link_path = link_path.with_suffix(".md")
 
@@ -325,7 +443,7 @@ class Html2mdConverter:
                                 test_path = source_dir.parent / link_path.name
                                 if ext:
                                     test_path = test_path.with_suffix(ext)
-                                if test_path.exists():
+                                if safe_exists(test_path):
                                     link_in_source = test_path
                                     break
 
@@ -393,20 +511,20 @@ class Html2mdConverter:
 
         # Read file content
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with safe_open(file_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
         except UnicodeDecodeError:
             # Try with different encodings
             for encoding in ["latin-1", "cp1252"]:
                 try:
-                    with open(file_path, "r", encoding=encoding) as f:
+                    with safe_open(file_path, "r", encoding=encoding) as f:
                         html_content = f.read()
                     break
                 except UnicodeDecodeError:
                     continue
             else:
                 # Last resort - ignore errors
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                with safe_open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     html_content = f.read()
 
         # Convert using the convert_html method which includes preprocessing
@@ -450,10 +568,10 @@ class Html2mdConverter:
         # Validate output path to ensure it stays within destination directory
         output_path = self._validate_output_path(output_path, self.config.destination)
 
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(output_path.parent, parents=True, exist_ok=True)
 
         # Write file
-        output_path.write_text(markdown, encoding=self.config.target_encoding)
+        safe_write_text(output_path, markdown, encoding=self.config.target_encoding)
 
         logger.debug(f"Written to {output_path}")
         return output_path
@@ -534,11 +652,11 @@ class Html2mdConverter:
         if not filename.endswith(".md"):
             filename = filename.replace(".html", "") + ".md"
         output_path = Path(self.config.destination) / filename
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(output_path.parent, parents=True, exist_ok=True)
 
         # Write file
         encoding = getattr(self.config, "target_encoding", "utf-8")
-        output_path.write_text(markdown, encoding=encoding)
+        safe_write_text(output_path, markdown, encoding=encoding)
 
         logger.info(f"Saved to {output_path}")
         return output_path
@@ -628,12 +746,41 @@ class Html2mdConverter:
             # Validate input path
             file_path = self._validate_path(file_path, self.config.source)
 
-            # Re-initialize parser and converter in worker process
-            parser = HTMLParser(self.config.extractor)
-            converter = MarkdownConverter(self.config.processor)
+            # Read file content
+            try:
+                with safe_open(file_path, "r", encoding="utf-8") as f:
+                    html_content = f.read()
+            except UnicodeDecodeError:
+                # Try with different encodings
+                for encoding in ["latin-1", "cp1252"]:
+                    try:
+                        with safe_open(file_path, "r", encoding=encoding) as f:
+                            html_content = f.read()
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                else:
+                    # Last resort - ignore errors
+                    with safe_open(
+                        file_path, "r", encoding="utf-8", errors="ignore"
+                    ) as f:
+                        html_content = f.read()
 
-            parsed = parser.parse_file(file_path)
-            markdown = converter.convert(parsed)
+            # Convert using the convert_html method which includes all preprocessing and CSS selector logic
+            # Use a relative base URL to avoid exposing absolute paths
+            file_name = (
+                file_path.name
+                if file_path and file_path.name
+                else (Path(file_path).resolve().name if file_path else None)
+            )
+            base_url = file_name
+            markdown = self.convert_html(
+                html_content,
+                base_url=base_url,
+                source_file=str(
+                    file_path
+                ),  # Pass full path for proper relative link calculation
+            )
 
             # Determine output path
             # Resolve both paths to handle cases where source is "."
@@ -662,8 +809,8 @@ class Html2mdConverter:
                 output_path, self.config.destination
             )
 
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(markdown, encoding=self.config.target_encoding)
+            safe_mkdir(output_path.parent, parents=True, exist_ok=True)
+            safe_write_text(output_path, markdown, encoding=self.config.target_encoding)
 
             return output_path
         except Exception as e:
@@ -682,7 +829,7 @@ class Html2mdConverter:
         logger.info("Generating m1f bundle...")
 
         # Import m1f integration
-        from .processors.m1f_integration import M1FBundler
+        from html2md_tool.processors.m1f_integration import M1FBundler
 
         bundler = M1FBundler(self.config.m1f)
         bundle_path = bundler.create_bundle(
@@ -842,7 +989,7 @@ def convert_html(html_content: str, **kwargs) -> str:
         Markdown content
     """
     from pathlib import Path
-    from .config.models import ConversionOptions, Config
+    from html2md_tool.config.models import ConversionOptions, Config
 
     # Create minimal config
     config = Config(

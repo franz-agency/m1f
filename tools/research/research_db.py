@@ -1,0 +1,676 @@
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Database management for m1f-research with dual DB system
+"""
+import sqlite3
+import json
+import uuid
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Optional, Any, Tuple
+from dataclasses import dataclass, asdict
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ResearchJob:
+    """Research job data model"""
+
+    job_id: str
+    query: str
+    created_at: datetime
+    updated_at: datetime
+    status: str  # active, completed, failed
+    config: Dict[str, Any]
+    output_dir: str
+
+    @classmethod
+    def create_new(
+        cls, query: str, config: Dict[str, Any], output_dir: str
+    ) -> "ResearchJob":
+        """Create a new research job"""
+        now = datetime.now()
+        return cls(
+            job_id=str(uuid.uuid4())[:8],  # Short ID for convenience
+            query=query,
+            created_at=now,
+            updated_at=now,
+            status="active",
+            config=config,
+            output_dir=output_dir,
+        )
+
+
+class ResearchDatabase:
+    """Main research jobs database manager"""
+
+    def __init__(self, db_path: Path):
+        self.db_path = db_path
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._connection_pool = []  # Track connections for cleanup
+        self._init_database()
+
+    def _init_database(self):
+        """Initialize the main research database"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS jobs (
+                    job_id TEXT PRIMARY KEY,
+                    query TEXT NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
+                    updated_at TIMESTAMP NOT NULL,
+                    status TEXT NOT NULL,
+                    config TEXT NOT NULL,
+                    output_dir TEXT NOT NULL,
+                    phase TEXT DEFAULT 'initialization',
+                    phase_data TEXT DEFAULT '{}',
+                    expanded_queries TEXT DEFAULT '[]'
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS job_stats (
+                    job_id TEXT PRIMARY KEY,
+                    total_urls INTEGER DEFAULT 0,
+                    scraped_urls INTEGER DEFAULT 0,
+                    filtered_urls INTEGER DEFAULT 0,
+                    analyzed_urls INTEGER DEFAULT 0,
+                    FOREIGN KEY (job_id) REFERENCES jobs(job_id)
+                )
+            """
+            )
+
+            conn.commit()
+
+    def create_job(self, job: ResearchJob) -> str:
+        """Create a new research job"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                """INSERT INTO jobs (job_id, query, created_at, updated_at, status, config, output_dir)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    job.job_id,
+                    job.query,
+                    job.created_at.isoformat(),
+                    job.updated_at.isoformat(),
+                    job.status,
+                    json.dumps(job.config),
+                    job.output_dir,
+                ),
+            )
+
+            # Initialize stats
+            conn.execute("INSERT INTO job_stats (job_id) VALUES (?)", (job.job_id,))
+
+            conn.commit()
+
+        logger.info(f"Created new job: {job.job_id} for query: {job.query}")
+        return job.job_id
+
+    def get_job(self, job_id: str) -> Optional[ResearchJob]:
+        """Get a research job by ID"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("SELECT * FROM jobs WHERE job_id = ?", (job_id,))
+            row = cursor.fetchone()
+
+            if row:
+                return ResearchJob(
+                    job_id=row["job_id"],
+                    query=row["query"],
+                    created_at=datetime.fromisoformat(row["created_at"]),
+                    updated_at=datetime.fromisoformat(row["updated_at"]),
+                    status=row["status"],
+                    config=json.loads(row["config"]),
+                    output_dir=row["output_dir"],
+                )
+
+        return None
+
+    def update_job_status(self, job_id: str, status: str):
+        """Update job status"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                "UPDATE jobs SET status = ?, updated_at = ? WHERE job_id = ?",
+                (status, datetime.now().isoformat(), job_id),
+            )
+            conn.commit()
+
+    def update_job_phase(
+        self, job_id: str, phase: str, phase_data: Optional[Dict] = None
+    ):
+        """Update job phase and optional phase-specific data"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            if phase_data:
+                conn.execute(
+                    "UPDATE jobs SET phase = ?, phase_data = ?, updated_at = ? WHERE job_id = ?",
+                    (phase, json.dumps(phase_data), datetime.now().isoformat(), job_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE jobs SET phase = ?, updated_at = ? WHERE job_id = ?",
+                    (phase, datetime.now().isoformat(), job_id),
+                )
+            conn.commit()
+            logger.info(f"Updated job {job_id} to phase: {phase}")
+
+    def update_expanded_queries(self, job_id: str, queries: List[str]):
+        """Update expanded queries for a job"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                "UPDATE jobs SET expanded_queries = ?, updated_at = ? WHERE job_id = ?",
+                (json.dumps(queries), datetime.now().isoformat(), job_id),
+            )
+            conn.commit()
+            logger.info(f"Updated job {job_id} with {len(queries)} expanded queries")
+
+    def update_job_stats(self, job_id: str, **stats):
+        """Update job statistics"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            # Build dynamic update query
+            updates = []
+            values = []
+            for key, value in stats.items():
+                if key in [
+                    "total_urls",
+                    "scraped_urls",
+                    "filtered_urls",
+                    "analyzed_urls",
+                ]:
+                    updates.append(f"{key} = ?")
+                    values.append(value)
+
+            if updates:
+                values.append(job_id)
+                query = f"UPDATE job_stats SET {', '.join(updates)} WHERE job_id = ?"
+                conn.execute(query, values)
+                conn.commit()
+
+    def list_jobs(
+        self,
+        status: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: int = 0,
+        date_filter: Optional[str] = None,
+        search_term: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        List jobs with advanced filtering options
+
+        Args:
+            status: Filter by job status
+            limit: Maximum number of results
+            offset: Number of results to skip (for pagination)
+            date_filter: Date filter in Y-M-D or Y-M format
+            search_term: Search term to filter queries
+        """
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+
+            query = """
+                SELECT j.*, s.total_urls, s.scraped_urls, s.filtered_urls, s.analyzed_urls
+                FROM jobs j
+                LEFT JOIN job_stats s ON j.job_id = s.job_id
+                WHERE 1=1
+            """
+            params = []
+
+            # Status filter
+            if status:
+                query += " AND j.status = ?"
+                params.append(status)
+
+            # Search term filter
+            if search_term:
+                query += " AND j.query LIKE ?"
+                params.append(f"%{search_term}%")
+
+            # Date filter
+            if date_filter:
+                if len(date_filter) == 10:  # Y-M-D format
+                    query += " AND DATE(j.created_at) = ?"
+                    params.append(date_filter)
+                elif len(date_filter) == 7:  # Y-M format
+                    query += " AND strftime('%Y-%m', j.created_at) = ?"
+                    params.append(date_filter)
+                elif len(date_filter) == 4:  # Y format
+                    query += " AND strftime('%Y', j.created_at) = ?"
+                    params.append(date_filter)
+
+            # Order by created_at
+            query += " ORDER BY j.created_at DESC"
+
+            # Pagination
+            if limit:
+                query += f" LIMIT {limit} OFFSET {offset}"
+
+            cursor = conn.execute(query, params)
+
+            jobs = []
+            for row in cursor:
+                jobs.append(
+                    {
+                        "job_id": row["job_id"],
+                        "query": row["query"],
+                        "created_at": row["created_at"],
+                        "updated_at": row["updated_at"],
+                        "status": row["status"],
+                        "output_dir": row["output_dir"],
+                        "stats": {
+                            "total_urls": row["total_urls"] or 0,
+                            "scraped_urls": row["scraped_urls"] or 0,
+                            "filtered_urls": row["filtered_urls"] or 0,
+                            "analyzed_urls": row["analyzed_urls"] or 0,
+                        },
+                    }
+                )
+
+            return jobs
+
+    def count_jobs(
+        self,
+        status: Optional[str] = None,
+        date_filter: Optional[str] = None,
+        search_term: Optional[str] = None,
+    ) -> int:
+        """Count jobs matching filters (for pagination)"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            query = "SELECT COUNT(*) FROM jobs WHERE 1=1"
+            params = []
+
+            if status:
+                query += " AND status = ?"
+                params.append(status)
+
+            if search_term:
+                query += " AND query LIKE ?"
+                params.append(f"%{search_term}%")
+
+            if date_filter:
+                if len(date_filter) == 10:  # Y-M-D format
+                    query += " AND DATE(created_at) = ?"
+                    params.append(date_filter)
+                elif len(date_filter) == 7:  # Y-M format
+                    query += " AND strftime('%Y-%m', created_at) = ?"
+                    params.append(date_filter)
+                elif len(date_filter) == 4:  # Y format
+                    query += " AND strftime('%Y', created_at) = ?"
+                    params.append(date_filter)
+
+            cursor = conn.execute(query, params)
+            return cursor.fetchone()[0]
+
+    def delete_job(self, job_id: str) -> bool:
+        """Delete a job from the database"""
+        try:
+            with sqlite3.connect(str(self.db_path)) as conn:
+                # Delete from job_stats first (foreign key constraint)
+                conn.execute("DELETE FROM job_stats WHERE job_id = ?", (job_id,))
+
+                # Delete from jobs table
+                cursor = conn.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
+
+                conn.commit()
+
+                # Return True if a job was actually deleted
+                deleted = cursor.rowcount > 0
+                if deleted:
+                    logger.info(f"Deleted job {job_id} from database")
+                else:
+                    logger.warning(f"Job {job_id} not found in database")
+                return deleted
+
+        except Exception as e:
+            logger.error(f"Error deleting job {job_id}: {e}")
+            return False
+
+    def close_all_connections(self):
+        """Close all database connections"""
+        try:
+            # Force garbage collection to close any remaining connections
+            import gc
+            gc.collect()
+            
+            # On Windows, sometimes we need to explicitly close the database
+            # SQLite doesn't have persistent connections with context managers,
+            # but we can force cleanup
+            logger.debug(f"Closing database connections for {self.db_path}")
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def cleanup(self):
+        """Clean up database resources"""
+        self.close_all_connections()
+
+
+class JobDatabase:
+    """Per-job database for URL and content tracking"""
+
+    def __init__(self, db_path: Path):
+        self.db_path = db_path
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._connection_pool = []  # Track connections for cleanup
+        self._init_database()
+
+    def _init_database(self):
+        """Initialize the job-specific database"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            # URL tracking table
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS urls (
+                    url TEXT PRIMARY KEY,
+                    normalized_url TEXT,
+                    host TEXT,
+                    added_by TEXT NOT NULL,
+                    added_at TIMESTAMP NOT NULL,
+                    scraped_at TIMESTAMP,
+                    status_code INTEGER,
+                    content_checksum TEXT,
+                    error_message TEXT,
+                    depth INTEGER DEFAULT 0,
+                    parent_url TEXT,
+                    review_status TEXT DEFAULT 'pending'
+                )
+            """
+            )
+
+            # Content storage
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS content (
+                    url TEXT PRIMARY KEY,
+                    title TEXT,
+                    markdown TEXT NOT NULL,
+                    metadata TEXT,
+                    word_count INTEGER,
+                    filtered BOOLEAN DEFAULT 0,
+                    filter_reason TEXT,
+                    FOREIGN KEY (url) REFERENCES urls(url)
+                )
+            """
+            )
+
+            # Analysis results
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS analysis (
+                    url TEXT PRIMARY KEY,
+                    relevance_score REAL,
+                    key_points TEXT,
+                    content_type TEXT,
+                    analysis_data TEXT,
+                    analyzed_at TIMESTAMP,
+                    FOREIGN KEY (url) REFERENCES urls(url)
+                )
+            """
+            )
+
+            # Create indexes
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_urls_host ON urls(host)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_urls_scraped ON urls(scraped_at)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_content_filtered ON content(filtered)"
+            )
+
+            conn.commit()
+
+    def add_urls(self, urls: List[Dict[str, str]], added_by: str = "llm") -> int:
+        """Add URLs to the database"""
+        added_count = 0
+
+        with sqlite3.connect(str(self.db_path)) as conn:
+            for url_data in urls:
+                url = url_data.get("url", "")
+                if not url:
+                    continue
+
+                try:
+                    # Normalize URL
+                    from urllib.parse import urlparse, urlunparse
+
+                    parsed = urlparse(url)
+                    normalized = urlunparse(
+                        (
+                            parsed.scheme.lower(),
+                            parsed.netloc.lower(),
+                            parsed.path.rstrip("/"),
+                            parsed.params,
+                            parsed.query,
+                            "",
+                        )
+                    )
+
+                    conn.execute(
+                        """INSERT OR IGNORE INTO urls 
+                           (url, normalized_url, host, added_by, added_at)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (
+                            url,
+                            normalized,
+                            parsed.netloc,
+                            added_by,
+                            datetime.now().isoformat(),
+                        ),
+                    )
+
+                    if conn.total_changes > added_count:
+                        added_count = conn.total_changes
+
+                except Exception as e:
+                    logger.error(f"Error adding URL {url}: {e}")
+
+            conn.commit()
+
+        return added_count
+
+    def get_unscraped_urls(self) -> List[str]:
+        """Get all URLs that haven't been scraped yet"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            cursor = conn.execute("SELECT url FROM urls WHERE scraped_at IS NULL")
+            return [row[0] for row in cursor]
+
+    def get_urls_by_host(self) -> Dict[str, List[str]]:
+        """Get URLs grouped by host"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            cursor = conn.execute(
+                "SELECT host, url FROM urls WHERE scraped_at IS NULL ORDER BY host"
+            )
+
+            urls_by_host = {}
+            for host, url in cursor:
+                if host not in urls_by_host:
+                    urls_by_host[host] = []
+                urls_by_host[host].append(url)
+
+            return urls_by_host
+
+    def mark_url_scraped(
+        self,
+        url: str,
+        status_code: int,
+        content_checksum: Optional[str] = None,
+        error_message: Optional[str] = None,
+    ):
+        """Mark a URL as scraped"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                """UPDATE urls 
+                   SET scraped_at = ?, status_code = ?, 
+                       content_checksum = ?, error_message = ?
+                   WHERE url = ?""",
+                (
+                    datetime.now().isoformat(),
+                    status_code,
+                    content_checksum,
+                    error_message,
+                    url,
+                ),
+            )
+            conn.commit()
+
+    def save_content(
+        self,
+        url: str,
+        title: str,
+        markdown: str,
+        metadata: Dict[str, Any],
+        filtered: bool = False,
+        filter_reason: Optional[str] = None,
+    ):
+        """Save scraped content"""
+        word_count = len(markdown.split())
+
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO content 
+                   (url, title, markdown, metadata, word_count, filtered, filter_reason)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    url,
+                    title,
+                    markdown,
+                    json.dumps(metadata),
+                    word_count,
+                    filtered,
+                    filter_reason,
+                ),
+            )
+            conn.commit()
+
+    def save_analysis(
+        self,
+        url: str,
+        relevance_score: float,
+        key_points: List[str],
+        content_type: str,
+        analysis_data: Dict[str, Any],
+    ):
+        """Save content analysis results"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO analysis 
+                   (url, relevance_score, key_points, content_type, 
+                    analysis_data, analyzed_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    url,
+                    relevance_score,
+                    json.dumps(key_points),
+                    content_type,
+                    json.dumps(analysis_data),
+                    datetime.now().isoformat(),
+                ),
+            )
+            conn.commit()
+
+    def get_content_for_bundle(self) -> List[Dict[str, Any]]:
+        """Get all non-filtered content for bundle creation"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                """
+                SELECT c.*, a.relevance_score, a.key_points, a.content_type
+                FROM content c
+                LEFT JOIN analysis a ON c.url = a.url
+                WHERE c.filtered = 0
+                ORDER BY a.relevance_score DESC NULLS LAST
+            """
+            )
+
+            content = []
+            for row in cursor:
+                content.append(
+                    {
+                        "url": row["url"],
+                        "title": row["title"],
+                        "markdown": row["markdown"],
+                        "metadata": json.loads(row["metadata"]),
+                        "word_count": row["word_count"],
+                        "relevance_score": row["relevance_score"],
+                        "key_points": (
+                            json.loads(row["key_points"]) if row["key_points"] else []
+                        ),
+                        "content_type": row["content_type"],
+                    }
+                )
+
+            return content
+
+    def get_stats(self) -> Dict[str, int]:
+        """Get job statistics"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            stats = {}
+
+            # Total URLs
+            cursor = conn.execute("SELECT COUNT(*) FROM urls")
+            stats["total_urls"] = cursor.fetchone()[0]
+
+            # Scraped URLs
+            cursor = conn.execute(
+                "SELECT COUNT(*) FROM urls WHERE scraped_at IS NOT NULL"
+            )
+            stats["scraped_urls"] = cursor.fetchone()[0]
+
+            # Filtered URLs
+            cursor = conn.execute("SELECT COUNT(*) FROM content WHERE filtered = 1")
+            stats["filtered_urls"] = cursor.fetchone()[0]
+
+            # Analyzed URLs
+            cursor = conn.execute("SELECT COUNT(*) FROM analysis")
+            stats["analyzed_urls"] = cursor.fetchone()[0]
+
+            return stats
+
+    def get_raw_content_files(self) -> List[Dict[str, Any]]:
+        """Get information about raw HTML content that can be cleaned"""
+        # Since we don't store raw HTML files anymore (we convert to markdown immediately),
+        # this returns an empty list. In future, we could track original HTML if needed.
+        return []
+
+    def cleanup_raw_content(self) -> Dict[str, int]:
+        """
+        Clean up raw HTML data while preserving aggregated data
+        Returns counts of cleaned items
+        """
+        # Currently, we don't store raw HTML separately
+        # This is a placeholder for future implementation
+        return {"files_deleted": 0, "space_freed": 0}
+
+    def close_all_connections(self):
+        """Close all database connections"""
+        try:
+            # Force garbage collection to close any remaining connections
+            import gc
+            gc.collect()
+            
+            # On Windows, sometimes we need to explicitly close the database
+            # SQLite doesn't have persistent connections with context managers,
+            # but we can force cleanup
+            logger.debug(f"Closing database connections for {self.db_path}")
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def cleanup(self):
+        """Clean up database resources"""
+        self.close_all_connections()

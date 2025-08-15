@@ -207,7 +207,14 @@ CLAUDE.md
 m1f/m1f.txt
 
 # Test artifacts and temporary files
-test_claude*.py
 tests/html2md/test_claude_files/m1f/
 m1f/analysis/
 analysis/
+
+# Research data directory (scraped data and bundles)
+# Exclude everything in research-data except README.md
+/research-data/*
+!/research-data/README.md
+
+/src
+GEMINI.md

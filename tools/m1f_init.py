@@ -35,6 +35,34 @@ from typing import Dict, List, Optional, Tuple
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Import version
+try:
+    from _version import __version__
+except ImportError:
+    __version__ = "dev"
+
+# Use unified colorama module
+try:
+    from tools.shared.colors import (
+        Colors,
+        ColoredHelpFormatter,
+        success,
+        error,
+        warning,
+        info,
+        header,
+    )
+except ImportError:
+    from shared.colors import (
+        Colors,
+        ColoredHelpFormatter,
+        success,
+        error,
+        warning,
+        info,
+        header,
+    )
+
 
 class M1FInit:
     """Initialize m1f for a project with quick setup."""
@@ -57,10 +85,36 @@ class M1FInit:
         self.m1f_root = Path(__file__).parent.parent
         self.m1f_docs_source = self.m1f_root / "m1f" / "m1f" / "87_m1f_only_docs.txt"
 
+        # Import safe operations locally to avoid module loading issues
+        try:
+            from tools.m1f.file_operations import (
+                safe_open,
+                safe_read_text,
+                safe_write_text,
+                safe_mkdir,
+                safe_exists,
+            )
+            from tools.m1f.utils import validate_path_traversal
+
+            self.safe_open = safe_open
+            self.safe_read_text = safe_read_text
+            self.safe_write_text = safe_write_text
+            self.safe_mkdir = safe_mkdir
+            self.safe_exists = safe_exists
+            self.validate_path_traversal = validate_path_traversal
+        except ImportError:
+            # Fallback to standard operations if safe operations are not available
+            self.safe_open = open
+            self.safe_read_text = lambda p: Path(p).read_text()
+            self.safe_write_text = lambda p, c: Path(p).write_text(c)
+            self.safe_mkdir = lambda p, **k: Path(p).mkdir(**k)
+            self.safe_exists = lambda p: Path(p).exists()
+            self.validate_path_traversal = lambda p, **k: Path(p)
+
     def run(self):
         """Run the initialization process."""
-        print("\n🚀 m1f Project Initialization")
-        print("=" * 50)
+        header("[m1f Project Initialization]")
+        info("=" * 50)
 
         # Step 1: Link m1f documentation
         self._link_documentation()
@@ -70,19 +124,19 @@ class M1FInit:
         config_exists = self._check_existing_config()
 
         # Step 3: Analyze project
-        print(f"\n📊 Project Analysis")
-        print("=" * 30)
+        header("📊 Project Analysis")
+        info("=" * 30)
         context = self._analyze_project()
 
         # Step 4: If config exists, run m1f-update instead of creating bundles
         if config_exists:
-            print(f"\n📦 Running m1f-update with existing configuration")
-            print("=" * 30)
+            header("[Running m1f-update with existing configuration]")
+            info("=" * 30)
             self._run_m1f_update()
         else:
             # Create bundles only if no config exists
-            print(f"\n📦 Creating Initial Bundles")
-            print("=" * 30)
+            header("[Creating Initial Bundles]")
+            info("=" * 30)
             self._create_bundles(context)
 
             # Step 5: Create config
@@ -96,16 +150,16 @@ class M1FInit:
         if self.no_symlink:
             return
 
-        print("\n📋 Setting up m1f documentation...")
+        info("\n📋 Setting up m1f documentation...")
 
         # Create m1f directory if it doesn't exist
         m1f_dir = self.project_path / "m1f"
-        m1f_dir.mkdir(exist_ok=True)
+        self.safe_mkdir(m1f_dir, parents=False, exist_ok=True)
 
         # Check if already linked
         link_path = m1f_dir / "m1f.txt"
-        if link_path.exists():
-            print("✅ m1f documentation already linked")
+        if self.safe_exists(link_path):
+            success("[OK] m1f documentation already linked")
             self.created_files.append("m1f/m1f.txt (symlink)")
             return
 
@@ -115,55 +169,71 @@ class M1FInit:
                 # On Windows, try creating a symlink first (requires admin or developer mode)
                 try:
                     link_path.symlink_to(self.m1f_docs_source)
-                    print(f"✅ Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}")
+                    success(
+                        f"[OK] Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}"
+                    )
                     self.created_files.append("m1f/m1f.txt (symlink)")
                 except OSError:
-                    # Fall back to copying the file
-                    import shutil
+                    # Fall back to copying the file using safe operations
+                    try:
+                        # Validate paths
+                        validated_source = self.validate_path_traversal(
+                            self.m1f_docs_source, allow_outside=True
+                        )
+                        validated_dest = self.validate_path_traversal(
+                            link_path, allow_outside=False
+                        )
 
-                    shutil.copy2(self.m1f_docs_source, link_path)
-                    print(f"✅ Copied m1f documentation to m1f/m1f.txt")
-                    print(
-                        "   (Symlink creation requires admin rights or developer mode on Windows)"
-                    )
-                    self.created_files.append("m1f/m1f.txt (copy)")
+                        # Read and write safely
+                        content = self.safe_read_text(validated_source)
+                        self.safe_write_text(validated_dest, content)
+                        success(f"[OK] Copied m1f documentation to m1f/m1f.txt")
+                        info(
+                            "   (Symlink creation requires admin rights or developer mode on Windows)"
+                        )
+                        self.created_files.append("m1f/m1f.txt (copy)")
+                    except Exception as copy_e:
+                        warning(f"[WARNING] Failed to copy m1f documentation: {copy_e}")
+                        info(
+                            f"   You can manually copy {self.m1f_docs_source} to m1f/m1f.txt"
+                        )
             else:
                 # Unix-like systems
                 link_path.symlink_to(self.m1f_docs_source)
-                print(f"✅ Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}")
+                success(f"[OK] Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}")
                 self.created_files.append("m1f/m1f.txt (symlink)")
 
         except Exception as e:
-            print(f"⚠️  Failed to link m1f documentation: {e}")
-            print(f"   You can manually copy {self.m1f_docs_source} to m1f/m1f.txt")
+            warning(f"[WARNING] Failed to link m1f documentation: {e}")
+            info(f"   You can manually copy {self.m1f_docs_source} to m1f/m1f.txt")
 
     def _check_git_repository(self) -> Path:
         """Check if we're in a git repository."""
         git_root = self.project_path
-        if (self.project_path / ".git").exists():
-            print(f"✅ Git repository detected in current directory")
+        if self.safe_exists(self.project_path / ".git"):
+            success(f"[OK] Git repository detected in current directory")
         else:
             # Look for git root in parent directories
             current = self.project_path
             while current != current.parent:
-                if (current / ".git").exists():
+                if self.safe_exists(current / ".git"):
                     git_root = current
                     break
                 current = current.parent
             else:
-                print(
-                    f"⚠️  No git repository found - initializing in current directory: {self.project_path}"
+                warning(
+                    f"[WARNING] No git repository found - initializing in current directory: {self.project_path}"
                 )
         return git_root
 
     def _check_existing_config(self) -> bool:
         """Check for existing .m1f.config.yml."""
         config_path = self.project_path / ".m1f.config.yml"
-        if config_path.exists():
-            print(f"✅ m1f configuration found: {config_path.name}")
+        if self.safe_exists(config_path):
+            success(f"[OK] m1f configuration found: {config_path.name}")
             return True
         else:
-            print(f"⚠️  No m1f configuration found - will create one")
+            warning(f"[WARNING] No m1f configuration found - will create one")
             return False
 
     def _run_m1f_update(self):
@@ -185,7 +255,10 @@ class M1FInit:
                         import yaml
 
                         config_path = self.project_path / ".m1f.config.yml"
-                        with open(config_path, "r") as f:
+                        validated_config_path = self.validate_path_traversal(
+                            config_path, allow_outside=False
+                        )
+                        with self.safe_open(validated_config_path, "r") as f:
                             config = yaml.safe_load(f)
 
                         # Find the bundle output path
@@ -201,26 +274,27 @@ class M1FInit:
                 if not self.created_files:
                     # Fallback: list files in m1f directory
                     m1f_dir = self.project_path / "m1f"
-                    if m1f_dir.exists():
+                    if self.safe_exists(m1f_dir):
                         for file in m1f_dir.glob("*.txt"):
                             if file.name != "m1f.txt":  # Don't list the symlink
                                 self.created_files.append(f"m1f/{file.name}")
             else:
-                print(f"⚠️  Failed to run m1f-update: {result.stderr}")
+                warning(f"[WARNING] Failed to run m1f-update: {result.stderr}")
 
         except Exception as e:
-            print(f"⚠️  Error running m1f-update: {e}")
+            warning(f"[WARNING] Error running m1f-update: {e}")
 
     def _analyze_project(self) -> Dict:
         """Analyze project structure."""
-        print("Analyzing project structure...")
+        info("Analyzing project structure...")
 
         # Create m1f directory if needed
         m1f_dir = self.project_path / "m1f"
-        m1f_dir.mkdir(exist_ok=True)
+        self.safe_mkdir(m1f_dir, parents=False, exist_ok=True)
 
         # Create temporary directory for analysis files
         import tempfile
+
         with tempfile.TemporaryDirectory() as temp_dir:
             # Run m1f to generate file and directory lists in temp directory
             project_name = self.project_path.name
@@ -242,7 +316,7 @@ class M1FInit:
                 ]
 
                 # Only use .gitignore if it exists in current directory
-                if (self.project_path / ".gitignore").exists():
+                if self.safe_exists(self.project_path / ".gitignore"):
                     cmd.extend(["--exclude-paths-file", ".gitignore"])
 
                 result = subprocess.run(cmd, capture_output=True, text=True)
@@ -255,13 +329,13 @@ class M1FInit:
                 files_list = []
                 dirs_list = []
 
-                if filelist_path.exists():
-                    content = filelist_path.read_text().strip()
+                if self.safe_exists(filelist_path):
+                    content = self.safe_read_text(filelist_path).strip()
                     if content:
                         files_list = content.split("\n")
 
-                if dirlist_path.exists():
-                    content = dirlist_path.read_text().strip()
+                if self.safe_exists(dirlist_path):
+                    content = self.safe_read_text(dirlist_path).strip()
                     if content:
                         dirs_list = content.split("\n")
 
@@ -270,17 +344,19 @@ class M1FInit:
 
                 # Note: Temporary files are automatically cleaned up when exiting the context
 
-                print(f"✅ Found {len(files_list)} files in {len(dirs_list)} directories")
-                print(f"📁 Project Type: {context.get('type', 'Unknown')}")
+                success(
+                    f"[OK] Found {len(files_list)} files in {len(dirs_list)} directories"
+                )
+                info(f"📁 Project Type: {context.get('type', 'Unknown')}")
                 if context.get("languages") != "No programming languages detected":
-                    print(
-                        f"💻 Programming Languages: {context.get('languages', 'Unknown')}"
+                    info(
+                        f"[Programming Languages]: {context.get('languages', 'Unknown')}"
                     )
 
                 return context
 
             except Exception as e:
-                print(f"⚠️  Failed to analyze project: {e}")
+                warning(f"[WARNING] Failed to analyze project: {e}")
                 return {
                     "type": "Unknown",
                     "languages": "No programming languages detected",
@@ -517,7 +593,7 @@ class M1FInit:
 
         # Create complete bundle only if not all files are docs
         if not only_docs:
-            print(f"Creating complete project bundle...")
+            info(f"Creating complete project bundle...")
             complete_cmd = [
                 sys.executable,
                 "-m",
@@ -536,7 +612,7 @@ class M1FInit:
             ]
 
             # Only use .gitignore if it exists in current directory
-            if (self.project_path / ".gitignore").exists():
+            if self.safe_exists(self.project_path / ".gitignore"):
                 idx = complete_cmd.index("--excludes")
                 complete_cmd.insert(idx, ".gitignore")
                 complete_cmd.insert(idx, "--exclude-paths-file")
@@ -548,13 +624,13 @@ class M1FInit:
 
             result = subprocess.run(complete_cmd, capture_output=True, text=True)
             if result.returncode == 0:
-                print(f"✅ Created: m1f/{project_name}_complete.txt")
+                success(f"[OK] Created: m1f/{project_name}_complete.txt")
                 self.created_files.append(f"m1f/{project_name}_complete.txt")
             else:
-                print(f"⚠️  Failed to create complete bundle: {result.stderr}")
+                warning(f"[WARNING] Failed to create complete bundle: {result.stderr}")
 
         # Create docs bundle
-        print(f"Creating documentation bundle...")
+        info(f"Creating documentation bundle...")
         docs_cmd = [
             sys.executable,
             "-m",
@@ -574,7 +650,7 @@ class M1FInit:
         ]
 
         # Only use .gitignore if it exists in current directory
-        if (self.project_path / ".gitignore").exists():
+        if self.safe_exists(self.project_path / ".gitignore"):
             idx = docs_cmd.index("--excludes")
             docs_cmd.insert(idx, ".gitignore")
             docs_cmd.insert(idx, "--exclude-paths-file")
@@ -586,21 +662,21 @@ class M1FInit:
 
         result = subprocess.run(docs_cmd, capture_output=True, text=True)
         if result.returncode == 0:
-            print(f"✅ Created: m1f/{project_name}_docs.txt")
+            success(f"[OK] Created: m1f/{project_name}_docs.txt")
             self.created_files.append(f"m1f/{project_name}_docs.txt")
             if only_docs:
-                print(
-                    f"ℹ️  Skipped complete bundle (all {total_file_count} files are documentation)"
+                info(
+                    f"[INFO] Skipped complete bundle (all {total_file_count} files are documentation)"
                 )
         else:
-            print(f"⚠️  Failed to create docs bundle: {result.stderr}")
+            warning(f"[WARNING] Failed to create docs bundle: {result.stderr}")
 
     def _create_config(self, context: Dict):
         """Create basic .m1f.config.yml."""
         project_name = self.safe_name
         config_path = self.project_path / ".m1f.config.yml"
 
-        print(f"\n📝 Creating .m1f.config.yml...")
+        info(f"\n[Creating .m1f.config.yml...]")
 
         # Check if all files are documentation
         files_list = context.get("files", [])
@@ -666,29 +742,32 @@ global:
 # Use 'm1f-update' to regenerate bundles after making changes
 """
 
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(yaml_content)
+        # Validate config path and write safely
+        validated_config_path = self.validate_path_traversal(
+            config_path, allow_outside=False
+        )
+        self.safe_write_text(validated_config_path, yaml_content)
 
-        print(f"✅ Configuration created: .m1f.config.yml")
+        success(f"[OK] Configuration created: .m1f.config.yml")
         self.created_files.append(".m1f.config.yml")
 
     def _show_next_steps(self):
         """Show next steps to the user."""
-        print(f"\n✅ Quick Setup Complete!")
+        success(f"\n[Quick Setup Complete!]")
 
         # Show created files nicely formatted
         if self.created_files:
-            print(
+            info(
                 f"\n📁 {'Here is your file:' if len(self.created_files) == 1 else 'Here are your files:'}\n"
             )
             for file in self.created_files:
-                print(f"   • {file}")
-            print()  # Empty line for spacing
+                info(f"   - {file}")
+            info("")  # Empty line for spacing
 
         # Show next steps
-        print(f"📌 Next Steps:")
-        print(f"1. Use 'm1f-update' to regenerate bundles after changes")
-        print(f"2. Reference @m1f/m1f.txt in AI tools for m1f documentation")
+        header(f"📌 Next Steps:")
+        info(f"1. Use 'm1f-update' to regenerate bundles after changes")
+        info(f"2. Reference @m1f/m1f.txt in AI tools for m1f documentation")
 
         # Show preview command only for actual bundle files
         bundle_files = [
@@ -697,47 +776,52 @@ global:
         if bundle_files:
             # Use the first bundle file for the preview example
             first_bundle = bundle_files[0]
-            print(f"3. Preview your bundle: cat {first_bundle} | head -50")
+            info(f"3. Preview your bundle: cat {first_bundle} | head -50")
 
         if not self.is_windows:
-            print(f"\n🚀 Additional Setup Available!")
-            print(f"For topic-specific bundles (components, API, tests, etc.), run:")
-            print(f"  m1f-claude --setup")
-            print(f"\nThis will:")
-            print(f"  • Analyze your project structure in detail")
-            print(f"  • Create focused bundles for different aspects")
-            print(f"  • Optimize configuration for your project type")
+            header(f"\n[Additional Setup Available!]")
+            info(f"For topic-specific bundles (components, API, tests, etc.), run:")
+            info(f"  m1f-claude --setup")
+            info(f"\nThis will:")
+            info(f"  - Analyze your project structure in detail")
+            info(f"  - Create focused bundles for different aspects")
+            info(f"  - Optimize configuration for your project type")
         else:
-            print(
-                f"\n💡 Note: Additional setup with Claude is not available on Windows"
-            )
-            print(f"You can manually add topic-specific bundles to .m1f.config.yml")
+            info(f"\n[Note]: Additional setup with Claude is not available on Windows")
+            info(f"You can manually add topic-specific bundles to .m1f.config.yml")
 
 
 def main():
     """Main entry point for m1f-init."""
     parser = argparse.ArgumentParser(
         description="Initialize m1f for your project with quick setup",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-This tool provides cross-platform m1f initialization:
-  • Links m1f documentation (like m1f-link)
-  • Analyzes your project structure
-  • Creates complete and docs bundles
-  • Generates .m1f.config.yml
-  • Shows platform-specific next steps
+        formatter_class=ColoredHelpFormatter,
+        epilog=f"""
+{Colors.BOLD}This tool provides cross-platform m1f initialization:{Colors.RESET}
+  - Links m1f documentation (like m1f-link)
+  - Analyzes your project structure
+  - Creates complete and docs bundles
+  - Generates .m1f.config.yml
+  - Shows platform-specific next steps
 
-Examples:
-  m1f-init                # Initialize in current directory
-  m1f-init --verbose      # Show detailed output
+{Colors.BOLD}Examples:{Colors.RESET}
+  {Colors.CYAN}m1f-init{Colors.RESET}                # Initialize in current directory
+  {Colors.CYAN}m1f-init --verbose{Colors.RESET}      # Show detailed output
   
-After initialization:
-  • Use 'm1f-update' to regenerate bundles
-  • On Linux/Mac: Use 'm1f-claude --setup' for topic bundles
-  • Reference @m1f/m1f.txt in AI tools
+{Colors.BOLD}After initialization:{Colors.RESET}
+  - Use {Colors.CYAN}'m1f-update'{Colors.RESET} to regenerate bundles
+  - On Linux/Mac: Use {Colors.CYAN}'m1f-claude --setup'{Colors.RESET} for topic bundles
+  - Reference {Colors.YELLOW}@m1f/m1f.txt{Colors.RESET} in AI tools
 """,
     )
 
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"m1f-init {__version__}",
+        help="Show version information"
+    )
+    
     parser.add_argument(
         "--verbose",
         "-v",
