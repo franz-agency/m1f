@@ -49,44 +49,28 @@ m1f-init && m1f-update
 - **Automatic Bundling**: Create multiple bundles from a single YAML config file.
 - **Real-Time Progress**: Live streaming of operations with friendly progress indicators.
 
-## Get Started in 30 Seconds
+## Get Started in 2 Minutes
 
 Works on Linux, macOS, and Windows. Because we don't discriminate.
 
 ```bash
-# 1. Clone it
-git clone https://github.com/franz-agency/m1f.git
-cd m1f
-
-# 2. Install it
-source ./scripts/install.sh    # Linux/macOS
-.\scripts\install.ps1          # Windows (restart your terminal)
-
-# 3. Use it
-cd /your/amazing/project
-m1f-init
-
-# 💥 Boom! Your AI just became a project expert.
-```
-
-## Your First 2 Minutes
-
-```bash
-# 1. Get it running (30 seconds)
+# 1. Install m1f (30 seconds)
 git clone https://github.com/franz-agency/m1f.git && cd m1f
-source ./scripts/install.sh
+source ./scripts/install.sh    # Linux/macOS
+# OR
+.\scripts\install.ps1          # Windows (restart terminal after)
 
-# 2. Initialize in your project (30 seconds)  
-cd /your/project && m1f-init
+# 2. Initialize your project (30 seconds)  
+cd /your/amazing/project && m1f-init
 
-# 3. Create your first bundle (60 seconds)
+# 3. Generate bundles (60 seconds)
 m1f-update
 # ✅ Done! Check the m1f/ directory for your AI-ready files
 ```
 
-**What just happened?**
+**💥 What just happened?**
 - Analyzed your project structure and created `.m1f.config.yml`
-- Generated multiple bundles: complete project, docs-only, frontend-only
+- Generated multiple bundles: complete project, docs-only, and more
 - Auto-ignored node_modules, .git, and other noise
 - Ready to paste into Claude, ChatGPT, or any LLM
 
