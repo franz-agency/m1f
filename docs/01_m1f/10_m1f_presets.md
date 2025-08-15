@@ -14,6 +14,23 @@ Instead of applying the same settings to all files, presets let you:
 - Override security checks and size limits per file type
 - Integrate with auto-bundling for intelligent project organization
 
+## v3.2+ Enhancements
+
+Version 3.2 introduced several important enhancements to the preset system:
+
+### Security Improvements
+- **File Size Limits**: Preset files are limited to 10MB to prevent memory exhaustion attacks
+- **Processor Validation**: Processor names must only contain alphanumeric characters and underscores
+- **Path Validation**: All paths in preset files are validated to prevent directory traversal
+
+### New Configuration Options
+- **`enable_content_deduplication`**: Control duplicate file handling (default: true)
+- **`prefer_utf8_for_text_files`**: UTF-8 preference for text files (default: true)
+- **`security_check`**: Default changed from 'warn' to 'abort' for enhanced security
+
+### Per-File Settings Support
+You can now override any global setting on a per-file-type basis using the new `per_file_settings` configuration:
+
 ## Quick Start
 
 1. **Use a built-in preset**:
@@ -366,7 +383,11 @@ global_settings:
   abort_on_encoding_error: false
 
   # Security
-  security_check: "warn" # abort, skip, warn
+  security_check: "warn" # abort, skip, warn (default: abort in v3.2+)
+  
+  # Performance Options (v3.2+)
+  enable_content_deduplication: true  # Default: true
+  prefer_utf8_for_text_files: true   # Default: true
 ```
 
 ### Encoding Options
@@ -515,6 +536,40 @@ m1f -s . -o bundle.txt \
   --preset base-rules.yml \
   --preset project-specific.yml \
   --preset production-overrides.yml
+```
+
+### v3.2 Sample Preset
+
+Example preset showcasing v3.2+ features:
+
+```yaml
+name: "Modern Web Project v3.2"
+version: "3.2"
+
+# Global settings with v3.2 features
+global_settings:
+  enable_content_deduplication: true
+  prefer_utf8_for_text_files: true
+  security_check: "abort"  # v3.2 default
+  
+# File patterns
+include_patterns:
+  - "src/**/*.{js,ts,jsx,tsx}"
+  - "**/*.md"
+
+exclude_patterns:
+  - "**/node_modules/**"
+  - "**/.git/**"
+
+# Per-file settings with processors
+per_file_settings:
+  "*.min.js":
+    processors:
+      - minify_content
+  "*.env":
+    security_check: "abort"
+    processors:
+      - redact_secrets
 ```
 
 ## Creating Custom Presets
