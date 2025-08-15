@@ -18,7 +18,7 @@ Integration tests for m1f-research scraping pipeline
 import pytest
 import asyncio
 import aiohttp
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 from datetime import datetime
 import json
 
@@ -161,15 +161,19 @@ class TestScrapingIntegration:
 
         # Mock handler for HTTP requests
         async def mock_get_handler(url, **kwargs):
-            response = AsyncMock()
+            response = Mock()
             response.status = 200 if url in mock_html_responses else 404
             response.url = url
             response.headers = {"Content-Type": "text/html"}
 
             if url in mock_html_responses:
-                response.text = AsyncMock(return_value=mock_html_responses[url])
+                async def text():
+                    return mock_html_responses[url]
+                response.text = text
             else:
-                response.text = AsyncMock(side_effect=aiohttp.ClientError("Not found"))
+                async def text():
+                    raise aiohttp.ClientError("Not found")
+                response.text = text
             return response
 
         # Create mock session and patch
@@ -237,10 +241,12 @@ class TestScrapingIntegration:
             concurrent_count -= 1
             request_times.append(("end", url, asyncio.get_event_loop().time()))
 
-            response = AsyncMock()
+            response = Mock()
             response.status = 200
             response.url = url
-            response.text = AsyncMock(return_value="<html><body>Test</body></html>")
+            async def text():
+                return "<html><body>Test</body></html>"
+            response.text = text
             return response
 
         # Create many URLs to test concurrency
@@ -274,7 +280,7 @@ class TestScrapingIntegration:
             # Count attempts
             attempt_counts[url] = attempt_counts.get(url, 0) + 1
 
-            response = AsyncMock()
+            response = Mock()
 
             # Fail first 2 attempts, succeed on 3rd
             if attempt_counts[url] < 3:
@@ -313,10 +319,12 @@ class TestScrapingIntegration:
 
         async def mock_get(url, **kwargs):
             request_times.append(asyncio.get_event_loop().time())
-            response = AsyncMock()
+            response = Mock()
             response.status = 200
             response.url = url
-            response.text = AsyncMock(return_value="<html><body>Test</body></html>")
+            async def text():
+                return "<html><body>Test</body></html>"
+            response.text = text
             return response
 
         urls = [
@@ -346,7 +354,7 @@ class TestScrapingIntegration:
 
         # Mock robots.txt response
         async def mock_get(url, **kwargs):
-            response = AsyncMock()
+            response = Mock()
 
             if url.endswith("/robots.txt"):
                 response.status = 200
@@ -363,7 +371,9 @@ class TestScrapingIntegration:
                 # Should not reach here if robots.txt is respected
                 response.status = 403
 
-                response.text = AsyncMock(return_value="Forbidden")
+                async def text():
+                    return "Forbidden"
+                response.text = text
             else:
                 response.status = 200
 
@@ -425,11 +435,13 @@ class TestScrapingIntegration:
         """
 
         async def mock_get(url, **kwargs):
-            response = AsyncMock()
+            response = Mock()
             response.status = 200
             response.url = url
 
-            response.text = AsyncMock(return_value=test_html)
+            async def text():
+                return test_html
+            response.text = text
             return response
 
         urls = [{"url": "https://example.com/test", "title": "Test"}]
@@ -473,14 +485,14 @@ class TestScrapingIntegration:
             if "timeout" in url:
                 await asyncio.sleep(10)  # Trigger timeout
             elif "error500" in url:
-                response = AsyncMock()
+                response = Mock()
                 response.status = 500
                 response.url = url
                 return response
             elif "network" in url:
                 raise aiohttp.ClientConnectorError(None, OSError("Network error"))
             elif "invalid" in url:
-                response = AsyncMock()
+                response = Mock()
                 response.status = 200
                 response.url = url
 
@@ -489,7 +501,7 @@ class TestScrapingIntegration:
                 )
                 return response
             else:
-                response = AsyncMock()
+                response = Mock()
                 response.status = 200
                 response.url = url
 
@@ -530,10 +542,12 @@ class TestScrapingIntegration:
         async def mock_get(url, **kwargs):
             # Simulate some delay to see progress updates
             await asyncio.sleep(0.05)
-            response = AsyncMock()
+            response = Mock()
             response.status = 200
             response.url = url
-            response.text = AsyncMock(return_value="<html><body>Test</body></html>")
+            async def text():
+                return "<html><body>Test</body></html>"
+            response.text = text
             return response
 
         def progress_callback(completed, total):
@@ -574,7 +588,7 @@ class TestScrapingIntegration:
         """Test metadata extraction from responses"""
 
         async def mock_get(url, **kwargs):
-            response = AsyncMock()
+            response = Mock()
             response.status = 200
             response.url = (
                 url
@@ -600,7 +614,9 @@ class TestScrapingIntegration:
                     </body>
                 </html>
             """
-            response.text = AsyncMock(return_value=html_content)
+            async def text():
+                return html_content
+            response.text = text
             return response
 
         urls = [

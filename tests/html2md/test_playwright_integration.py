@@ -350,6 +350,10 @@ class TestPlaywrightIntegration:
             request_delay=0.1,
             concurrent_requests=1,
             check_ssrf=False,
+            browser_config={
+                "wait_until": "domcontentloaded",  # Use faster wait strategy for tests
+                "wait_timeout": 10000,  # 10 second timeout instead of 30
+            },
         )
 
         crawler = WebCrawler(config.crawler)

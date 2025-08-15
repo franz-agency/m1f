@@ -379,7 +379,7 @@ documentation. We like you already._
 Welcome to the m1f project documentation. This directory contains comprehensive
 guides, references, and examples for all tools in the m1f toolkit.
 
-**Current Version: 3.7.0** | [Changelog](99_CHANGELOG.md)
+**Current Version: 3.8.0** | [Changelog](99_CHANGELOG.md)
 
 ## Table of Contents
 

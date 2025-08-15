@@ -194,7 +194,7 @@ def serve_page(page_name):
             # For testing canonical URLs, inject a canonical tag if requested
             if query_params.get("canonical"):
                 try:
-                    content = file_path.read_text()
+                    content = file_path.read_text(encoding='utf-8')
                     canonical_url = query_params.get("canonical")
                     # Inject canonical tag into head
                     content = content.replace(
@@ -241,7 +241,7 @@ def serve_page(page_name):
         # Handle canonical parameter even for pages not in TEST_PAGES
         if query_params.get("canonical"):
             try:
-                content = file_path.read_text()
+                content = file_path.read_text(encoding='utf-8')
                 canonical_url = query_params.get("canonical")
                 # Inject canonical tag into head
                 content = content.replace(
