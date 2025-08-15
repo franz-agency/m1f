@@ -9371,6 +9371,7 @@ capabilities.
 - [66_examples.md](66_examples.md) - Real-world usage examples
 - [67_cli_improvements.md](67_cli_improvements.md) - Enhanced CLI features and
   UX
+- [68_job_deletion_guide.md](68_job_deletion_guide.md) - Complete guide to job deletion
 
 ## Quick Start
 

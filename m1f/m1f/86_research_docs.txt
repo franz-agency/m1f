@@ -14,6 +14,7 @@ capabilities.
 - [66_examples.md](66_examples.md) - Real-world usage examples
 - [67_cli_improvements.md](67_cli_improvements.md) - Enhanced CLI features and
   UX
+- [68_job_deletion_guide.md](68_job_deletion_guide.md) - Complete guide to job deletion
 
 ## Quick Start
 
@@ -803,8 +804,8 @@ research-data/
         └── 23/
             └── abc123_query-name/
                 ├── research.db           # Job-specific database
-                ├── 📚_RESEARCH_BUNDLE.md # Main research bundle
-                ├── 📊_EXECUTIVE_SUMMARY.md # Executive summary
+                ├── RESEARCH_BUNDLE.md    # Main research bundle
+                ├── EXECUTIVE_SUMMARY.md  # Executive summary
                 └── metadata.json         # Job metadata
 ```
 
@@ -952,6 +953,112 @@ m1f-research --clean-all-raw
 
 **Warning**: This action cannot be undone. You'll be prompted to confirm.
 
+## Job Deletion
+
+### Deleting Individual Jobs
+
+Completely remove a job including all data:
+
+```bash
+# Delete specific job (with confirmation)
+m1f-research --delete abc123
+
+# Delete without confirmation prompt
+m1f-research --delete abc123 --yes
+```
+
+When deleting a job, the system will:
+
+1. Show job details (query, status, creation date, output path)
+2. Request confirmation (unless `--yes` is used)
+3. Remove the job from the database
+4. Delete the entire job directory and all its contents
+5. Report success or any errors encountered
+
+**What gets deleted:**
+
+- Database entry in `research_jobs.db`
+- Job statistics in the database
+- Entire job directory including:
+  - Job-specific database (`research.db`)
+  - Research bundle (`RESEARCH_BUNDLE.md`)
+  - Executive summary (`EXECUTIVE_SUMMARY.md`)
+  - All scraped content and analysis
+  - Any metadata files
+
+### Bulk Job Deletion
+
+Delete multiple jobs based on filters:
+
+```bash
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete jobs from a specific month
+m1f-research --delete-bulk --date 2025-01
+
+# Delete jobs matching a search term
+m1f-research --delete-bulk --search "test"
+
+# Combine filters
+m1f-research --delete-bulk --status-filter failed --date 2025-01
+
+# Skip confirmation (use with caution!)
+m1f-research --delete-bulk --status-filter failed --yes
+```
+
+**Bulk deletion process:**
+
+1. Lists all jobs matching the filters
+2. Shows a preview of jobs to be deleted (first 10)
+3. Requests confirmation with total count
+4. Deletes each job with progress tracking
+5. Reports success/failure statistics
+
+### Safety Features
+
+#### Confirmation Prompts
+
+By default, all deletion operations require confirmation:
+
+```
+Job to delete: abc123
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Query: python async best practices
+Status: completed
+Created: 2025-07-23 14:30:22
+Output: research-data/2025/07/23/abc123_python-async-best-practices
+
+⚠️  Delete job abc123 and all its data? [y/N]:
+```
+
+#### Error Handling
+
+The deletion system handles errors gracefully:
+
+- **Partial failures**: If filesystem deletion fails but database deletion succeeds, both are reported
+- **Permission errors**: Attempts recovery with fallback methods
+- **Missing jobs**: Clear error messages for non-existent job IDs
+- **Failed deletions**: Detailed error reporting for troubleshooting
+
+### Deletion vs Cleanup
+
+| Operation | Database Entry | Job Directory | Research Bundle | Raw HTML | Recovery |
+|-----------|---------------|---------------|-----------------|----------|----------|
+| Clean Raw | ✓ Kept | ✓ Kept | ✓ Kept | ✗ Deleted | Can resume |
+| Delete Job | ✗ Deleted | ✗ Deleted | ✗ Deleted | ✗ Deleted | Not recoverable |
+
+**When to use cleanup:**
+- Free disk space while keeping research results
+- Job is complete but you want to keep the analysis
+- Temporary space management
+
+**When to use deletion:**
+- Remove failed or test jobs
+- Clean up old research no longer needed
+- Complete removal of sensitive or outdated data
+- Permanent space recovery
+
 ## Job Status
 
 Jobs can have the following statuses:
@@ -1014,6 +1121,9 @@ m1f-research --list-jobs --search "python"
 
 # 5. Clean up old data
 m1f-research --clean-raw abc123
+
+# 6. Delete old or failed jobs
+m1f-research --delete old-job-id
 ```
 
 ### Monthly Research Review
@@ -1036,11 +1146,39 @@ m1f-research --list-jobs --date 2025-07 --search "react hooks"
 # Check job sizes (future feature)
 # m1f-research --list-jobs --show-size
 
-# Clean specific old job
+# Clean raw data from specific job
 m1f-research --clean-raw old-job-id
 
-# Bulk cleanup
+# Bulk cleanup of raw data
 m1f-research --clean-all-raw
+
+# Delete specific job completely
+m1f-research --delete old-job-id
+
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete old jobs from previous month
+m1f-research --delete-bulk --date 2025-06
+```
+
+### Job Maintenance Workflow
+
+```bash
+# 1. List all jobs to review
+m1f-research --list-jobs
+
+# 2. Check failed jobs
+m1f-research --list-jobs --status-filter failed
+
+# 3. Delete all failed jobs after review
+m1f-research --delete-bulk --status-filter failed
+
+# 4. Clean raw data from completed jobs
+m1f-research --clean-all-raw
+
+# 5. Delete old test jobs
+m1f-research --delete-bulk --search "test" --yes
 ```
 
 ## Tips
@@ -1050,6 +1188,10 @@ m1f-research --clean-all-raw
 3. **Combine filters**: Use multiple filters for precise searches
 4. **Manual URLs**: Supplement LLM search with your own URLs
 5. **Check status**: Monitor long-running jobs with --status
+6. **Review before deletion**: Always check job details before deleting
+7. **Use --yes carefully**: Only use automatic confirmation in scripts you trust
+8. **Delete failed jobs**: Regularly remove failed jobs to keep workspace clean
+9. **Backup important research**: Export important jobs before deletion
 
 ## Future Enhancements
 
@@ -1059,6 +1201,9 @@ m1f-research --clean-all-raw
 - Job tagging system
 - Cross-job deduplication
 - Job templates
+- Scheduled deletion policies
+- Job archiving before deletion
+- Undo/recovery for recently deleted jobs
 
 ======= 63_cli_reference.md ======
 # m1f-research CLI Reference
@@ -1160,6 +1305,8 @@ management commands)
 | `--clean-raw JOB_ID` | Clean raw HTML data for specific job |
 | `--clean-all-raw`    | Clean raw HTML data for all jobs     |
 | `--export JOB_ID`    | Export job data to JSON              |
+| `--delete JOB_ID`    | Delete a research job completely     |
+| `--delete-bulk`      | Delete multiple jobs based on filters |
 
 ## Command Examples
 
@@ -1235,6 +1382,31 @@ m1f-research --clean-raw abc123
 m1f-research --clean-all-raw
 ```
 
+### Job Deletion
+
+```bash
+# Delete specific job (with confirmation)
+m1f-research --delete abc123
+
+# Delete without confirmation
+m1f-research --delete abc123 --yes
+
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete jobs from specific month
+m1f-research --delete-bulk --date 2025-06
+
+# Delete jobs matching search term
+m1f-research --delete-bulk --search "test"
+
+# Combine filters for targeted deletion
+m1f-research --delete-bulk --status-filter failed --date 2025-07
+
+# Force deletion without confirmation (use carefully!)
+m1f-research --delete-bulk --status-filter failed --yes
+```
+
 ### Advanced Workflows
 
 ```bash
@@ -1302,6 +1474,9 @@ research:
 3. **Pagination**: Use limit/offset for large job lists
 4. **Cleanup**: Regularly clean raw data to save space
 5. **Manual URLs**: Supplement with your own curated links
+6. **Delete Failed Jobs**: Remove failed jobs regularly to keep workspace clean
+7. **Confirm Deletions**: Always review job details before deleting
+8. **Use --yes Carefully**: Only skip confirmations in trusted scripts
 
 ======= 64_api_reference.md ======
 # m1f-research API Reference
@@ -2476,6 +2651,327 @@ m1f-research --clean-all-raw --yes
    - Timing information per phase
    - Resource usage tracking
    - Success rate statistics
+
+======= 68_job_deletion_guide.md ======
+# Job Deletion Guide for m1f-research
+
+This guide covers the job deletion functionality in m1f-research, including best practices, safety features, and common workflows.
+
+## Overview
+
+Job deletion provides complete removal of research jobs from both the database and filesystem. Unlike cleanup operations that only remove raw data, deletion permanently removes all traces of a job.
+
+## Why Delete Jobs?
+
+- **Failed Jobs**: Remove jobs that encountered errors and cannot be resumed
+- **Test Jobs**: Clean up experimental or test research runs
+- **Outdated Research**: Remove old research that is no longer relevant
+- **Space Management**: Recover disk space completely
+- **Privacy**: Remove sensitive or confidential research data
+- **Organization**: Keep your research workspace clean and manageable
+
+## Deletion Commands
+
+### Single Job Deletion
+
+Delete a specific job by its ID:
+
+```bash
+m1f-research --delete JOB_ID
+```
+
+**Example:**
+```bash
+# Delete job with confirmation
+m1f-research --delete abc123
+
+# Skip confirmation (automation-friendly)
+m1f-research --delete abc123 --yes
+```
+
+### Bulk Deletion
+
+Delete multiple jobs based on filters:
+
+```bash
+m1f-research --delete-bulk [FILTERS]
+```
+
+**Available Filters:**
+- `--status-filter {active,completed,failed}` - Filter by job status
+- `--date DATE` - Filter by creation date (Y-M-D, Y-M, or Y format)
+- `--search TERM` - Filter by search term in query
+- `--yes` - Skip confirmation prompt
+
+**Examples:**
+```bash
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete jobs from January 2025
+m1f-research --delete-bulk --date 2025-01
+
+# Delete test jobs
+m1f-research --delete-bulk --search "test"
+
+# Combine filters
+m1f-research --delete-bulk --status-filter failed --date 2025-07
+
+# Automated deletion (no confirmation)
+m1f-research --delete-bulk --status-filter failed --yes
+```
+
+## What Gets Deleted?
+
+When you delete a job, the following items are permanently removed:
+
+### Database Entries
+- Main job record in `research_jobs.db`
+- Job statistics in the database
+- All references and foreign key relationships
+
+### Filesystem Data
+- Entire job directory at `research-data/YYYY/MM/DD/job_id_query/`
+- Job-specific database (`research.db`)
+- Research bundle (`RESEARCH_BUNDLE.md`)
+- Executive summary (`EXECUTIVE_SUMMARY.md`)
+- All scraped HTML content
+- All converted Markdown content
+- Analysis results and metadata
+- Any temporary or cache files
+
+## Safety Features
+
+### Confirmation Prompts
+
+By default, all deletion operations show job details and require confirmation:
+
+```
+Job to delete: abc123
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Query: python async best practices
+Status: completed
+Created: 2025-07-23 14:30:22
+Output: research-data/2025/07/23/abc123_python-async-best-practices
+
+⚠️  Delete job abc123 and all its data? [y/N]:
+```
+
+For bulk deletion, you'll see a preview:
+
+```
+Jobs to delete (15 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. [abc123] test query 1 (failed)
+2. [def456] test query 2 (failed)
+3. [ghi789] test query 3 (failed)
+... and 12 more
+
+⚠️  Delete 15 jobs with filters: status=failed? [y/N]:
+```
+
+### Error Handling
+
+The deletion system handles various error scenarios:
+
+- **Non-existent jobs**: Clear error message if job ID not found
+- **Permission errors**: Attempts recovery with fallback methods
+- **Partial failures**: Reports both successful and failed operations
+- **Database integrity**: Uses transactions to prevent corruption
+
+### Progress Tracking
+
+Bulk deletions show real-time progress:
+
+```
+Deleting 25 jobs...
+[████████████████████████████████████████] 100.0% Deletion complete
+✅ Successfully deleted 23 jobs
+❌ Failed to delete 2 jobs
+  - job123: Permission denied
+  - job456: Directory not found
+```
+
+## Deletion vs Cleanup Comparison
+
+| Aspect | Clean Raw (`--clean-raw`) | Delete Job (`--delete`) |
+|--------|---------------------------|-------------------------|
+| **Database entry** | ✅ Preserved | ❌ Deleted |
+| **Job directory** | ✅ Preserved | ❌ Deleted |
+| **Research bundle** | ✅ Preserved | ❌ Deleted |
+| **Analysis results** | ✅ Preserved | ❌ Deleted |
+| **Raw HTML** | ❌ Deleted | ❌ Deleted |
+| **Can resume** | ✅ Yes | ❌ No |
+| **Recoverable** | ✅ Partially | ❌ No |
+| **Space saved** | 🟡 Moderate | 🟢 Maximum |
+
+## Common Workflows
+
+### Regular Maintenance
+
+Clean up failed jobs weekly:
+
+```bash
+# Review failed jobs
+m1f-research --list-jobs --status-filter failed
+
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+```
+
+### Monthly Cleanup
+
+Remove old research monthly:
+
+```bash
+# List jobs from 2 months ago
+m1f-research --list-jobs --date 2025-05
+
+# Review and delete old jobs
+m1f-research --delete-bulk --date 2025-05
+```
+
+### Project Cleanup
+
+Clean up after a project:
+
+```bash
+# Find all project-related jobs
+m1f-research --list-jobs --search "project-name"
+
+# Delete project jobs
+m1f-research --delete-bulk --search "project-name"
+```
+
+### Automated Cleanup Script
+
+```bash
+#!/bin/bash
+# cleanup-research.sh
+
+# Delete failed jobs older than 7 days
+m1f-research --delete-bulk --status-filter failed --yes
+
+# Clean raw data from completed jobs
+m1f-research --clean-all-raw --yes
+
+echo "Cleanup complete!"
+```
+
+## Best Practices
+
+### Before Deleting
+
+1. **Review job details**: Always check what you're about to delete
+2. **Export important data**: Use `--export` to save job data if needed
+3. **Check research bundles**: Ensure you have copies of important results
+4. **Consider cleanup first**: Try `--clean-raw` if you only need space
+
+### Safe Deletion
+
+1. **Use filters carefully**: Test filters with `--list-jobs` first
+2. **Start small**: Delete individual jobs before bulk operations
+3. **Keep confirmations**: Only use `--yes` in trusted scripts
+4. **Document deletions**: Keep a log of what was deleted and why
+
+### Recovery Planning
+
+Since deletion is permanent:
+
+1. **Regular exports**: Export important jobs to JSON regularly
+2. **Backup bundles**: Copy research bundles to a backup location
+3. **Version control**: Consider committing important research to git
+4. **Archive first**: Move old jobs to archive storage before deleting
+
+## Troubleshooting
+
+### Common Issues
+
+**"Job not found" error:**
+- Verify job ID with `--list-jobs`
+- Check you're in the correct directory
+- Ensure the job hasn't already been deleted
+
+**"Permission denied" errors:**
+- Check file ownership and permissions
+- Run with appropriate user privileges
+- Consider using `sudo` if appropriate
+
+**Partial deletion failures:**
+- Check disk space and permissions
+- Review error messages for specific issues
+- Manually remove remaining files if needed
+
+### Recovery from Mistakes
+
+Unfortunately, deletion is permanent. To minimize risk:
+
+1. Always review before confirming
+2. Test with dry runs when possible
+3. Keep backups of important research
+4. Use cleanup instead of deletion when unsure
+
+## FAQ
+
+**Q: Can I undo a deletion?**
+A: No, deletion is permanent. Always confirm before deleting.
+
+**Q: What's the difference between cleanup and deletion?**
+A: Cleanup removes only raw HTML data. Deletion removes everything.
+
+**Q: Can I delete active jobs?**
+A: Yes, but it's not recommended. Stop the job first if possible.
+
+**Q: How do I delete jobs older than X days?**
+A: Use date filters, e.g., `--delete-bulk --date 2025-06` for June 2025.
+
+**Q: Is there a way to archive before deleting?**
+A: Use `--export` to save job data, then manually archive files before deletion.
+
+**Q: Can I recover a deleted job from the database?**
+A: No, deletion removes all database entries permanently.
+
+## Command Reference
+
+### Options
+- `--delete JOB_ID` - Delete a specific job
+- `--delete-bulk` - Delete multiple jobs with filters
+- `--yes` - Skip confirmation prompts
+- `--status-filter` - Filter by job status
+- `--date` - Filter by creation date
+- `--search` - Filter by query content
+
+### Examples
+```bash
+# Delete specific job
+m1f-research --delete abc123
+
+# Delete with auto-confirmation
+m1f-research --delete abc123 --yes
+
+# Delete failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete old jobs
+m1f-research --delete-bulk --date 2025-01
+
+# Delete test jobs
+m1f-research --delete-bulk --search "test"
+
+# Combined filters
+m1f-research --delete-bulk --status-filter failed --date 2025-07 --yes
+```
+
+## Summary
+
+Job deletion is a powerful feature for managing your research workspace. Use it wisely:
+
+- ✅ Delete failed and test jobs regularly
+- ✅ Review before confirming deletions
+- ✅ Use filters to target specific jobs
+- ⚠️ Remember deletion is permanent
+- ⚠️ Keep backups of important research
+- ⚠️ Use `--yes` only in trusted automation
 
 ======= index.md ======
 # Research Tool Documentation
