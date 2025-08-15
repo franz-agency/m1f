@@ -108,6 +108,13 @@ class EnhancedResearchCommand:
   
   {Colors.CYAN}# Clean up old data{Colors.RESET}
   m1f-research --clean-raw abc123
+  
+  {Colors.CYAN}# Delete a specific job{Colors.RESET}
+  m1f-research --delete abc123
+  
+  {Colors.CYAN}# Delete multiple jobs{Colors.RESET}
+  m1f-research --delete-bulk --status-filter failed
+  m1f-research --delete-bulk --date 2025-01 --yes
 
 {Colors.BOLD}For more help:{Colors.RESET}
   m1f-research --help-examples    # More usage examples
@@ -218,6 +225,16 @@ class EnhancedResearchCommand:
             "--export", metavar="JOB_ID", help="Export job data to JSON"
         )
 
+        data_group.add_argument(
+            "--delete", metavar="JOB_ID", help="Delete a research job completely"
+        )
+
+        data_group.add_argument(
+            "--delete-bulk",
+            action="store_true",
+            help="Delete multiple jobs based on filters",
+        )
+
         # Research options
         research_group = parser.add_argument_group("research options")
         research_group.add_argument(
@@ -318,6 +335,8 @@ class EnhancedResearchCommand:
                 args.clean_all_raw,
                 args.export,
                 args.watch,
+                args.delete,
+                args.delete_bulk,
                 args.help_examples,
                 args.help_filters,
                 args.help_providers,
@@ -417,6 +436,10 @@ class EnhancedResearchCommand:
                 return await self._clean_all_raw(args)
             elif args.export:
                 return await self._export_job(args)
+            elif args.delete:
+                return await self._delete_job(args)
+            elif args.delete_bulk:
+                return await self._delete_bulk(args)
             elif args.interactive:
                 return await self._interactive_mode(args)
             else:
@@ -503,6 +526,23 @@ m1f-research --list-jobs --status-filter completed --format json
 for topic in "react hooks" "vue composition" "angular signals"; do
   m1f-research "$topic" --quiet
 done
+
+## Data Management
+
+# Delete specific job
+m1f-research --delete abc123
+
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete jobs from specific month
+m1f-research --delete-bulk --date 2025-01
+
+# Delete jobs matching search term (with confirmation)
+m1f-research --delete-bulk --search "test"
+
+# Force delete without confirmation
+m1f-research --delete abc123 --yes
 
 ## Interactive Research
 m1f-research --interactive
@@ -942,6 +982,137 @@ research:
                 break
 
         return 0
+
+    async def _delete_job(self, args):
+        """Delete a specific job with confirmation"""
+        from .job_manager import JobManager
+
+        job_manager = JobManager(args.output)
+
+        # Get job details for confirmation
+        job = job_manager.get_job(args.delete)
+        if not job:
+            self.formatter.error(f"Job not found: {args.delete}")
+            return 1
+
+        # Show job details and confirm
+        if not args.yes:
+            self.formatter.header(f"Job to delete: {args.delete}")
+            self.formatter.info(f"Query: {job.query}")
+            self.formatter.info(f"Status: {job.status}")
+            self.formatter.info(f"Created: {job.created_at}")
+            self.formatter.info(f"Output: {job.output_dir}")
+
+            if not self.formatter.confirm(
+                f"\n⚠️  Delete job {args.delete} and all its data?", default=False
+            ):
+                self.formatter.info("Cancelled")
+                return 0
+
+        # Delete the job
+        self.formatter.info(f"Deleting job {args.delete}...")
+
+        result = await job_manager.delete_job(args.delete)
+
+        if result.get("error"):
+            self.formatter.error(result["error"])
+            return 1
+
+        if result.get("deleted"):
+            self.formatter.success(
+                f"Successfully deleted job {args.delete} ({result.get('query', 'Unknown query')})"
+            )
+            if result.get("errors"):
+                for error in result["errors"]:
+                    self.formatter.warning(f"Warning: {error}")
+        else:
+            self.formatter.error(f"Failed to delete job {args.delete}")
+            if result.get("errors"):
+                for error in result["errors"]:
+                    self.formatter.error(f"Error: {error}")
+            return 1
+
+        return 0
+
+    async def _delete_bulk(self, args):
+        """Delete multiple jobs with confirmation"""
+        from .job_manager import JobManager
+
+        job_manager = JobManager(args.output)
+
+        # Get jobs that match the filters
+        jobs_to_delete = job_manager.list_jobs(
+            status=args.status_filter, date_filter=args.date, search_term=args.search
+        )
+
+        if not jobs_to_delete:
+            self.formatter.info("No jobs found matching the criteria")
+            return 0
+
+        # Show jobs and confirm
+        if not args.yes:
+            self.formatter.header(f"Jobs to delete ({len(jobs_to_delete)} total)")
+
+            # Show first 10 jobs as preview
+            preview_count = min(10, len(jobs_to_delete))
+            for i, job in enumerate(jobs_to_delete[:preview_count], 1):
+                self.formatter.info(
+                    f"{i}. [{job['job_id']}] {job['query'][:50]} ({job['status']})"
+                )
+
+            if len(jobs_to_delete) > preview_count:
+                self.formatter.info(
+                    f"... and {len(jobs_to_delete) - preview_count} more"
+                )
+
+            # Build filter description
+            filters = []
+            if args.search:
+                filters.append(f"search='{args.search}'")
+            if args.date:
+                filters.append(f"date={args.date}")
+            if args.status_filter:
+                filters.append(f"status={args.status_filter}")
+
+            filter_desc = f" with filters: {', '.join(filters)}" if filters else ""
+
+            if not self.formatter.confirm(
+                f"\n⚠️  Delete {len(jobs_to_delete)} jobs{filter_desc}?", default=False
+            ):
+                self.formatter.info("Cancelled")
+                return 0
+
+        # Delete the jobs with progress tracking
+        self.formatter.info(f"Deleting {len(jobs_to_delete)} jobs...")
+
+        # Show progress
+        progress = ProgressTracker(self.formatter, len(jobs_to_delete), "Deleting jobs")
+
+        # Perform deletion
+        result = await job_manager.delete_jobs(
+            status=args.status_filter, date_filter=args.date, search_term=args.search
+        )
+
+        progress.complete("Deletion complete")
+
+        # Show results
+        if result["successfully_deleted"] > 0:
+            self.formatter.success(
+                f"Successfully deleted {result['successfully_deleted']} jobs"
+            )
+
+        if result["failed_deletions"] > 0:
+            self.formatter.error(f"Failed to delete {result['failed_deletions']} jobs")
+            for failed_job in result["failed_jobs"]:
+                self.formatter.error(
+                    f"  - {failed_job['job_id']}: {', '.join(failed_job.get('errors', ['Unknown error']))}"
+                )
+
+        if result.get("errors"):
+            for error in result["errors"]:
+                self.formatter.warning(f"Warning: {error}")
+
+        return 0 if result["failed_deletions"] == 0 else 1
 
     async def _interactive_mode(self, args):
         """Run in interactive mode"""
