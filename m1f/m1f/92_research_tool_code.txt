@@ -3887,7 +3887,7 @@ class ClaudeCodeProvider(LLMProvider):
 
         try:
             # Build command with WebSearch tool enabled for URL discovery
-            # Use verbose and stream-json for real-time feedback
+            # Use stream-json format for real-time feedback
             cmd = [
                 self.binary_path,
                 "-p",
@@ -3972,43 +3972,92 @@ class ClaudeCodeProvider(LLMProvider):
                                 msg_type = json_obj.get("type", "")
 
                                 # Show progress based on message type
-                                if (
-                                    msg_type == "tool_use"
-                                    and json_obj.get("name") == "WebSearch"
-                                ):
-                                    query_info = json_obj.get("input", {}).get(
-                                        "query", ""
-                                    )
-                                    sys.stdout.write(
-                                        "\r" + " " * 80 + "\r"
-                                    )  # Clear line
-                                    info(
-                                        f"  🔍 Searching web for: {query_info[:60]}..."
-                                    )
-                                elif (
-                                    msg_type == "tool_response"
-                                    and "search_results" in line
-                                ):
-                                    sys.stdout.write(
-                                        "\r" + " " * 80 + "\r"
-                                    )  # Clear line
-                                    info(f"  ✅ Found search results")
-                                elif msg_type == "assistant":
-                                    # Check for content mentioning URLs
+                                if msg_type == "assistant":
+                                    # Check for tool_use and text in assistant message
+                                    message = json_obj.get("message", {})
+                                    if isinstance(message, dict):
+                                        content_parts = message.get("content", [])
+                                        for part in content_parts:
+                                            if isinstance(part, dict):
+                                                if (
+                                                    part.get("type") == "tool_use"
+                                                    and part.get("name") == "WebSearch"
+                                                ):
+                                                    query_info = part.get(
+                                                        "input", {}
+                                                    ).get("query", "")
+                                                    sys.stdout.write(
+                                                        "\r" + " " * 80 + "\r"
+                                                    )
+                                                    info(
+                                                        f'  🔍 WebSearch: "{query_info}"'
+                                                    )
+                                                elif part.get("type") == "text":
+                                                    text = part.get("text", "")
+                                                    # Check if this is the final JSON output
+                                                    if "```json" in text:
+                                                        sys.stdout.write(
+                                                            "\r" + " " * 80 + "\r"
+                                                        )
+                                                        # Try to count URLs in the JSON
+                                                        try:
+                                                            import re
+
+                                                            urls_found = len(
+                                                                re.findall(
+                                                                    r'"url":', text
+                                                                )
+                                                            )
+                                                            if urls_found > 0:
+                                                                info(
+                                                                    f"  📝 Formatting {urls_found} URLs as JSON..."
+                                                                )
+                                                        except:
+                                                            info(
+                                                                f"  📝 Formatting results as JSON..."
+                                                            )
+                                elif msg_type == "user":
+                                    # Check for tool_result in user message (WebSearch response)
                                     message = json_obj.get("message", {})
                                     if isinstance(message, dict):
                                         content_parts = message.get("content", [])
                                         for part in content_parts:
                                             if (
                                                 isinstance(part, dict)
-                                                and part.get("type") == "text"
+                                                and part.get("type") == "tool_result"
                                             ):
-                                                text = part.get("text", "")
-                                                if "http" in text.lower():
+                                                content = part.get("content", "")
+                                                if "Web search results" in content:
                                                     sys.stdout.write(
                                                         "\r" + " " * 80 + "\r"
                                                     )
-                                                    info(f"  📝 Processing URLs...")
+                                                    # Try to count links in the response
+                                                    try:
+                                                        import re
+
+                                                        links_match = re.search(
+                                                            r"Links: \[(.*?)\]", content
+                                                        )
+                                                        if links_match:
+                                                            links_str = (
+                                                                links_match.group(1)
+                                                            )
+                                                            links_count = (
+                                                                links_str.count(
+                                                                    '"url":'
+                                                                )
+                                                            )
+                                                            info(
+                                                                f"  ✅ WebSearch returned {links_count} results"
+                                                            )
+                                                        else:
+                                                            info(
+                                                                f"  ✅ WebSearch results received"
+                                                            )
+                                                    except:
+                                                        info(
+                                                            f"  ✅ WebSearch results received"
+                                                        )
                             except json.JSONDecodeError:
                                 # Not JSON, show spinner for regular output
                                 if current_time - last_progress_time > 0.3:
