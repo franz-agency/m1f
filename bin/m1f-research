@@ -24,4 +24,4 @@ export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 cd "$ORIGINAL_DIR"
 
 # Run the research module
-exec python -m tools.research "$@"
+exec python "$PROJECT_ROOT/tools/research/__main__.py" "$@"

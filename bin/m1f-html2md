@@ -16,4 +16,4 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run mf1-html2md
-cd "$ORIGINAL_DIR" && exec python -m tools.html2md_tool "$@"
+cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/html2md_tool/__main__.py" "$@"

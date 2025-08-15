@@ -10,4 +10,4 @@ M1F_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 export PYTHONPATH="$M1F_ROOT:$PYTHONPATH"
 
 # Run the Python help script
-exec python3 -m tools.m1f_help "$@"
+exec python3 "$M1F_ROOT/tools/m1f_help.py" "$@"
