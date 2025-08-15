@@ -25,9 +25,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from ..m1f.file_operations import (
-    safe_exists,
-)
+from m1f.file_operations import safe_exists
 
 from .config import ResearchConfig
 from .orchestrator import EnhancedResearchOrchestrator
@@ -35,7 +33,7 @@ from .output import OutputFormatter, ProgressTracker
 
 # Use unified colorama module
 try:
-    from ..shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE, info
+    from shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE, info
 except ImportError:
     # Fallback to local implementation
     from .output import Colors, COLORAMA_AVAILABLE
@@ -74,7 +72,7 @@ except ImportError:
 
 # Import version
 try:
-    from .._version import __version__
+    from _version import __version__
 except ImportError:
     __version__ = "3.8.0"
 

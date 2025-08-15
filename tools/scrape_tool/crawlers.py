@@ -26,8 +26,8 @@ from urllib.parse import urlparse, urljoin
 
 from .scrapers import create_scraper, ScraperConfig, ScrapedPage
 from .config import CrawlerConfig, ScraperBackend
-from ..m1f.file_operations import safe_exists, safe_mkdir
-from ..html2md_tool.utils import sanitize_filename
+from m1f.file_operations import safe_exists, safe_mkdir
+from html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -1116,7 +1116,7 @@ class WebCrawler:
         import os
         from bs4 import BeautifulSoup
         from urllib.parse import urljoin, urlparse, urlunparse
-        from tools.scrape_tool.utils import find_common_parent
+        from scrape_tool.utils import find_common_parent
 
         # Handle both string and BeautifulSoup inputs
         if isinstance(content, str):

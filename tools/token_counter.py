@@ -24,8 +24,8 @@ try:
 except ImportError:
     # Try direct import if running as script
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from tools.shared.colors import Colors, ColoredHelpFormatter, success, error, info
-    from tools.m1f.file_operations import safe_exists, safe_open
+    from shared.colors import Colors, ColoredHelpFormatter, success, error, info
+    from m1f.file_operations import safe_exists, safe_open
 
 
 def count_tokens_in_file(file_path: str, encoding_name: str = "cl100k_base") -> int:

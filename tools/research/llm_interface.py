@@ -29,7 +29,7 @@ import anyio
 # Claude SDK removed - using direct subprocess instead
 
 # Import shared Claude utilities
-from ..shared.claude_utils import (
+from shared.claude_utils import (
     ClaudeConfig,
     ClaudeHTTPClient,
     ClaudeSessionManager,
@@ -447,7 +447,7 @@ class ClaudeCodeProvider(LLMProvider):
             pass
 
         # Try known paths
-        from ..shared.claude_utils import ClaudeBinaryFinder
+        from shared.claude_utils import ClaudeBinaryFinder
 
         return ClaudeBinaryFinder.find()
 
@@ -494,7 +494,7 @@ class ClaudeCodeProvider(LLMProvider):
 
                 # Try to import colors for better output
                 try:
-                    from ..shared.colors import info, dim
+                    from shared.colors import info, dim
                 except ImportError:
                     # Fallback if colors not available
                     def info(msg):

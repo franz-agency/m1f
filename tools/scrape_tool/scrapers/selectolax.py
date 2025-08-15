@@ -186,7 +186,7 @@ class SelectolaxScraper(WebScraperBase):
 
             # 3. Content duplicate check
             if self.config.check_content_duplicates:
-                from ..utils import calculate_content_checksum
+                from scrape_tool.utils import calculate_content_checksum
 
                 content_checksum = calculate_content_checksum(response.text)
 

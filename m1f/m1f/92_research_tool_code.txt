@@ -39,7 +39,7 @@ from .url_manager import URLManager
 from .smart_scraper import EnhancedSmartScraper
 
 try:
-    from .._version import __version__, __version_info__
+    from _version import __version__, __version_info__
 except ImportError:
     # Fallback for when running as a script
     __version__ = "3.9.0"
@@ -1204,7 +1204,7 @@ from datetime import datetime
 import json
 from collections import defaultdict, Counter
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_open,
 )
 
@@ -1704,9 +1704,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from ..m1f.file_operations import (
-    safe_exists,
-)
+from m1f.file_operations import safe_exists
 
 from .config import ResearchConfig
 from .orchestrator import EnhancedResearchOrchestrator
@@ -1714,7 +1712,7 @@ from .output import OutputFormatter, ProgressTracker
 
 # Use unified colorama module
 try:
-    from ..shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE, info
+    from shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE, info
 except ImportError:
     # Fallback to local implementation
     from .output import Colors, COLORAMA_AVAILABLE
@@ -1753,7 +1751,7 @@ except ImportError:
 
 # Import version
 try:
-    from .._version import __version__
+    from _version import __version__
 except ImportError:
     __version__ = "3.8.0"
 
@@ -2978,7 +2976,7 @@ import yaml
 import os
 from argparse import Namespace
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_read_text,
 )
 
@@ -4227,7 +4225,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_mkdir,
 )
@@ -4644,7 +4642,7 @@ import anyio
 # Claude SDK removed - using direct subprocess instead
 
 # Import shared Claude utilities
-from ..shared.claude_utils import (
+from shared.claude_utils import (
     ClaudeConfig,
     ClaudeHTTPClient,
     ClaudeSessionManager,
@@ -5062,7 +5060,7 @@ class ClaudeCodeProvider(LLMProvider):
             pass
 
         # Try known paths
-        from ..shared.claude_utils import ClaudeBinaryFinder
+        from shared.claude_utils import ClaudeBinaryFinder
 
         return ClaudeBinaryFinder.find()
 
@@ -5109,7 +5107,7 @@ class ClaudeCodeProvider(LLMProvider):
 
                 # Try to import colors for better output
                 try:
-                    from ..shared.colors import info, dim
+                    from shared.colors import info, dim
                 except ImportError:
                     # Fallback if colors not available
                     def info(msg):
@@ -5764,7 +5762,7 @@ from datetime import datetime
 import json
 import logging
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_open,
 )
 
@@ -5788,13 +5786,13 @@ from .workflow_phases import WorkflowPhase, WorkflowManager, PhaseContext
 logger = logging.getLogger(__name__)
 
 try:
-    from ..scrape_tool.scrapers.base import WebScraperBase as WebScraper
+    from scrape_tool.scrapers.base import WebScraperBase as WebScraper
 except ImportError:
     logger.warning("Could not import WebScraperBase from scrape_tool")
     WebScraper = None
 
 try:
-    from ..html2md_tool import HTML2MDConverter as HTMLToMarkdownConverter
+    from html2md_tool import HTML2MDConverter as HTMLToMarkdownConverter
 except ImportError:
     logger.warning("Could not import HTML2MDConverter from html2md_tool")
     HTMLToMarkdownConverter = None
@@ -6339,7 +6337,7 @@ class EnhancedResearchOrchestrator:
 
     async def _prompt_for_queries(self, original_query: str) -> List[str]:
         """Interactively prompt for custom query variations"""
-        from ..shared.colors import info, success, dim
+        from shared.colors import info, success, dim
 
         queries = []
         info(f"\nOriginal query: {original_query}")
@@ -6766,7 +6764,7 @@ import shutil
 from pathlib import Path
 
 # Use unified colorama module
-from ..shared.colors import Colors, COLORAMA_AVAILABLE
+from shared.colors import Colors, COLORAMA_AVAILABLE
 
 
 class OutputFormatter:
@@ -7066,7 +7064,7 @@ Prompt utilities for m1f-research using shared prompt loader
 """
 
 from pathlib import Path
-from tools.shared.prompts import PromptLoader, format_prompt
+from shared.prompts import PromptLoader, format_prompt
 
 # Initialize loader with research-specific prompts
 _loader = PromptLoader(
@@ -7404,7 +7402,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import json
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_open,
 )
 
@@ -9062,7 +9060,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse, urlunparse
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_read_text,
 )
@@ -9255,7 +9253,7 @@ from dataclasses import dataclass
 import re
 
 try:
-    from ..shared.colors import Colors, info, success, warning, error
+    from shared.colors import Colors, info, success, warning, error
 except ImportError:
     # Fallback if colors not available
     class Colors:

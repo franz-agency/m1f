@@ -24,7 +24,7 @@ import shutil
 from pathlib import Path
 
 # Use unified colorama module
-from ..shared.colors import Colors, COLORAMA_AVAILABLE
+from shared.colors import Colors, COLORAMA_AVAILABLE
 
 
 class OutputFormatter:

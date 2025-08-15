@@ -8,6 +8,18 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.8.2] - 2025-08-15
+
+### Fixed
+
+- **Package Installation**: Fixed module import errors for all m1f commands
+  - Created new root-level setup.py with proper package_dir configuration
+  - Migrated from relative imports to absolute imports across 37 files
+  - Fixed entry point definitions to work with editable installations
+  - All commands (m1f, m1f-s1f, m1f-scrape, m1f-research, etc.) now work correctly
+  - Added comprehensive test suite `tests/test_command_availability.py` with 33 passing tests
+  - Ensures cross-platform compatibility (Linux/Windows)
+
 ## [3.9.0] - Unreleased
 
 ### Added

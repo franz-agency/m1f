@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_mkdir,
 )

@@ -23,7 +23,7 @@ import yaml
 import os
 from argparse import Namespace
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_read_text,
 )
 

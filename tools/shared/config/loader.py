@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union, TypeVar, Type
 import logging
 
-from ...m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_open,
     safe_read_text,

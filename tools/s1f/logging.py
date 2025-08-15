@@ -20,7 +20,7 @@ from pathlib import Path
 
 # Try different import strategies for shared logging
 try:
-    from ..shared.logging import (
+    from shared.logging import (
         LoggerManager as SharedLoggerManager,
         setup_logging as shared_setup_logging,
         get_logger as shared_get_logger,
@@ -32,7 +32,7 @@ except ImportError:
     sys.path.insert(
         0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     )
-    from tools.shared.logging import (
+    from shared.logging import (
         LoggerManager as SharedLoggerManager,
         setup_logging as shared_setup_logging,
         get_logger as shared_get_logger,
@@ -41,7 +41,7 @@ except ImportError:
 # Use unified colorama module for legacy compatibility
 try:
     # Try absolute import first (when running as installed package)
-    from tools.shared.colors import (
+    from shared.colors import (
         Colors,
         ColoredFormatter as BaseColoredFormatter,
         COLORAMA_AVAILABLE,
@@ -49,7 +49,7 @@ try:
 except ImportError:
     # Try relative import (when running from within package)
     try:
-        from ..shared.colors import (
+        from shared.colors import (
             Colors,
             ColoredFormatter as BaseColoredFormatter,
             COLORAMA_AVAILABLE,

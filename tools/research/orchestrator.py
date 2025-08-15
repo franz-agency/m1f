@@ -24,7 +24,7 @@ from datetime import datetime
 import json
 import logging
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_open,
 )
 
@@ -48,13 +48,13 @@ from .workflow_phases import WorkflowPhase, WorkflowManager, PhaseContext
 logger = logging.getLogger(__name__)
 
 try:
-    from ..scrape_tool.scrapers.base import WebScraperBase as WebScraper
+    from scrape_tool.scrapers.base import WebScraperBase as WebScraper
 except ImportError:
     logger.warning("Could not import WebScraperBase from scrape_tool")
     WebScraper = None
 
 try:
-    from ..html2md_tool import HTML2MDConverter as HTMLToMarkdownConverter
+    from html2md_tool import HTML2MDConverter as HTMLToMarkdownConverter
 except ImportError:
     logger.warning("Could not import HTML2MDConverter from html2md_tool")
     HTMLToMarkdownConverter = None
@@ -599,7 +599,7 @@ class EnhancedResearchOrchestrator:
 
     async def _prompt_for_queries(self, original_query: str) -> List[str]:
         """Interactively prompt for custom query variations"""
-        from ..shared.colors import info, success, dim
+        from shared.colors import info, success, dim
 
         queries = []
         info(f"\nOriginal query: {original_query}")

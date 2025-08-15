@@ -6,10 +6,10 @@ A modern Python tool to split a combined file (created by m1f) back into individ
 """
 
 try:
-    from tools._version import __version__, __version_info__
+    from _version import __version__, __version_info__
 except ImportError:
     try:
-        from .._version import __version__, __version_info__
+        from _version import __version__, __version_info__
     except ImportError:
         # Fallback when running as standalone script
         __version__ = "3.9.0"
