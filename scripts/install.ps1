@@ -89,7 +89,7 @@ Write-Host
 
 # Check if this is an upgrade from an old installation
 if ((Test-Path ".venv") -and (Test-Path "bin") -and (Test-Path "bin\m1f")) {
-    Write-ColorOutput "📦 Upgrade detected: Migrating to Python entry points system" -Color $colors.Yellow
+    Write-ColorOutput "[UPGRADE] Detected: Migrating to Python entry points system" -Color $colors.Yellow
     Write-Host
 }
 
@@ -100,7 +100,7 @@ if ($executionPolicy -eq "Restricted") {
     Write-ColorOutput "Updating execution policy for current user..." -Color $colors.Yellow
     try {
         Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-        Write-ColorOutput "✓ Execution policy updated" -Color $colors.Green
+        Write-ColorOutput "[OK] Execution policy updated" -Color $colors.Green
     } catch {
         Write-ColorOutput "Error: Could not update execution policy. Please run as administrator or run:" -Color $colors.Red
         Write-ColorOutput "  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" -Color $colors.Blue
@@ -147,7 +147,7 @@ try {
         exit 1
     }
     
-    Write-ColorOutput "✓ Python $versionOutput found" -Color $colors.Green
+    Write-ColorOutput "[OK] Python $versionOutput found" -Color $colors.Green
 } catch {
     Write-ColorOutput "Error: Could not determine Python version" -Color $colors.Red
     Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
@@ -164,7 +164,7 @@ if (Test-Path ".venv") {
     Write-ColorOutput "Virtual environment already exists." -Color $colors.Yellow
 } else {
     & $pythonCmd -m venv .venv
-    Write-ColorOutput "✓ Virtual environment created" -Color $colors.Green
+    Write-ColorOutput "[OK] Virtual environment created" -Color $colors.Green
 }
 
 # Step 2: Activate virtual environment and install dependencies
@@ -181,7 +181,7 @@ python -m pip install --upgrade pip --quiet
 # Install requirements
 if (Test-Path "requirements.txt") {
     pip install -r requirements.txt --quiet
-    Write-ColorOutput "✓ Dependencies installed" -Color $colors.Green
+    Write-ColorOutput "[OK] Dependencies installed" -Color $colors.Green
 } else {
     Write-ColorOutput "Error: requirements.txt not found" -Color $colors.Red
     Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
@@ -191,21 +191,28 @@ if (Test-Path "requirements.txt") {
 # Install m1f package in editable mode (creates all entry points)
 Write-ColorOutput "Installing m1f package with all tools..." -Color $colors.Green
 pip install -e tools\ --quiet
-Write-ColorOutput "✓ m1f package installed with all entry points" -Color $colors.Green
+Write-ColorOutput "[OK] m1f package installed with all entry points" -Color $colors.Green
+
+# Create .pth file for Windows compatibility
+# This ensures that modules in tools/ root are found on Windows
+$pthFile = Join-Path $projectRoot ".venv\Lib\site-packages\m1f_tools.pth"
+$toolsPath = Join-Path $projectRoot "tools"
+Set-Content -Path $pthFile -Value $toolsPath -Encoding ASCII
+Write-ColorOutput "[OK] Created .pth file for Windows module resolution" -Color $colors.Green
 
 # Step 3: Test m1f installation
 Write-Host
 Write-ColorOutput "Step 3: Testing m1f installation..." -Color $colors.Green
 try {
     $null = & python -m tools.m1f --version 2>&1
-    Write-ColorOutput "✓ m1f is working correctly" -Color $colors.Green
+    Write-ColorOutput "[OK] m1f is working correctly" -Color $colors.Green
     
     # Create symlink for main documentation if needed
     $m1fDocPath = Join-Path $projectRoot "m1f\m1f\87_m1f_only_docs.txt"
     $m1fLinkPath = Join-Path $projectRoot "m1f\m1f.txt"
     if ((Test-Path $m1fDocPath) -and !(Test-Path $m1fLinkPath)) {
         New-Item -ItemType SymbolicLink -Path $m1fLinkPath -Target "m1f\87_m1f_only_docs.txt" -Force | Out-Null
-        Write-ColorOutput "✓ Created m1f.txt symlink to main documentation" -Color $colors.Green
+        Write-ColorOutput "[OK] Created m1f.txt symlink to main documentation" -Color $colors.Green
     }
 } catch {
     Write-ColorOutput "Warning: Could not verify m1f installation" -Color $colors.Yellow
@@ -227,10 +234,10 @@ $profileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
 if ($profileContent -match "# m1f tools functions") {
     # Check if we need to update from old bin path to new venv path
     if ($profileContent -match [regex]::Escape($oldBinDir)) {
-        Write-ColorOutput "🔄 Updating PowerShell profile from old paths to new entry points..." -Color $colors.Yellow
+        Write-ColorOutput "[UPDATE] PowerShell profile from old paths to new entry points..." -Color $colors.Yellow
         $profileContent = $profileContent -replace [regex]::Escape($oldBinDir), $venvBinDir
         Set-Content $PROFILE $profileContent
-        Write-ColorOutput "✓ Updated PowerShell profile to use Python entry points" -Color $colors.Green
+        Write-ColorOutput "[OK] Updated PowerShell profile to use Python entry points" -Color $colors.Green
     } else {
         Write-ColorOutput "m1f functions already exist in profile" -Color $colors.Yellow
     }
@@ -249,7 +256,7 @@ if (Test-Path "$projectRoot\scripts\m1f_aliases.ps1") {
 
 "@
     Add-Content $PROFILE $functionsContent
-    Write-ColorOutput "✓ PowerShell functions added to profile" -Color $colors.Green
+    Write-ColorOutput "[OK] PowerShell functions added to profile" -Color $colors.Green
 }
 
 # Step 5: Create batch files for Command Prompt (optional)
@@ -320,13 +327,13 @@ foreach ($file in $commands.Keys) {
     Set-Content -Path $filePath -Value $content -Encoding ASCII
 }
 
-Write-ColorOutput "✓ Batch files created in $batchDir" -Color $colors.Green
+Write-ColorOutput "[OK] Batch files created in $batchDir" -Color $colors.Green
 
 # Installation complete
 Write-Host
-Write-ColorOutput "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -Color $colors.Green
-Write-ColorOutput "✨ Installation complete!" -Color $colors.Green
-Write-ColorOutput "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -Color $colors.Green
+Write-ColorOutput "============================================================" -Color $colors.Green
+Write-ColorOutput "[SUCCESS] Installation complete!" -Color $colors.Green
+Write-ColorOutput "============================================================" -Color $colors.Green
 Write-Host
 
 Write-ColorOutput "Available commands in PowerShell:" -Color $colors.Yellow

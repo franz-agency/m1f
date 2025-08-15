@@ -43,9 +43,9 @@ if ($pythonFiles) {
                 }
             }
         }
-        Write-ColorOutput "✓ Python formatting complete" -Color "Green"
+        Write-ColorOutput "[OK] Python formatting complete" -Color "Green"
     } else {
-        Write-ColorOutput "⚠ Black not found. Skipping Python formatting." -Color "Yellow"
+        Write-ColorOutput "[WARNING] Black not found. Skipping Python formatting." -Color "Yellow"
         Write-ColorOutput "  Install with: pip install black" -Color "Gray"
     }
 }
@@ -67,9 +67,9 @@ if ($markdownFiles) {
                 }
             }
         }
-        Write-ColorOutput "✓ Markdown formatting complete" -Color "Green"
+        Write-ColorOutput "[OK] Markdown formatting complete" -Color "Green"
     } else {
-        Write-ColorOutput "⚠ Prettier not found. Skipping Markdown formatting." -Color "Yellow"
+        Write-ColorOutput "[WARNING] Prettier not found. Skipping Markdown formatting." -Color "Yellow"
         Write-ColorOutput "  Install with: npm install -g prettier" -Color "Gray"
     }
 }
@@ -82,25 +82,25 @@ if (Test-Path ".m1f.config.yml") {
     try {
         if (Get-Command m1f-update -ErrorAction SilentlyContinue) {
             & m1f-update --quiet
-            Write-ColorOutput "✓ Auto-bundle completed successfully" -Color "Green"
+            Write-ColorOutput "[OK] Auto-bundle completed successfully" -Color "Green"
             $filesModified = $true
         } elseif (Get-Command m1f -ErrorAction SilentlyContinue) {
             & m1f auto-bundle --quiet
-            Write-ColorOutput "✓ Auto-bundle completed successfully" -Color "Green"
+            Write-ColorOutput "[OK] Auto-bundle completed successfully" -Color "Green"
             $filesModified = $true
         } else {
             # Try direct Python execution
             $m1fScript = Join-Path $PSScriptRoot "..\..\..\tools\m1f.py"
             if (Test-Path $m1fScript) {
                 & python $m1fScript auto-bundle --quiet
-                Write-ColorOutput "✓ Auto-bundle completed successfully" -Color "Green"
+                Write-ColorOutput "[OK] Auto-bundle completed successfully" -Color "Green"
                 $filesModified = $true
             } else {
-                Write-ColorOutput "⚠ m1f not found. Skipping auto-bundle." -Color "Yellow"
+                Write-ColorOutput "[WARNING] m1f not found. Skipping auto-bundle." -Color "Yellow"
             }
         }
     } catch {
-        Write-ColorOutput "✗ Auto-bundle failed: $_" -Color "Red"
+        Write-ColorOutput "[ERROR] Auto-bundle failed: $_" -Color "Red"
         exit 1
     }
 }
@@ -109,14 +109,16 @@ if (Test-Path ".m1f.config.yml") {
 if ($filesModified) {
     Write-ColorOutput "Re-staging modified files..." -Color "Cyan"
     
-    # Stage m1f bundle files
-    Get-ChildItem -Path "m1f" -Filter "*.txt" -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+    # Stage m1f bundle files (excluding .venv)
+    Get-ChildItem -Path "m1f" -Filter "*.txt" -Recurse -ErrorAction SilentlyContinue | Where-Object { 
+        $_.FullName -notmatch "[\\/]\.venv[\\/]"
+    } | ForEach-Object {
         $file = $_.FullName
         $relativePath = Resolve-Path -Path $file -Relative
         $inGit = git ls-files --error-unmatch $relativePath 2>$null
         if ($LASTEXITCODE -eq 0) {
             git add $relativePath
-            Write-ColorOutput "✓ Staged: $relativePath" -Color "Green"
+            Write-ColorOutput "[OK] Staged: $relativePath" -Color "Green"
         }
     }
 }
@@ -124,8 +126,8 @@ if ($filesModified) {
 # Show warning if files were modified
 if ($filesModified) {
     Write-ColorOutput "" -Color "White"
-    Write-ColorOutput "⚠️  Files were modified by formatters and re-staged" -Color "Yellow"
+    Write-ColorOutput "[WARNING] Files were modified by formatters and re-staged" -Color "Yellow"
 }
 
-Write-ColorOutput "✓ Pre-commit hook completed" -Color "Green"
+Write-ColorOutput "[OK] Pre-commit hook completed" -Color "Green"
 exit 0

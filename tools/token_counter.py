@@ -79,6 +79,12 @@ def main():
     """
     Main function to parse arguments and print token count.
     """
+    # Import version
+    try:
+        from _version import __version__
+    except ImportError:
+        __version__ = "dev"
+    
     parser = argparse.ArgumentParser(
         description="Count tokens in a text file using OpenAI's tiktoken library.",
         formatter_class=ColoredHelpFormatter,
@@ -89,6 +95,12 @@ def main():
     )
     parser.add_argument(
         "file_path", type=str, help="Path to the text file (txt, php, md, etc.)."
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"m1f-token-counter {__version__}",
+        help="Show version information"
     )
     parser.add_argument(
         "-e",

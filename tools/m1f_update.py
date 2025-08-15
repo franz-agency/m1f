@@ -16,7 +16,7 @@
 """Wrapper for m1f-update command that calls m1f auto-bundle."""
 
 import sys
-from m1f.cli import main as m1f_main
+from m1f import main as m1f_main
 
 
 def main():

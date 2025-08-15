@@ -139,7 +139,7 @@ exit $?
     
     Copy-Item -Path $sourceFile -Destination $targetPsFile -Force
     
-    Write-ColorOutput "✓ Installed $HookType pre-commit hook" -Color $colors.Green
+    Write-ColorOutput "[OK] Installed $HookType pre-commit hook" -Color $colors.Green
 }
 
 # Show hook options
@@ -186,7 +186,7 @@ if ((Test-Path $existingHook) -or (Test-Path $existingPsHook)) {
 Install-Hook -HookType $hookType
 
 Write-Host
-Write-ColorOutput "✓ Git hook installation complete!" -Color $colors.Green
+Write-ColorOutput "[OK] Git hook installation complete!" -Color $colors.Green
 Write-Host
 
 # Show usage instructions based on hook type

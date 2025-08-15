@@ -4692,6 +4692,9 @@ class EnhancedResearchOrchestrator:
             if self.current_job:
                 self.job_manager.update_job_status(self.current_job.job_id, "failed")
             raise
+        finally:
+            # Always cleanup database connections to prevent file locking on Windows
+            self.cleanup_databases()
 
     async def _collect_urls(
         self, query: str, urls_file: Optional[Path], resume: bool
@@ -5097,6 +5100,31 @@ Research on "{query}" yielded {len(content)} high-quality sources.
     async def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all research jobs"""
         return self.job_manager.list_jobs(status)
+
+    def cleanup_databases(self):
+        """Clean up database connections to prevent file locking issues on Windows"""
+        try:
+            if self.job_db:
+                self.job_db.cleanup()
+                logger.debug("Cleaned up job database connections")
+            
+            if self.job_manager and hasattr(self.job_manager, 'main_db'):
+                self.job_manager.main_db.cleanup()
+                logger.debug("Cleaned up main database connections")
+                
+            # Force garbage collection to ensure connections are closed
+            import gc
+            gc.collect()
+            
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def __del__(self):
+        """Ensure cleanup when object is destroyed"""
+        try:
+            self.cleanup_databases()
+        except Exception:
+            pass  # Ignore errors during cleanup in destructor
 
 ======= output.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -5862,6 +5890,7 @@ class ResearchDatabase:
     def __init__(self, db_path: Path):
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._connection_pool = []  # Track connections for cleanup
         self._init_database()
 
     def _init_database(self):
@@ -6086,6 +6115,24 @@ class ResearchDatabase:
             cursor = conn.execute(query, params)
             return cursor.fetchone()[0]
 
+    def close_all_connections(self):
+        """Close all database connections"""
+        try:
+            # Force garbage collection to close any remaining connections
+            import gc
+            gc.collect()
+            
+            # On Windows, sometimes we need to explicitly close the database
+            # SQLite doesn't have persistent connections with context managers,
+            # but we can force cleanup
+            logger.debug(f"Closing database connections for {self.db_path}")
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def cleanup(self):
+        """Clean up database resources"""
+        self.close_all_connections()
+
 
 class JobDatabase:
     """Per-job database for URL and content tracking"""
@@ -6093,6 +6140,7 @@ class JobDatabase:
     def __init__(self, db_path: Path):
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._connection_pool = []  # Track connections for cleanup
         self._init_database()
 
     def _init_database(self):
@@ -6378,6 +6426,24 @@ class JobDatabase:
         # Currently, we don't store raw HTML separately
         # This is a placeholder for future implementation
         return {"files_deleted": 0, "space_freed": 0}
+
+    def close_all_connections(self):
+        """Close all database connections"""
+        try:
+            # Force garbage collection to close any remaining connections
+            import gc
+            gc.collect()
+            
+            # On Windows, sometimes we need to explicitly close the database
+            # SQLite doesn't have persistent connections with context managers,
+            # but we can force cleanup
+            logger.debug(f"Closing database connections for {self.db_path}")
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def cleanup(self):
+        """Clean up database resources"""
+        self.close_all_connections()
 
 ======= scraper.py ======
 # Copyright 2025 Franz und Franz GmbH

@@ -49,16 +49,16 @@ def show_help():
     """Display the main help information."""
     # Header with ASCII art
     info(
-        f"{Colors.CYAN}{Colors.BOLD}╔══════════════════════════════════════════════════════════════╗"
+        f"{Colors.CYAN}{Colors.BOLD}================================================================"
     )
-    info("║                     m1f Tools Suite                          ║")
-    info("║              Make One File - Bundle Everything               ║")
+    info("|                     m1f Tools Suite                          |")
+    info("|              Make One File - Bundle Everything               |")
     info(
-        f"╚══════════════════════════════════════════════════════════════╝{Colors.RESET}"
+        f"================================================================{Colors.RESET}"
     )
     info("")
 
-    header("🛠️  Available Commands", "Your complete toolkit for bundling codebases")
+    header("[Available Commands]", "Your complete toolkit for bundling codebases")
     info("")
 
     # Core tools
@@ -101,7 +101,7 @@ def show_help():
     info("")
 
     # Quick start
-    header("🚀 Quick Start Examples")
+    header("[Quick Start Examples]")
     info(f"{Colors.CYAN}# Bundle a Python project:{Colors.RESET}")
     info(f"  m1f -s ./my-project -o project-bundle.md")
     info("")
@@ -127,6 +127,12 @@ def show_help():
 def main():
     """Main entry point."""
     import argparse
+    
+    # Import version
+    try:
+        from _version import __version__
+    except ImportError:
+        __version__ = "dev"
 
     parser = argparse.ArgumentParser(
         description="Display help information for m1f tools",
@@ -140,6 +146,13 @@ def main():
 
     parser.add_argument(
         "-h", "--help", action="store_true", help="Show this help message"
+    )
+    
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"m1f-help {__version__}",
+        help="Show version information"
     )
 
     args = parser.parse_args()

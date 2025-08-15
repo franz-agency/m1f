@@ -216,13 +216,13 @@ def success(message: str, file=None) -> None:
 
 def error(message: str, file=None) -> None:
     """Print an error message in red"""
-    print(f"{Colors.RED}❌ Error: {message}{Colors.RESET}", file=file or sys.stderr)
+    print(f"{Colors.RED}[ERROR]: {message}{Colors.RESET}", file=file or sys.stderr)
 
 
 def warning(message: str, file=None) -> None:
     """Print a warning message in yellow"""
     print(
-        f"{Colors.YELLOW}⚠️  Warning: {message}{Colors.RESET}", file=file or sys.stdout
+        f"{Colors.YELLOW}[WARNING]: {message}{Colors.RESET}", file=file or sys.stdout
     )
 
 
