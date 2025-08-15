@@ -1,32 +1,68 @@
 ======= README.md ======
 # m1f-research Documentation
 
-AI-powered research tool that extends m1f with intelligent web research
-capabilities.
+> ⚠️ **Early Alpha Warning**: m1f-research is in early alpha and under heavy development. Expect significant changes to features, APIs, and workflows.
+
+AI-powered research tool with a sophisticated 7-phase workflow system for comprehensive web research and analysis.
+
+## 🚀 New: 7-Phase Workflow System
+
+The m1f-research tool now features an advanced workflow system that transforms simple queries into comprehensive research:
+
+1. **Query Expansion** - Automatically generate search variations
+2. **URL Collection** - Gather URLs from multiple sources  
+3. **Interactive Review** - Curate URLs before scraping
+4. **Deep Crawling** - Follow links for comprehensive coverage
+5. **Smart Bundling** - Organize content intelligently
+6. **AI Analysis** - Generate insights and summaries
+7. **Phase Management** - Resume from any phase
 
 ## Documentation Files
 
-- [60_research_overview.md](60_research_overview.md) - Overview and quick start
+- [60_research_overview.md](60_research_overview.md) - Overview, workflow system, and quick start
 - [62_job_management.md](62_job_management.md) - Job persistence and filtering
-- [63_cli_reference.md](63_cli_reference.md) - Complete command reference
+- [63_cli_reference.md](63_cli_reference.md) - Complete command reference with workflow options
 - [64_api_reference.md](64_api_reference.md) - Developer documentation
-- [65_architecture.md](65_architecture.md) - Technical architecture
-- [66_examples.md](66_examples.md) - Real-world usage examples
-- [67_cli_improvements.md](67_cli_improvements.md) - Enhanced CLI features and
-  UX
+- [65_architecture.md](65_architecture.md) - Technical architecture and workflow components
+- [66_examples.md](66_examples.md) - Real-world usage examples with workflow scenarios
+- [67_cli_improvements.md](67_cli_improvements.md) - Enhanced CLI features and UX
 - [68_job_deletion_guide.md](68_job_deletion_guide.md) - Complete guide to job deletion
 
 ## Quick Start
 
 ```bash
-# Basic research
+# Basic research with automatic workflow
 m1f-research "python async programming"
 
-# List all jobs
+# Interactive research with URL review
+m1f-research "machine learning frameworks" --expand-queries --max-queries 10
+
+# Deep research with crawling
+m1f-research "rust web frameworks" --crawl-depth 2 --max-pages-per-site 20
+
+# Generate comparative analysis
+m1f-research "cloud providers" --analysis-type comparative
+
+# List all jobs with phase status
 m1f-research --list-jobs
 
-# Resume a job
+# Resume a job from specific phase
 m1f-research --resume abc123
+```
+
+## Workflow Configuration
+
+Create a `.m1f-research.yml` for custom workflows:
+
+```yaml
+workflow:
+  expand_queries: true      # Generate search variations
+  max_queries: 5           # Number of query variations
+  skip_review: false       # Interactive URL review
+  crawl_depth: 1          # Follow links one level deep
+  max_pages_per_site: 10  # Limit per domain
+  generate_analysis: true  # Create AI analysis
+  analysis_type: summary   # summary/comparative/technical/trend
 ```
 
 For detailed documentation, see the numbered files above.
@@ -439,6 +475,20 @@ uses LLMs to:
 - Analyze content for relevance and extract key insights
 - Create organized research bundles
 
+### 7-Phase Workflow System
+
+m1f-research implements a sophisticated workflow system that breaks research into 7 distinct phases:
+
+1. **INITIALIZATION** - Setup and configuration validation
+2. **QUERY_EXPANSION** - Generate multiple search query variations for comprehensive coverage
+3. **URL_COLLECTION** - Search for relevant URLs using expanded queries
+4. **URL_REVIEW** - Optional human review and curation of found URLs
+5. **CRAWLING** - Intelligent web scraping with depth control and link following
+6. **BUNDLING** - Organize scraped content into structured research bundles
+7. **ANALYSIS** - Generate AI-powered insights and summaries
+
+This workflow allows for flexible research strategies, checkpoint resumption, and fine-grained control over each phase.
+
 ## Quick Start
 
 ```bash
@@ -475,16 +525,25 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 ### 🗄️ Job Management
 
 - **Persistent Jobs**: All research tracked in SQLite database
-- **Resume Support**: Continue interrupted research
+- **Resume Support**: Continue interrupted research at any workflow phase
 - **Advanced Filtering**: Search by date, query term
 - **Pagination**: Handle large job lists efficiently
+- **Phase Tracking**: Monitor progress through 7-phase workflow
 
 ### 🔍 Intelligent Search
 
+- **Query Expansion**: Generate multiple search variations for comprehensive coverage
 - Uses LLMs to find high-quality, relevant URLs
 - Manual URL support via `--urls-file`
 - Focuses on authoritative sources
 - Mixes different content types
+
+### 🌐 Advanced Crawling
+
+- **Deep Crawling**: Follow links to specified depth levels
+- **URL Review**: Optional human curation of discovered URLs
+- **Intelligent Filtering**: Domain-based and pattern-based URL filtering
+- **Site Limits**: Control maximum pages per domain
 
 ### 📥 Smart Scraping
 
@@ -495,10 +554,12 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 
 ### 🧠 Content Analysis
 
+- **Analysis Generator**: AI-powered insights and summaries
 - Relevance scoring (0-10 scale)
 - Key points extraction
 - Content summarization
 - Duplicate detection
+- Template-based analysis approaches
 
 ### 📦 Organized Output
 
@@ -506,6 +567,7 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 - Prominent bundle files (📚_RESEARCH_BUNDLE.md)
 - Clean Markdown output
 - Symlink to latest research
+- Phase-specific output organization
 
 ## Usage Examples
 
@@ -582,6 +644,17 @@ research:
   defaults:
     url_count: 30
     scrape_count: 15
+
+  # Workflow configuration
+  workflow:
+    expand_queries: true        # Generate search query variations
+    max_queries: 5             # Maximum expanded queries
+    skip_review: false         # Skip URL review interface
+    crawl_depth: 0             # How many levels deep to crawl
+    max_pages_per_site: 10     # Maximum pages per domain
+    follow_external: false     # Follow external links
+    generate_analysis: true    # Generate AI analysis
+    analysis_type: "summary"   # Type of analysis to generate
 
   # Scraping behavior
   scraping:
@@ -1271,6 +1344,18 @@ management commands)
 | `--no-analysis`  |       | Skip AI analysis (just scrape)     | False   |
 | `--interactive`  | `-i`  | Start in interactive mode          | False   |
 
+### Workflow Options
+
+| Option                    | Description                              | Default |
+| ------------------------- | ---------------------------------------- | ------- |
+| `--expand-queries`        | Enable query expansion phase             | True    |
+| `--max-queries N`         | Maximum number of expanded queries       | 5       |
+| `--skip-review`           | Skip URL review phase                    | False   |
+| `--crawl-depth N`         | How many levels deep to crawl links     | 0       |
+| `--max-pages-per-site N`  | Maximum pages to crawl per domain       | 10      |
+| `--follow-external`       | Follow external links during crawling   | False   |
+| `--analysis-type TYPE`    | Type of analysis: summary, detailed     | summary |
+
 ### Output Options
 
 | Option         | Short | Description                     | Default         |
@@ -1421,6 +1506,15 @@ m1f-research --interactive
 
 # Technical analysis with high URL count
 m1f-research "kubernetes networking" --template technical --urls 50 --scrape 25
+
+# Deep crawling with query expansion
+m1f-research "microservices patterns" --expand-queries --crawl-depth 2 --max-pages-per-site 15
+
+# Skip review for automated workflows
+m1f-research "python async patterns" --skip-review --max-queries 8
+
+# Detailed analysis with external link following
+m1f-research "AI research 2024" --follow-external --analysis-type detailed
 ```
 
 ## Date Format Examples
@@ -1462,6 +1556,17 @@ research:
   defaults:
     url_count: 30
     scrape_count: 15
+
+  # Workflow phase configuration
+  workflow:
+    expand_queries: true        # Generate search query variations
+    max_queries: 5             # Maximum expanded queries
+    skip_review: false         # Skip URL review interface
+    crawl_depth: 1             # How many levels deep to crawl
+    max_pages_per_site: 10     # Maximum pages per domain
+    follow_external: false     # Follow external links
+    generate_analysis: true    # Generate AI analysis
+    analysis_type: "summary"   # Type of analysis to generate
 
   output:
     directory: ~/research-data
@@ -1793,51 +1898,109 @@ research bundles.
 ### 1. Orchestrator (`orchestrator.py`)
 
 - Central coordination of the research workflow
-- Manages the pipeline: search → scrape → analyze → bundle
+- Manages the 7-phase workflow system
 - Handles configuration and state management
+- Coordinates phase transitions and checkpoints
 
-### 2. LLM Interface (`llm_interface.py`)
+### 2. Workflow Manager (`workflow_phases.py`)
+
+- Manages workflow phases and transitions
+- Tracks phase completion and state
+- Handles phase skipping based on configuration
+- Provides resumption capabilities
+
+### 3. Query Expander (`query_expander.py`)
+
+- Generates multiple search query variations
+- Uses LLM to create comprehensive query coverage
+- Handles query expansion metadata
+- Configurable expansion limits
+
+### 4. URL Reviewer (`url_reviewer.py`)
+
+- Interactive URL review and curation interface
+- Allows human oversight of discovered URLs
+- Supports batch operations and filtering
+- Optional phase that can be skipped
+
+### 5. Deep Crawler (`deep_crawler.py`)
+
+- Intelligent multi-level web crawling
+- Follows links to specified depth
+- Respects domain limits and external link policies
+- Integrates with URL filtering systems
+
+### 6. LLM Interface (`llm_interface.py`)
 
 - Abstraction layer for different LLM providers
 - Supports Claude, Gemini, and CLI tools
 - Manages API calls and response parsing
 
-### 3. Scraper (`scraper.py`)
+### 7. Scraper (`scraper.py`)
 
 - Concurrent web scraping with rate limiting
 - Integrates with html2md for content conversion
 - Handles failures gracefully with retry logic
 
-### 4. Analyzer (`analyzer.py`)
+### 8. Analysis Generator (`analysis_generator.py`)
 
-- Content relevance scoring
-- Key points extraction
-- Duplicate detection
-- Template-based analysis
+- Generates AI-powered insights and summaries
+- Template-based analysis approaches
+- Content relevance scoring and key points extraction
+- Configurable analysis types
 
-### 5. Bundle Creator (`bundle_creator.py`)
+### 9. Bundle Creator (`bundle_creator.py`)
 
 - Organizes scraped content into structured bundles
 - Creates table of contents and summaries
 - Formats output in clean Markdown
+- Integrates phase-specific metadata
 
 ## Data Flow
+
+### 7-Phase Workflow
 
 ```
 User Query
     ↓
-Orchestrator
+[1] INITIALIZATION
+    ↓ (Configuration & Setup)
+Workflow Manager
     ↓
-LLM Search → URLs
+[2] QUERY_EXPANSION (Optional)
+    ↓ (Query Expander)
+Expanded Queries
     ↓
-Concurrent Scraping → Raw Content
+[3] URL_COLLECTION
+    ↓ (LLM Search)
+Discovered URLs
     ↓
-HTML to Markdown → Clean Content
+[4] URL_REVIEW (Optional)
+    ↓ (URL Reviewer)
+Curated URLs
     ↓
-Content Analysis → Scored Content
+[5] CRAWLING
+    ↓ (Deep Crawler + Scraper)
+Raw Content
     ↓
-Bundle Creation → Research Bundle
+[6] BUNDLING
+    ↓ (Bundle Creator)
+Research Bundle
+    ↓
+[7] ANALYSIS (Optional)
+    ↓ (Analysis Generator)
+Final Research Package
 ```
+
+### Phase Dependencies
+
+- INITIALIZATION → Required for all workflows
+- QUERY_EXPANSION → Can be skipped if `expand_queries: false`
+- URL_COLLECTION → Always required
+- URL_REVIEW → Can be skipped if `skip_review: true`
+- CRAWLING → Always required
+- BUNDLING → Always required
+- ANALYSIS → Can be skipped if `generate_analysis: false`
 
 ## Configuration System
 
@@ -1847,6 +2010,23 @@ The research tool uses a hierarchical configuration system:
 2. **User Config**: ~/.m1f.config.yml
 3. **Project Config**: ./.m1f.config.yml
 4. **CLI Arguments**: Command-line overrides
+
+### Workflow Configuration
+
+Workflow behavior is controlled by the `WorkflowConfig` class:
+
+```python
+@dataclass
+class WorkflowConfig:
+    expand_queries: bool = True        # Generate search query variations
+    max_queries: int = 5              # Maximum expanded queries
+    skip_review: bool = False         # Skip URL review interface
+    crawl_depth: int = 0              # How many levels deep to crawl
+    max_pages_per_site: int = 10      # Maximum pages per domain
+    follow_external: bool = False     # Follow external links
+    generate_analysis: bool = True    # Generate AI analysis
+    analysis_type: str = "summary"    # Type of analysis to generate
+```
 
 ## Templates
 
@@ -1902,6 +2082,10 @@ The architecture supports several extension mechanisms:
 2. **Scraper Backends**: Integrate new scraping tools
 3. **Analysis Templates**: Create domain-specific templates
 4. **Output Formats**: Add new bundle formats
+5. **Workflow Phases**: Add custom phases to the workflow
+6. **Crawling Strategies**: Implement domain-specific crawling logic
+7. **URL Filters**: Create custom URL filtering rules
+8. **Analysis Generators**: Add specialized analysis types
 
 ## Performance Optimizations
 
@@ -2092,6 +2276,90 @@ research:
         include_code_stats: true
 ```
 
+## Workflow Examples
+
+### Query Expansion Workflow
+
+```bash
+# Basic query expansion
+m1f-research "python web frameworks" --expand-queries
+
+# Advanced query expansion with more variations
+m1f-research "machine learning model deployment" --expand-queries --max-queries 8
+
+# Query expansion with specific focus
+m1f-research "kubernetes best practices" --expand-queries --template technical
+```
+
+### URL Review Workflow
+
+```bash
+# Enable URL review for manual curation
+m1f-research "AI ethics research" --skip-review false
+
+# Automated workflow (skip review)
+m1f-research "python libraries 2024" --skip-review
+
+# Review with expanded queries
+m1f-research "microservices patterns" --expand-queries --skip-review false
+```
+
+### Deep Crawling Workflow
+
+```bash
+# Single-level crawling
+m1f-research "vue.js documentation" --crawl-depth 1
+
+# Multi-level crawling with site limits
+m1f-research "react ecosystem" --crawl-depth 2 --max-pages-per-site 15
+
+# External link following
+m1f-research "web development trends" --crawl-depth 1 --follow-external
+
+# Comprehensive crawling
+m1f-research "database optimization" --crawl-depth 3 --max-pages-per-site 25 --follow-external
+```
+
+### Analysis Generation Workflow
+
+```bash
+# Summary analysis (default)
+m1f-research "golang best practices" --analysis-type summary
+
+# Detailed analysis
+m1f-research "system design principles" --analysis-type detailed
+
+# Skip analysis for raw content
+m1f-research "API documentation" --no-analysis
+```
+
+### Complete Workflow Examples
+
+```bash
+# Full-featured research with all phases
+m1f-research "distributed systems patterns" \
+  --expand-queries --max-queries 6 \
+  --crawl-depth 2 --follow-external \
+  --max-pages-per-site 20 \
+  --analysis-type detailed \
+  --skip-review false
+
+# Minimal automated workflow
+m1f-research "quick reference guide" \
+  --no-expand-queries \
+  --skip-review \
+  --crawl-depth 0 \
+  --analysis-type summary
+
+# Academic research workflow
+m1f-research "quantum computing research 2024" \
+  --template academic \
+  --expand-queries --max-queries 10 \
+  --crawl-depth 1 \
+  --analysis-type detailed \
+  --skip-review false
+```
+
 ## Python Script Examples
 
 ### Basic Research Script
@@ -2120,15 +2388,15 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### Custom Template Script
+### Custom Template Script with Workflow
 
 ```python
 #!/usr/bin/env python3
 import asyncio
-from tools.research import ResearchOrchestrator, ResearchTemplate
+from tools.research import ResearchOrchestrator, ResearchTemplate, ResearchConfig, WorkflowConfig
 from tools.shared.colors import info
 
-# Define custom template
+# Define custom template with workflow configuration
 security_template = ResearchTemplate(
     name="security",
     description="Security-focused research",
@@ -2143,18 +2411,37 @@ security_template = ResearchTemplate(
     relevance_criteria="security relevance and actionable advice"
 )
 
-async def main():
-    orchestrator = ResearchOrchestrator()
+# Configure workflow for security research
+workflow_config = WorkflowConfig(
+    expand_queries=True,
+    max_queries=8,
+    skip_review=False,  # Review URLs for security relevance
+    crawl_depth=2,
+    max_pages_per_site=15,
+    follow_external=True,
+    generate_analysis=True,
+    analysis_type="detailed"
+)
 
-    results = await orchestrator.research(
+async def main():
+    config = ResearchConfig(
         query="API security",
-        template=security_template,
         url_count=40,
-        scrape_count=20
+        scrape_count=20,
+        template="security",
+        workflow=workflow_config
     )
+    
+    orchestrator = ResearchOrchestrator(config=config)
+    orchestrator.register_template(security_template)
+
+    results = await orchestrator.research_with_workflow()
 
     # Print security-specific summary
     info("\n=== Security Research Summary ===")
+    info(f"Workflow completed with {len(results.content)} sources")
+    info(f"Analysis type: {workflow_config.analysis_type}")
+    
     for analysis in sorted(results.analyses, key=lambda a: a.relevance, reverse=True)[:5]:
         info(f"\n{analysis.url}")
         info(f"Relevance: {analysis.relevance}/10")
@@ -2217,85 +2504,150 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### Research Pipeline Script
+### Advanced Workflow Pipeline Script
 
 ```python
 #!/usr/bin/env python3
 import asyncio
 import json
 from datetime import datetime
-from tools.research import ResearchOrchestrator
+from tools.research import ResearchOrchestrator, ResearchConfig, WorkflowConfig
+from tools.research.workflow_phases import WorkflowPhase
 from tools.m1f import bundle_files
-from tools.shared.colors import info, success
+from tools.shared.colors import info, success, warning
 
-async def research_and_bundle(query):
-    """Research a topic and create an m1f bundle"""
+async def research_with_workflow(query, workflow_config):
+    """Research a topic using the 7-phase workflow"""
 
-    # Phase 1: Research
-    info(f"Phase 1: Researching {query}")
-    orchestrator = ResearchOrchestrator()
-
-    research_results = await orchestrator.research(
+    info(f"Starting workflow research for: {query}")
+    
+    config = ResearchConfig(
         query=query,
         url_count=30,
         scrape_count=15,
-        output_dir=f"./pipeline/{query.replace(' ', '_')}"
+        workflow=workflow_config
     )
+    
+    orchestrator = ResearchOrchestrator(config=config)
+    
+    # Monitor workflow phases
+    phase_results = {}
+    
+    try:
+        # Execute workflow with phase tracking
+        research_results = await orchestrator.research_with_workflow()
+        
+        # Get workflow summary
+        if hasattr(orchestrator, 'workflow_manager'):
+            phase_summary = orchestrator.workflow_manager.get_phase_summary(research_results.job_id)
+            phase_results = phase_summary
+        
+        info(f"Workflow completed successfully")
+        info(f"Completed phases: {phase_results.get('completed_phases', [])}")
+        
+        return research_results, phase_results
+        
+    except Exception as e:
+        warning(f"Workflow failed: {e}")
+        return None, {"error": str(e)}
 
-    # Phase 2: Bundle with m1f
-    info(f"Phase 2: Creating m1f bundle")
-    bundle_path = bundle_files(
-        paths=[str(research_results.bundle_path.parent)],
-        output=f"./pipeline/{query.replace(' ', '_')}_complete.txt",
-        preset="docs-bundle"
-    )
-
-    # Phase 3: Create report
-    info(f"Phase 3: Generating report")
-    report = {
-        "query": query,
-        "timestamp": datetime.now().isoformat(),
-        "research": {
-            "urls_found": len(research_results.urls),
-            "urls_scraped": len(research_results.content),
-            "avg_relevance": sum(a.relevance for a in research_results.analyses) / len(research_results.analyses)
+async def comprehensive_research_pipeline():
+    """Run comprehensive research with different workflow configurations"""
+    
+    research_configs = [
+        {
+            "query": "microservices architecture patterns",
+            "workflow": WorkflowConfig(
+                expand_queries=True,
+                max_queries=6,
+                skip_review=False,
+                crawl_depth=2,
+                follow_external=True,
+                generate_analysis=True,
+                analysis_type="detailed"
+            )
         },
-        "bundle": {
-            "path": str(bundle_path),
-            "size": bundle_path.stat().st_size
+        {
+            "query": "python async programming",
+            "workflow": WorkflowConfig(
+                expand_queries=True,
+                max_queries=4,
+                skip_review=True,  # Automated
+                crawl_depth=1,
+                follow_external=False,
+                generate_analysis=True,
+                analysis_type="summary"
+            )
+        },
+        {
+            "query": "quick docker reference",
+            "workflow": WorkflowConfig(
+                expand_queries=False,  # Minimal
+                skip_review=True,
+                crawl_depth=0,
+                generate_analysis=False
+            )
         }
-    }
-
-    report_path = f"./pipeline/{query.replace(' ', '_')}_report.json"
-    with open(report_path, "w") as f:
-        json.dump(report, f, indent=2)
-
-    return report
-
-async def main():
-    queries = [
-        "react state management",
-        "vue composition api",
-        "angular signals"
     ]
-
-    # Process all queries
+    
     results = []
-    for query in queries:
-        result = await research_and_bundle(query)
-        results.append(result)
-        success(f"Completed: {query}\n")
-
-    # Summary
-    info("\n=== Pipeline Summary ===")
+    
+    for config in research_configs:
+        info(f"\n{'='*50}")
+        info(f"Processing: {config['query']}")
+        info(f"Workflow type: {'Comprehensive' if config['workflow'].expand_queries else 'Minimal'}")
+        
+        research_result, phase_result = await research_with_workflow(
+            config['query'], 
+            config['workflow']
+        )
+        
+        if research_result:
+            # Create detailed report
+            report = {
+                "query": config['query'],
+                "timestamp": datetime.now().isoformat(),
+                "workflow_config": {
+                    "expand_queries": config['workflow'].expand_queries,
+                    "crawl_depth": config['workflow'].crawl_depth,
+                    "analysis_type": config['workflow'].analysis_type,
+                },
+                "phase_results": phase_result,
+                "research_stats": {
+                    "urls_found": len(research_result.urls) if research_result.urls else 0,
+                    "urls_scraped": len(research_result.content) if research_result.content else 0,
+                },
+                "bundle_path": str(research_result.bundle_path) if research_result.bundle_path else None
+            }
+            
+            results.append(report)
+            success(f"Completed: {config['query']}")
+        else:
+            warning(f"Failed: {config['query']}")
+    
+    # Generate summary report
+    summary_path = "./pipeline_summary.json"
+    with open(summary_path, "w") as f:
+        json.dump({
+            "pipeline_run": datetime.now().isoformat(),
+            "total_queries": len(research_configs),
+            "successful": len(results),
+            "results": results
+        }, f, indent=2)
+    
+    info(f"\n=== Pipeline Summary ===")
+    info(f"Total queries processed: {len(research_configs)}")
+    info(f"Successful completions: {len(results)}")
+    info(f"Summary saved to: {summary_path}")
+    
     for result in results:
         info(f"\n{result['query']}:")
-        info(f"  - URLs scraped: {result['research']['urls_scraped']}")
-        info(f"  - Avg relevance: {result['research']['avg_relevance']:.1f}")
-        info(f"  - Bundle size: {result['bundle']['size'] / 1024:.1f} KB")
+        info(f"  - Workflow: {result['workflow_config']}")
+        info(f"  - Completed phases: {len(result['phase_results'].get('completed_phases', []))}")
+        info(f"  - URLs processed: {result['research_stats']['urls_scraped']}")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(comprehensive_research_pipeline())
 ```
 
 ## Real-World Use Cases
@@ -2381,9 +2733,14 @@ m1f-research "covid vaccine efficacy" --config medical-research.yml
 
 ```bash
 # Research → m1f bundle → AI analysis
-m1f-research "topic" && \
+m1f-research "topic" --analysis-type detailed && \
 m1f ./m1f/research/topic-*/ -o analysis.txt && \
 cat analysis.txt | llm "Summarize the key findings"
+
+# Multi-stage workflow research
+m1f-research "react hooks patterns" --expand-queries --crawl-depth 1 && \
+m1f-research --resume [job-id] --analysis-type detailed && \
+m1f ./research-data/*/[job-id]/ -o react-hooks-complete.txt
 ```
 
 ### 4. Scheduled Research

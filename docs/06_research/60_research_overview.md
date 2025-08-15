@@ -13,6 +13,20 @@ uses LLMs to:
 - Analyze content for relevance and extract key insights
 - Create organized research bundles
 
+### 7-Phase Workflow System
+
+m1f-research implements a sophisticated workflow system that breaks research into 7 distinct phases:
+
+1. **INITIALIZATION** - Setup and configuration validation
+2. **QUERY_EXPANSION** - Generate multiple search query variations for comprehensive coverage
+3. **URL_COLLECTION** - Search for relevant URLs using expanded queries
+4. **URL_REVIEW** - Optional human review and curation of found URLs
+5. **CRAWLING** - Intelligent web scraping with depth control and link following
+6. **BUNDLING** - Organize scraped content into structured research bundles
+7. **ANALYSIS** - Generate AI-powered insights and summaries
+
+This workflow allows for flexible research strategies, checkpoint resumption, and fine-grained control over each phase.
+
 ## Quick Start
 
 ```bash
@@ -49,16 +63,25 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 ### 🗄️ Job Management
 
 - **Persistent Jobs**: All research tracked in SQLite database
-- **Resume Support**: Continue interrupted research
+- **Resume Support**: Continue interrupted research at any workflow phase
 - **Advanced Filtering**: Search by date, query term
 - **Pagination**: Handle large job lists efficiently
+- **Phase Tracking**: Monitor progress through 7-phase workflow
 
 ### 🔍 Intelligent Search
 
+- **Query Expansion**: Generate multiple search variations for comprehensive coverage
 - Uses LLMs to find high-quality, relevant URLs
 - Manual URL support via `--urls-file`
 - Focuses on authoritative sources
 - Mixes different content types
+
+### 🌐 Advanced Crawling
+
+- **Deep Crawling**: Follow links to specified depth levels
+- **URL Review**: Optional human curation of discovered URLs
+- **Intelligent Filtering**: Domain-based and pattern-based URL filtering
+- **Site Limits**: Control maximum pages per domain
 
 ### 📥 Smart Scraping
 
@@ -69,10 +92,12 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 
 ### 🧠 Content Analysis
 
+- **Analysis Generator**: AI-powered insights and summaries
 - Relevance scoring (0-10 scale)
 - Key points extraction
 - Content summarization
 - Duplicate detection
+- Template-based analysis approaches
 
 ### 📦 Organized Output
 
@@ -80,6 +105,7 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 - Prominent bundle files (📚_RESEARCH_BUNDLE.md)
 - Clean Markdown output
 - Symlink to latest research
+- Phase-specific output organization
 
 ## Usage Examples
 
@@ -156,6 +182,17 @@ research:
   defaults:
     url_count: 30
     scrape_count: 15
+
+  # Workflow configuration
+  workflow:
+    expand_queries: true        # Generate search query variations
+    max_queries: 5             # Maximum expanded queries
+    skip_review: false         # Skip URL review interface
+    crawl_depth: 0             # How many levels deep to crawl
+    max_pages_per_site: 10     # Maximum pages per domain
+    follow_external: false     # Follow external links
+    generate_analysis: true    # Generate AI analysis
+    analysis_type: "summary"   # Type of analysis to generate
 
   # Scraping behavior
   scraping:

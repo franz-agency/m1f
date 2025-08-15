@@ -11,51 +11,109 @@ research bundles.
 ### 1. Orchestrator (`orchestrator.py`)
 
 - Central coordination of the research workflow
-- Manages the pipeline: search → scrape → analyze → bundle
+- Manages the 7-phase workflow system
 - Handles configuration and state management
+- Coordinates phase transitions and checkpoints
 
-### 2. LLM Interface (`llm_interface.py`)
+### 2. Workflow Manager (`workflow_phases.py`)
+
+- Manages workflow phases and transitions
+- Tracks phase completion and state
+- Handles phase skipping based on configuration
+- Provides resumption capabilities
+
+### 3. Query Expander (`query_expander.py`)
+
+- Generates multiple search query variations
+- Uses LLM to create comprehensive query coverage
+- Handles query expansion metadata
+- Configurable expansion limits
+
+### 4. URL Reviewer (`url_reviewer.py`)
+
+- Interactive URL review and curation interface
+- Allows human oversight of discovered URLs
+- Supports batch operations and filtering
+- Optional phase that can be skipped
+
+### 5. Deep Crawler (`deep_crawler.py`)
+
+- Intelligent multi-level web crawling
+- Follows links to specified depth
+- Respects domain limits and external link policies
+- Integrates with URL filtering systems
+
+### 6. LLM Interface (`llm_interface.py`)
 
 - Abstraction layer for different LLM providers
 - Supports Claude, Gemini, and CLI tools
 - Manages API calls and response parsing
 
-### 3. Scraper (`scraper.py`)
+### 7. Scraper (`scraper.py`)
 
 - Concurrent web scraping with rate limiting
 - Integrates with html2md for content conversion
 - Handles failures gracefully with retry logic
 
-### 4. Analyzer (`analyzer.py`)
+### 8. Analysis Generator (`analysis_generator.py`)
 
-- Content relevance scoring
-- Key points extraction
-- Duplicate detection
-- Template-based analysis
+- Generates AI-powered insights and summaries
+- Template-based analysis approaches
+- Content relevance scoring and key points extraction
+- Configurable analysis types
 
-### 5. Bundle Creator (`bundle_creator.py`)
+### 9. Bundle Creator (`bundle_creator.py`)
 
 - Organizes scraped content into structured bundles
 - Creates table of contents and summaries
 - Formats output in clean Markdown
+- Integrates phase-specific metadata
 
 ## Data Flow
+
+### 7-Phase Workflow
 
 ```
 User Query
     ↓
-Orchestrator
+[1] INITIALIZATION
+    ↓ (Configuration & Setup)
+Workflow Manager
     ↓
-LLM Search → URLs
+[2] QUERY_EXPANSION (Optional)
+    ↓ (Query Expander)
+Expanded Queries
     ↓
-Concurrent Scraping → Raw Content
+[3] URL_COLLECTION
+    ↓ (LLM Search)
+Discovered URLs
     ↓
-HTML to Markdown → Clean Content
+[4] URL_REVIEW (Optional)
+    ↓ (URL Reviewer)
+Curated URLs
     ↓
-Content Analysis → Scored Content
+[5] CRAWLING
+    ↓ (Deep Crawler + Scraper)
+Raw Content
     ↓
-Bundle Creation → Research Bundle
+[6] BUNDLING
+    ↓ (Bundle Creator)
+Research Bundle
+    ↓
+[7] ANALYSIS (Optional)
+    ↓ (Analysis Generator)
+Final Research Package
 ```
+
+### Phase Dependencies
+
+- INITIALIZATION → Required for all workflows
+- QUERY_EXPANSION → Can be skipped if `expand_queries: false`
+- URL_COLLECTION → Always required
+- URL_REVIEW → Can be skipped if `skip_review: true`
+- CRAWLING → Always required
+- BUNDLING → Always required
+- ANALYSIS → Can be skipped if `generate_analysis: false`
 
 ## Configuration System
 
@@ -65,6 +123,23 @@ The research tool uses a hierarchical configuration system:
 2. **User Config**: ~/.m1f.config.yml
 3. **Project Config**: ./.m1f.config.yml
 4. **CLI Arguments**: Command-line overrides
+
+### Workflow Configuration
+
+Workflow behavior is controlled by the `WorkflowConfig` class:
+
+```python
+@dataclass
+class WorkflowConfig:
+    expand_queries: bool = True        # Generate search query variations
+    max_queries: int = 5              # Maximum expanded queries
+    skip_review: bool = False         # Skip URL review interface
+    crawl_depth: int = 0              # How many levels deep to crawl
+    max_pages_per_site: int = 10      # Maximum pages per domain
+    follow_external: bool = False     # Follow external links
+    generate_analysis: bool = True    # Generate AI analysis
+    analysis_type: str = "summary"    # Type of analysis to generate
+```
 
 ## Templates
 
@@ -120,6 +195,10 @@ The architecture supports several extension mechanisms:
 2. **Scraper Backends**: Integrate new scraping tools
 3. **Analysis Templates**: Create domain-specific templates
 4. **Output Formats**: Add new bundle formats
+5. **Workflow Phases**: Add custom phases to the workflow
+6. **Crawling Strategies**: Implement domain-specific crawling logic
+7. **URL Filters**: Create custom URL filtering rules
+8. **Analysis Generators**: Add specialized analysis types
 
 ## Performance Optimizations
 

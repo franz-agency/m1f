@@ -8,9 +8,34 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- **research**: Updated documentation for 7-phase workflow system
+  - Added comprehensive workflow overview in research_overview.md
+  - Documented new workflow configuration options in CLI reference
+  - Updated architecture documentation with new components (QueryExpander, URLReviewer, DeepCrawler, AnalysisGenerator)
+  - Added workflow examples showing different configuration scenarios
+  - Included Python script examples demonstrating workflow-aware research
+
 ## [3.8.0] - Unreleased
 
 ### Fixed
+
+- **Test Suite**: Resolved remaining test failures and warnings
+  - Fixed encoding error in test server by explicitly using UTF-8 for HTML responses
+  - Fixed Playwright timeout issues by using 'domcontentloaded' wait strategy for tests
+  - Fixed async mock warnings by using regular Mock for response objects instead of AsyncMock
+  - Response.text methods now properly return coroutines without AsyncMock warnings
+  - Fixed SQLite datetime adapter deprecation warnings
+  - Eliminated all remaining AsyncMock coroutine warnings
+
+- **Windows Compatibility**: Comprehensive Windows support improvements
+  - Fixed subprocess.PIPE issues in test server startup
+  - Improved path handling in Windows installation scripts (install.ps1)
+  - Fixed PowerShell git hook scripts for better Windows compatibility
+  - Enhanced m1f-init and m1f-help tools for cross-platform operation
+  - Fixed test timeouts specific to Windows environment
+  - Improved Claude integration for Windows users
 
 - **research**: Fixed Html2mdConverter method call - was calling non-existent `convert()` instead of `convert_html()`
 - **research**: Added missing `filter_content()` method to ContentFilter that returns (bool, str) tuple
@@ -18,6 +43,9 @@ and this project adheres to
 - **research**: Created missing `default_analysis.md` prompt file for content analysis
 - **research**: Research tool now works end-to-end with Claude Code provider using web search
 - **research**: Removed emojis from bundle filenames (RESEARCH_BUNDLE.md, EXECUTIVE_SUMMARY.md) for better compatibility
+- **research**: Added real-time feedback display for Claude WebSearch operations
+- **research**: Improved WebSearch feedback to show search queries and result counts
+- **research**: Fixed optional URL parameter handling in analysis prompts
 
 - **Test Suite Fixes**: Resolved 6 failing tests across multiple modules
   - Fixed LLM provider tests by properly mocking API keys for Claude and Gemini
@@ -34,6 +62,10 @@ and this project adheres to
 
 ### Added
 
+- **Dependencies**: Added rich library for better terminal UI components
+  - Required for m1f-research's interactive URL review feature
+  - Provides formatted tables, progress bars, and colored output
+
 - **m1f-research Job Deletion**: Complete job management with deletion capabilities
   - Added `--delete JOB_ID` command to delete a single research job
   - Added `--delete-bulk` command to delete multiple jobs based on filters
@@ -43,7 +75,7 @@ and this project adheres to
   - Progress tracking for bulk deletion operations
   - Detailed error reporting for failed deletions
 
-- **m1f-research Advanced Workflow Features**: Major workflow redesign for better control and comprehensive research
+- **m1f-research Advanced Workflow Features**: Complete workflow redesign for better control and comprehensive research
   - **Query Expansion**: Automatically generates multiple search query variations using LLM
   - **Interactive URL Review**: Terminal UI for reviewing and curating URLs before crawling
   - **Deep Crawling**: Recursive page discovery with configurable depth and per-site limits

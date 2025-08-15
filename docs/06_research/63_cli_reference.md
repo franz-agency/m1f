@@ -63,6 +63,18 @@ management commands)
 | `--no-analysis`  |       | Skip AI analysis (just scrape)     | False   |
 | `--interactive`  | `-i`  | Start in interactive mode          | False   |
 
+### Workflow Options
+
+| Option                    | Description                              | Default |
+| ------------------------- | ---------------------------------------- | ------- |
+| `--expand-queries`        | Enable query expansion phase             | True    |
+| `--max-queries N`         | Maximum number of expanded queries       | 5       |
+| `--skip-review`           | Skip URL review phase                    | False   |
+| `--crawl-depth N`         | How many levels deep to crawl links     | 0       |
+| `--max-pages-per-site N`  | Maximum pages to crawl per domain       | 10      |
+| `--follow-external`       | Follow external links during crawling   | False   |
+| `--analysis-type TYPE`    | Type of analysis: summary, detailed     | summary |
+
 ### Output Options
 
 | Option         | Short | Description                     | Default         |
@@ -213,6 +225,15 @@ m1f-research --interactive
 
 # Technical analysis with high URL count
 m1f-research "kubernetes networking" --template technical --urls 50 --scrape 25
+
+# Deep crawling with query expansion
+m1f-research "microservices patterns" --expand-queries --crawl-depth 2 --max-pages-per-site 15
+
+# Skip review for automated workflows
+m1f-research "python async patterns" --skip-review --max-queries 8
+
+# Detailed analysis with external link following
+m1f-research "AI research 2024" --follow-external --analysis-type detailed
 ```
 
 ## Date Format Examples
@@ -254,6 +275,17 @@ research:
   defaults:
     url_count: 30
     scrape_count: 15
+
+  # Workflow phase configuration
+  workflow:
+    expand_queries: true        # Generate search query variations
+    max_queries: 5             # Maximum expanded queries
+    skip_review: false         # Skip URL review interface
+    crawl_depth: 1             # How many levels deep to crawl
+    max_pages_per_site: 10     # Maximum pages per domain
+    follow_external: false     # Follow external links
+    generate_analysis: true    # Generate AI analysis
+    analysis_type: "summary"   # Type of analysis to generate
 
   output:
     directory: ~/research-data

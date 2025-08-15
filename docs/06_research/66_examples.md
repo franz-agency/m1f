@@ -172,6 +172,90 @@ research:
         include_code_stats: true
 ```
 
+## Workflow Examples
+
+### Query Expansion Workflow
+
+```bash
+# Basic query expansion
+m1f-research "python web frameworks" --expand-queries
+
+# Advanced query expansion with more variations
+m1f-research "machine learning model deployment" --expand-queries --max-queries 8
+
+# Query expansion with specific focus
+m1f-research "kubernetes best practices" --expand-queries --template technical
+```
+
+### URL Review Workflow
+
+```bash
+# Enable URL review for manual curation
+m1f-research "AI ethics research" --skip-review false
+
+# Automated workflow (skip review)
+m1f-research "python libraries 2024" --skip-review
+
+# Review with expanded queries
+m1f-research "microservices patterns" --expand-queries --skip-review false
+```
+
+### Deep Crawling Workflow
+
+```bash
+# Single-level crawling
+m1f-research "vue.js documentation" --crawl-depth 1
+
+# Multi-level crawling with site limits
+m1f-research "react ecosystem" --crawl-depth 2 --max-pages-per-site 15
+
+# External link following
+m1f-research "web development trends" --crawl-depth 1 --follow-external
+
+# Comprehensive crawling
+m1f-research "database optimization" --crawl-depth 3 --max-pages-per-site 25 --follow-external
+```
+
+### Analysis Generation Workflow
+
+```bash
+# Summary analysis (default)
+m1f-research "golang best practices" --analysis-type summary
+
+# Detailed analysis
+m1f-research "system design principles" --analysis-type detailed
+
+# Skip analysis for raw content
+m1f-research "API documentation" --no-analysis
+```
+
+### Complete Workflow Examples
+
+```bash
+# Full-featured research with all phases
+m1f-research "distributed systems patterns" \
+  --expand-queries --max-queries 6 \
+  --crawl-depth 2 --follow-external \
+  --max-pages-per-site 20 \
+  --analysis-type detailed \
+  --skip-review false
+
+# Minimal automated workflow
+m1f-research "quick reference guide" \
+  --no-expand-queries \
+  --skip-review \
+  --crawl-depth 0 \
+  --analysis-type summary
+
+# Academic research workflow
+m1f-research "quantum computing research 2024" \
+  --template academic \
+  --expand-queries --max-queries 10 \
+  --crawl-depth 1 \
+  --analysis-type detailed \
+  --skip-review false
+```
+
 ## Python Script Examples
 
 ### Basic Research Script
@@ -200,15 +284,15 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### Custom Template Script
+### Custom Template Script with Workflow
 
 ```python
 #!/usr/bin/env python3
 import asyncio
-from tools.research import ResearchOrchestrator, ResearchTemplate
+from tools.research import ResearchOrchestrator, ResearchTemplate, ResearchConfig, WorkflowConfig
 from tools.shared.colors import info
 
-# Define custom template
+# Define custom template with workflow configuration
 security_template = ResearchTemplate(
     name="security",
     description="Security-focused research",
@@ -223,18 +307,37 @@ security_template = ResearchTemplate(
     relevance_criteria="security relevance and actionable advice"
 )
 
-async def main():
-    orchestrator = ResearchOrchestrator()
+# Configure workflow for security research
+workflow_config = WorkflowConfig(
+    expand_queries=True,
+    max_queries=8,
+    skip_review=False,  # Review URLs for security relevance
+    crawl_depth=2,
+    max_pages_per_site=15,
+    follow_external=True,
+    generate_analysis=True,
+    analysis_type="detailed"
+)
 
-    results = await orchestrator.research(
+async def main():
+    config = ResearchConfig(
         query="API security",
-        template=security_template,
         url_count=40,
-        scrape_count=20
+        scrape_count=20,
+        template="security",
+        workflow=workflow_config
     )
+    
+    orchestrator = ResearchOrchestrator(config=config)
+    orchestrator.register_template(security_template)
+
+    results = await orchestrator.research_with_workflow()
 
     # Print security-specific summary
     info("\n=== Security Research Summary ===")
+    info(f"Workflow completed with {len(results.content)} sources")
+    info(f"Analysis type: {workflow_config.analysis_type}")
+    
     for analysis in sorted(results.analyses, key=lambda a: a.relevance, reverse=True)[:5]:
         info(f"\n{analysis.url}")
         info(f"Relevance: {analysis.relevance}/10")
@@ -297,85 +400,150 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### Research Pipeline Script
+### Advanced Workflow Pipeline Script
 
 ```python
 #!/usr/bin/env python3
 import asyncio
 import json
 from datetime import datetime
-from tools.research import ResearchOrchestrator
+from tools.research import ResearchOrchestrator, ResearchConfig, WorkflowConfig
+from tools.research.workflow_phases import WorkflowPhase
 from tools.m1f import bundle_files
-from tools.shared.colors import info, success
+from tools.shared.colors import info, success, warning
 
-async def research_and_bundle(query):
-    """Research a topic and create an m1f bundle"""
+async def research_with_workflow(query, workflow_config):
+    """Research a topic using the 7-phase workflow"""
 
-    # Phase 1: Research
-    info(f"Phase 1: Researching {query}")
-    orchestrator = ResearchOrchestrator()
-
-    research_results = await orchestrator.research(
+    info(f"Starting workflow research for: {query}")
+    
+    config = ResearchConfig(
         query=query,
         url_count=30,
         scrape_count=15,
-        output_dir=f"./pipeline/{query.replace(' ', '_')}"
+        workflow=workflow_config
     )
+    
+    orchestrator = ResearchOrchestrator(config=config)
+    
+    # Monitor workflow phases
+    phase_results = {}
+    
+    try:
+        # Execute workflow with phase tracking
+        research_results = await orchestrator.research_with_workflow()
+        
+        # Get workflow summary
+        if hasattr(orchestrator, 'workflow_manager'):
+            phase_summary = orchestrator.workflow_manager.get_phase_summary(research_results.job_id)
+            phase_results = phase_summary
+        
+        info(f"Workflow completed successfully")
+        info(f"Completed phases: {phase_results.get('completed_phases', [])}")
+        
+        return research_results, phase_results
+        
+    except Exception as e:
+        warning(f"Workflow failed: {e}")
+        return None, {"error": str(e)}
 
-    # Phase 2: Bundle with m1f
-    info(f"Phase 2: Creating m1f bundle")
-    bundle_path = bundle_files(
-        paths=[str(research_results.bundle_path.parent)],
-        output=f"./pipeline/{query.replace(' ', '_')}_complete.txt",
-        preset="docs-bundle"
-    )
-
-    # Phase 3: Create report
-    info(f"Phase 3: Generating report")
-    report = {
-        "query": query,
-        "timestamp": datetime.now().isoformat(),
-        "research": {
-            "urls_found": len(research_results.urls),
-            "urls_scraped": len(research_results.content),
-            "avg_relevance": sum(a.relevance for a in research_results.analyses) / len(research_results.analyses)
+async def comprehensive_research_pipeline():
+    """Run comprehensive research with different workflow configurations"""
+    
+    research_configs = [
+        {
+            "query": "microservices architecture patterns",
+            "workflow": WorkflowConfig(
+                expand_queries=True,
+                max_queries=6,
+                skip_review=False,
+                crawl_depth=2,
+                follow_external=True,
+                generate_analysis=True,
+                analysis_type="detailed"
+            )
         },
-        "bundle": {
-            "path": str(bundle_path),
-            "size": bundle_path.stat().st_size
+        {
+            "query": "python async programming",
+            "workflow": WorkflowConfig(
+                expand_queries=True,
+                max_queries=4,
+                skip_review=True,  # Automated
+                crawl_depth=1,
+                follow_external=False,
+                generate_analysis=True,
+                analysis_type="summary"
+            )
+        },
+        {
+            "query": "quick docker reference",
+            "workflow": WorkflowConfig(
+                expand_queries=False,  # Minimal
+                skip_review=True,
+                crawl_depth=0,
+                generate_analysis=False
+            )
         }
-    }
-
-    report_path = f"./pipeline/{query.replace(' ', '_')}_report.json"
-    with open(report_path, "w") as f:
-        json.dump(report, f, indent=2)
-
-    return report
-
-async def main():
-    queries = [
-        "react state management",
-        "vue composition api",
-        "angular signals"
     ]
-
-    # Process all queries
+    
     results = []
-    for query in queries:
-        result = await research_and_bundle(query)
-        results.append(result)
-        success(f"Completed: {query}\n")
-
-    # Summary
-    info("\n=== Pipeline Summary ===")
+    
+    for config in research_configs:
+        info(f"\n{'='*50}")
+        info(f"Processing: {config['query']}")
+        info(f"Workflow type: {'Comprehensive' if config['workflow'].expand_queries else 'Minimal'}")
+        
+        research_result, phase_result = await research_with_workflow(
+            config['query'], 
+            config['workflow']
+        )
+        
+        if research_result:
+            # Create detailed report
+            report = {
+                "query": config['query'],
+                "timestamp": datetime.now().isoformat(),
+                "workflow_config": {
+                    "expand_queries": config['workflow'].expand_queries,
+                    "crawl_depth": config['workflow'].crawl_depth,
+                    "analysis_type": config['workflow'].analysis_type,
+                },
+                "phase_results": phase_result,
+                "research_stats": {
+                    "urls_found": len(research_result.urls) if research_result.urls else 0,
+                    "urls_scraped": len(research_result.content) if research_result.content else 0,
+                },
+                "bundle_path": str(research_result.bundle_path) if research_result.bundle_path else None
+            }
+            
+            results.append(report)
+            success(f"Completed: {config['query']}")
+        else:
+            warning(f"Failed: {config['query']}")
+    
+    # Generate summary report
+    summary_path = "./pipeline_summary.json"
+    with open(summary_path, "w") as f:
+        json.dump({
+            "pipeline_run": datetime.now().isoformat(),
+            "total_queries": len(research_configs),
+            "successful": len(results),
+            "results": results
+        }, f, indent=2)
+    
+    info(f"\n=== Pipeline Summary ===")
+    info(f"Total queries processed: {len(research_configs)}")
+    info(f"Successful completions: {len(results)}")
+    info(f"Summary saved to: {summary_path}")
+    
     for result in results:
         info(f"\n{result['query']}:")
-        info(f"  - URLs scraped: {result['research']['urls_scraped']}")
-        info(f"  - Avg relevance: {result['research']['avg_relevance']:.1f}")
-        info(f"  - Bundle size: {result['bundle']['size'] / 1024:.1f} KB")
+        info(f"  - Workflow: {result['workflow_config']}")
+        info(f"  - Completed phases: {len(result['phase_results'].get('completed_phases', []))}")
+        info(f"  - URLs processed: {result['research_stats']['urls_scraped']}")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(comprehensive_research_pipeline())
 ```
 
 ## Real-World Use Cases
@@ -461,9 +629,14 @@ m1f-research "covid vaccine efficacy" --config medical-research.yml
 
 ```bash
 # Research → m1f bundle → AI analysis
-m1f-research "topic" && \
+m1f-research "topic" --analysis-type detailed && \
 m1f ./m1f/research/topic-*/ -o analysis.txt && \
 cat analysis.txt | llm "Summarize the key findings"
+
+# Multi-stage workflow research
+m1f-research "react hooks patterns" --expand-queries --crawl-depth 1 && \
+m1f-research --resume [job-id] --analysis-type detailed && \
+m1f ./research-data/*/[job-id]/ -o react-hooks-complete.txt
 ```
 
 ### 4. Scheduled Research
