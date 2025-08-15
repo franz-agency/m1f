@@ -21,7 +21,7 @@ from typing import Union, List, Optional, Generator
 import os
 import logging
 
-from ...m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_is_dir,
 )

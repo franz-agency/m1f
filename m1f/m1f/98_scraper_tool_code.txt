@@ -25,7 +25,7 @@ import sys
 
 # Try absolute imports first (for module execution), fall back to relative
 try:
-    from tools.scrape_tool.cli import main
+    from scrape_tool.cli import main
 except ImportError:
     # Fallback for direct script execution
     from scrape_tool.cli import main
@@ -36,7 +36,7 @@ if __name__ == "__main__":
 ======= scrape_tool/__init__.py ======
 """Web scraper tool for downloading websites."""
 
-from .._version import __version__, __version_info__
+from _version import __version__, __version_info__
 
 ======= scrape_tool/__main__.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -75,11 +75,11 @@ from pathlib import Path
 from typing import Optional
 
 # Import safe file operations
-from ..m1f.file_operations import safe_exists, safe_is_dir, safe_is_file, safe_open
+from m1f.file_operations import safe_exists, safe_is_dir, safe_is_file, safe_open
 
 # Use unified colorama module
 try:
-    from ..shared.colors import (
+    from shared.colors import (
         Colors,
         success,
         error,
@@ -89,7 +89,7 @@ try:
         COLORAMA_AVAILABLE,
         ColoredHelpFormatter,
     )
-    from ..shared.cli import CustomArgumentParser
+    from shared.cli import CustomArgumentParser
 except ImportError:
     COLORAMA_AVAILABLE = False
 
@@ -1512,8 +1512,8 @@ from urllib.parse import urlparse, urljoin
 
 from .scrapers import create_scraper, ScraperConfig, ScrapedPage
 from .config import CrawlerConfig, ScraperBackend
-from ..m1f.file_operations import safe_exists, safe_mkdir
-from ..html2md_tool.utils import sanitize_filename
+from m1f.file_operations import safe_exists, safe_mkdir
+from html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -1611,6 +1611,10 @@ class WebCrawler:
                             )
                             value = {}
                     setattr(scraper_config, key, value)
+                else:
+                    # Store non-attribute configs in __dict__ for backend-specific use
+                    # (e.g., browser_config for Playwright)
+                    scraper_config.__dict__[key] = value
 
         return scraper_config
 
@@ -2602,7 +2606,7 @@ class WebCrawler:
         import os
         from bs4 import BeautifulSoup
         from urllib.parse import urljoin, urlparse, urlunparse
-        from tools.scrape_tool.utils import find_common_parent
+        from scrape_tool.utils import find_common_parent
 
         # Handle both string and BeautifulSoup inputs
         if isinstance(content, str):
@@ -4804,7 +4808,7 @@ class BeautifulSoupScraper(WebScraperBase):
 
                     # 3. Content duplicate check
                     if self.config.check_content_duplicates:
-                        from ..utils import calculate_content_checksum
+                        from scrape_tool.utils import calculate_content_checksum
 
                         content_checksum = calculate_content_checksum(content)
 
@@ -5222,8 +5226,8 @@ from urllib.parse import urlparse, urljoin
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
 from .python_mirror import PythonMirrorScraper
-from ...m1f.file_operations import safe_exists, safe_is_file, safe_is_dir
-from ...html2md_tool.utils import sanitize_filename
+from m1f.file_operations import safe_exists, safe_is_file, safe_is_dir
+from html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -5706,7 +5710,7 @@ class HTTrackScraper(PythonMirrorScraper):
 
                     # 3. Content duplicate check
                     if self.config.check_content_duplicates:
-                        from ..utils import calculate_content_checksum
+                        from scrape_tool.utils import calculate_content_checksum
 
                         content_checksum = calculate_content_checksum(content)
 
@@ -5821,6 +5825,9 @@ class PlaywrightScraper(WebScraperBase):
 
         # Browser configuration from scraper config
         self._browser_config = config.__dict__.get("browser_config", {})
+        if not isinstance(self._browser_config, dict):
+            self._browser_config = {}
+        
         self._browser_type = self._browser_config.get("browser", "chromium")
         self._headless = self._browser_config.get("headless", True)
         self._viewport = self._browser_config.get(
@@ -6286,8 +6293,8 @@ import aiofiles
 from bs4 import BeautifulSoup
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
-from ...m1f.file_operations import safe_mkdir
-from ...html2md_tool.utils import sanitize_filename
+from m1f.file_operations import safe_mkdir
+from html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -6754,7 +6761,7 @@ class SelectolaxScraper(WebScraperBase):
 
             # 3. Content duplicate check
             if self.config.check_content_duplicates:
-                from ..utils import calculate_content_checksum
+                from scrape_tool.utils import calculate_content_checksum
 
                 content_checksum = calculate_content_checksum(response.text)
 

@@ -5,13 +5,7 @@
 """Main entry point for s1f - Split One File."""
 
 import sys
-
-# Try absolute imports first (for module execution), fall back to relative
-try:
-    from tools.s1f.cli import main
-except ImportError:
-    # Fallback for direct script execution
-    from s1f.cli import main
+from s1f.cli import main
 
 if __name__ == "__main__":
     sys.exit(main())

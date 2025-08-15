@@ -486,6 +486,38 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.8.2] - 2025-08-15
+
+### Fixed
+
+- **Package Installation**: Fixed module import errors for all m1f commands
+  - Created new root-level setup.py with proper package_dir configuration
+  - Migrated from relative imports to absolute imports across 40+ files
+  - Fixed entry point definitions to work with editable installations
+  - All commands (m1f, m1f-s1f, m1f-scrape, m1f-research, etc.) now work correctly
+  - Added comprehensive test suite with 33 passing tests
+  - Ensures cross-platform compatibility (Linux/Windows)
+
+- **Test Suite**: Resolved 26 test failures and 13 errors
+  - Fixed s1f module import errors in test fixtures
+  - Added missing @pytest.mark.asyncio decorators for async tests
+  - Fixed AsyncMock import issues in research tests
+  - Corrected test_large_file_handling assertions
+  - Removed invalid return statements from test functions
+  - Fixed test_submodules_importable path conflicts
+
+- **Research Workflow**: Fixed workflow test failures
+  - Corrected bundle_path handling in dry run mode
+  - Fixed workflow phase transitions (INITIALIZATION → URL_COLLECTION)
+  - Disabled query expansion in tests to prevent multiple search_web calls
+  - Added skip_review=True to avoid interactive URL review in tests
+
+- **Installation Scripts**: Improved robustness
+  - Fixed tmux pane termination issue in install.sh when sourced
+  - Added pip package uninstallation to uninstall scripts
+  - Enhanced error handling for editable installations
+  - Fixed PowerShell path resolution in install.ps1
+
 ## [3.8.1] - 2025-08-15
 
 ### Fixed
@@ -503,8 +535,6 @@ and this project adheres to
   - Use `return` instead of `exit` to prevent PowerShell closure when dot-sourced
   - Enhanced error messages with PROJECT_ROOT and current directory diagnostics
   - Supports dot-sourcing from both project root and scripts directory
-
-## [3.8.0] - 2025-08-15
 
 ### Fixed
 
@@ -529,7 +559,6 @@ and this project adheres to
 - **research**: Enabled WebSearch tool for Claude Code provider - now finds real URLs instead of generating hypothetical ones
 - **research**: Created missing `default_analysis.md` prompt file for content analysis
 - **research**: Research tool now works end-to-end with Claude Code provider using web search
-- **research**: Removed emojis from bundle filenames (RESEARCH_BUNDLE.md, EXECUTIVE_SUMMARY.md) for better compatibility
 - **research**: Added real-time feedback display for Claude WebSearch operations
 - **research**: Improved WebSearch feedback to show search queries and result counts
 - **research**: Fixed optional URL parameter handling in analysis prompts
@@ -4754,16 +4783,22 @@ tools/m1f/
 
 ### Performance Considerations
 
-With the new async I/O architecture, m1f can handle large projects more
-efficiently:
+With v3.2+ performance improvements, m1f can handle large projects significantly faster:
 
-- Concurrent file reading and processing
-- Memory-efficient streaming for large files
+**v3.2+ Performance Enhancements:**
+- **Parallel Processing**: Enabled by default, provides 3-5x speedup for large file sets
+- **Stream-based Checksums**: Constant memory usage regardless of file size
+- **Optimized Deduplication**: Thread-safe checksum verification with minimal overhead
+- **Concurrent Write Limits**: Semaphore-based write limiting prevents "too many open files" errors
+
+**Architecture Features:**
+- Async I/O with aiofiles for truly asynchronous operations
+- Memory-efficient streaming for large files (8KB chunks)
 - Smart caching to avoid redundant operations
-- Content deduplication saves space and processing time
+- Content deduplication saves space and processing time (disable with `--allow-duplicate-files`)
+- Deterministic file ordering maintained despite parallel processing
 
-For extremely large directories with tens of thousands of files or very large
-individual files, the script might take some time to process.
+For extremely large directories with tens of thousands of files, v3.2 parallel processing provides substantial performance improvements while maintaining consistent output.
 
 ## Preset System
 
@@ -5359,9 +5394,11 @@ contain UTF-8 emojis or special characters.
 
 Check for sensitive information in files using detect-secrets.
 
-- **abort**: Stop processing if secrets are found
+- **abort**: Stop processing if secrets are found (default in v3.2+)
 - **warn**: Include files but show warnings
 - **skip**: Disable security scanning (not recommended)
+
+**v3.2+ Change**: Default changed from 'warn' to 'abort' for enhanced security.
 
 ## Archive Options
 
@@ -5948,6 +5985,23 @@ Instead of applying the same settings to all files, presets let you:
 - Override security checks and size limits per file type
 - Integrate with auto-bundling for intelligent project organization
 
+## v3.2+ Enhancements
+
+Version 3.2 introduced several important enhancements to the preset system:
+
+### Security Improvements
+- **File Size Limits**: Preset files are limited to 10MB to prevent memory exhaustion attacks
+- **Processor Validation**: Processor names must only contain alphanumeric characters and underscores
+- **Path Validation**: All paths in preset files are validated to prevent directory traversal
+
+### New Configuration Options
+- **`enable_content_deduplication`**: Control duplicate file handling (default: true)
+- **`prefer_utf8_for_text_files`**: UTF-8 preference for text files (default: true)
+- **`security_check`**: Default changed from 'warn' to 'abort' for enhanced security
+
+### Per-File Settings Support
+You can now override any global setting on a per-file-type basis using the new `per_file_settings` configuration:
+
 ## Quick Start
 
 1. **Use a built-in preset**:
@@ -6300,7 +6354,11 @@ global_settings:
   abort_on_encoding_error: false
 
   # Security
-  security_check: "warn" # abort, skip, warn
+  security_check: "warn" # abort, skip, warn (default: abort in v3.2+)
+  
+  # Performance Options (v3.2+)
+  enable_content_deduplication: true  # Default: true
+  prefer_utf8_for_text_files: true   # Default: true
 ```
 
 ### Encoding Options
@@ -6449,6 +6507,40 @@ m1f -s . -o bundle.txt \
   --preset base-rules.yml \
   --preset project-specific.yml \
   --preset production-overrides.yml
+```
+
+### v3.2 Sample Preset
+
+Example preset showcasing v3.2+ features:
+
+```yaml
+name: "Modern Web Project v3.2"
+version: "3.2"
+
+# Global settings with v3.2 features
+global_settings:
+  enable_content_deduplication: true
+  prefer_utf8_for_text_files: true
+  security_check: "abort"  # v3.2 default
+  
+# File patterns
+include_patterns:
+  - "src/**/*.{js,ts,jsx,tsx}"
+  - "**/*.md"
+
+exclude_patterns:
+  - "**/node_modules/**"
+  - "**/.git/**"
+
+# Per-file settings with processors
+per_file_settings:
+  "*.min.js":
+    processors:
+      - minify_content
+  "*.env":
+    security_check: "abort"
+    processors:
+      - redact_secrets
 ```
 
 ## Creating Custom Presets
@@ -10887,6 +10979,75 @@ This guide documents security best practices and protective measures implemented
 in the m1f toolkit v3.2. Following these practices ensures safe operation and
 prevents common security vulnerabilities.
 
+## Major Security Enhancements in v3.2+
+
+### Path Traversal Protection
+
+**What's New**: Comprehensive validation of all file paths to prevent directory traversal attacks.
+
+**Impact**: Prevents malicious actors from accessing files outside intended directories.
+
+**Implementation**:
+- New `validate_safe_path()` utility function
+- Applied to all user inputs, preset paths, and configuration files
+- Symlink targets are now validated
+
+### SSRF Protection in Web Scrapers
+
+**What's New**: Blocks access to private IP ranges and cloud metadata endpoints.
+
+**Protected Ranges**:
+- Private networks (10.x.x.x, 172.16.x.x, 192.168.x.x)
+- Localhost (127.0.0.1, ::1)
+- Link-local (169.254.x.x)
+- Cloud metadata (169.254.169.254)
+
+**Applies to**: All web scraping tools (BeautifulSoup, Playwright, Scrapy, Selectolax)
+
+### robots.txt Compliance
+
+**What's New**: All scrapers now automatically respect robots.txt files.
+
+**Features**:
+- Automatic robots.txt fetching and parsing
+- Per-path access validation
+- User-agent specific rule support
+
+### SSL/TLS Certificate Validation
+
+**What's New**: SSL validation is now enabled by default.
+
+**Configuration**:
+- New `--ignore-https-errors` flag for exceptions
+- Per-scraper SSL configuration
+
+**Security**: Prevents man-in-the-middle attacks
+
+### Command Injection Prevention
+
+**What's New**: Proper escaping of all shell commands.
+
+**Implementation**: Uses `shlex.quote()` for all user inputs in commands.
+
+**Affected Tools**: HTTrack scraper, git operations
+
+### JavaScript Execution Safety
+
+**What's New**: Validation of custom JavaScript in Playwright scraper.
+
+**Features**:
+- Detects dangerous patterns (eval, Function constructor)
+- Warns about custom script execution
+- Encourages use of built-in actions
+
+### Custom Processor Validation
+
+**What's New**: Validates processor names to prevent injection attacks.
+
+**Rules**: Only alphanumeric characters and underscores allowed.
+
+**Impact**: Prevents code injection through preset files
+
 ## Path Validation and Traversal Protection
 
 ### Why It Matters
@@ -11113,313 +11274,9 @@ Stay informed about security updates:
 - Update to new versions promptly
 - Review breaking changes that might affect security
 
-Remember: Security is a shared responsibility. While m1f implements many
-protective measures, proper configuration and usage are essential for
-maintaining a secure environment.
-
-======= docs/01_m1f/41_version_3_2_features.md ======
-# m1f v3.2 Feature Documentation
-
-## Overview
-
-Version 3.2 of the m1f toolkit introduces significant security enhancements,
-performance improvements, and new configuration options. This document provides
-a comprehensive overview of all v3.2 features and changes.
-
-## Major Security Enhancements
-
-### 1. Path Traversal Protection
-
-- **What's New**: Comprehensive validation of all file paths to prevent
-  directory traversal attacks
-- **Impact**: Prevents malicious actors from accessing files outside intended
-  directories
-- **Implementation**:
-  - New `validate_safe_path()` utility function
-  - Applied to all user inputs, preset paths, and configuration files
-  - Symlink targets are now validated
-
-### 2. SSRF Protection in Web Scrapers
-
-- **What's New**: Blocks access to private IP ranges and cloud metadata
-  endpoints
-- **Protected Ranges**:
-  - Private networks (10.x.x.x, 172.16.x.x, 192.168.x.x)
-  - Localhost (127.0.0.1, ::1)
-  - Link-local (169.254.x.x)
-  - Cloud metadata (169.254.169.254)
-- **Applies to**: All web scraping tools (BeautifulSoup, Playwright, Scrapy,
-  Selectolax)
-
-### 3. robots.txt Compliance
-
-- **What's New**: All scrapers now automatically respect robots.txt files
-- **Features**:
-  - Automatic robots.txt fetching and parsing
-  - Per-path access validation
-  - User-agent specific rule support
-
-### 4. SSL/TLS Certificate Validation
-
-- **What's New**: SSL validation is now enabled by default
-- **Configuration**:
-  - New `--ignore-https-errors` flag for exceptions
-  - Per-scraper SSL configuration
-- **Security**: Prevents man-in-the-middle attacks
-
-### 5. Command Injection Prevention
-
-- **What's New**: Proper escaping of all shell commands
-- **Implementation**: Uses `shlex.quote()` for all user inputs in commands
-- **Affected Tools**: HTTrack scraper, git operations
-
-### 6. JavaScript Execution Safety
-
-- **What's New**: Validation of custom JavaScript in Playwright scraper
-- **Features**:
-  - Detects dangerous patterns (eval, Function constructor)
-  - Warns about custom script execution
-  - Encourages use of built-in actions
-
-### 7. Custom Processor Validation
-
-- **What's New**: Validates processor names to prevent injection attacks
-- **Rules**: Only alphanumeric characters and underscores allowed
-- **Impact**: Prevents code injection through preset files
-
-## Performance Improvements
-
-### 1. Parallel File Processing
-
-- **Enabled by Default**: Parallel processing is now always active
-- **Features**:
-  - Concurrent file reading with automatic batch size optimization
-  - Thread-safe checksum deduplication
-  - Maintains deterministic file order in output
-- **Performance**: Up to 3-5x faster for large file sets
-
-### 2. Optimized Checksum Verification
-
-- **What's Changed**: Stream-based file reading for checksums
-- **Benefits**:
-  - Reduced memory usage for large files
-  - Prevents out-of-memory errors
-  - 8KB chunk processing
-
-### 3. Concurrent Write Limits in s1f
-
-- **What's New**: Semaphore-based write limiting
-- **Default**: 10 concurrent file operations
-- **Benefits**: Prevents "too many open files" errors
-
-### 4. Async I/O Improvements
-
-- **Updates**:
-  - Uses `aiofiles` for truly async file operations
-  - Modern async patterns (asyncio.run())
-  - Proper exception handling in async contexts
-
-## Configuration Enhancements
-
-### 1. Content Deduplication Control
-
-- **New CLI Option**: `--allow-duplicate-files`
-- **Preset Setting**: `enable_content_deduplication`
-- **Default**: Deduplication enabled (False for allow-duplicate)
-- **Use Case**: When you need to preserve duplicate content
-
-### 2. UTF-8 Preference Control
-
-- **New CLI Option**: `--no-prefer-utf8-for-text-files`
-- **Preset Setting**: `prefer_utf8_for_text_files`
-- **Default**: UTF-8 preferred (True)
-- **Use Case**: Working with legacy encodings like windows-1252
-
-### 3. Security Check Modes
-
-- **Options**:
-  - `error` (default): Stop on security issues
-  - `warn`: Log warnings but continue
-  - `skip`: Disable security scanning
-- **CLI**: `--security-check {error|warn|skip}`
-- **Preset**: `security_check` setting
-
-### 4. File Size Limits
-
-- **Preset Files**: Limited to 10MB
-- **Benefits**: Prevents memory exhaustion attacks
-- **Error Handling**: Clear error messages for oversized files
-
-## Improved Patterns and Flexibility
-
-### 1. Flexible Metadata Stripping
-
-- **What's New**: More flexible regex for scraped content metadata
-- **Supports**:
-  - Various horizontal rule styles (`---`, `___`, `***`)
-  - Different emphasis markers
-  - Multiple formatting variations
-
-### 2. Code Block Detection in s1f
-
-- **What's New**: Ignores separators inside code blocks
-- **Benefits**: Prevents false positive file detection
-- **Applies to**: Markdown code blocks (```)
-
-### 3. Timezone-Aware Timestamps
-
-- **What's Changed**: All timestamps now use UTC
-- **Implementation**: `datetime.now(timezone.utc)`
-- **Benefits**: Consistent timestamps across timezones
-
-## CLI Updates
-
-### New Options Summary
-
-```bash
-# Performance
---allow-duplicate-files         # Disable content deduplication
-
-# Encoding
---no-prefer-utf8-for-text-files # Disable UTF-8 preference
-
-# Security
---security-check {error|warn|skip}  # Security scanning mode
---ignore-https-errors              # Disable SSL validation (scraping)
-
-# Existing options work as before
---source-directory, -s          # Source directory
---output-file, -o              # Output file
---preset                       # Use preset configuration
-```
-
-## Breaking Changes
-
-### 1. Standard Separator Format
-
-- **Change**: File separators no longer include checksums
-- **Before**: `=== path/to/file.txt === SHA256: abc123...`
-- **After**: `=== path/to/file.txt ===`
-- **Impact**: s1f can still read old format files
-
-### 2. SSL Validation Default
-
-- **Change**: SSL validation now enabled by default
-- **Impact**: May break scraping of sites with invalid certificates
-- **Migration**: Use `--ignore-https-errors` if needed
-
-### 3. Security Scanning Default
-
-- **Change**: Security scanning in error mode by default
-- **Impact**: Processing stops on sensitive data detection
-- **Migration**: Use `--security-check warn` for old behavior
-
-## Preset System Enhancements
-
-### New Preset Settings
-
-```yaml
-# Performance
-enable_content_deduplication: false # Allow duplicate files
-
-# Encoding
-prefer_utf8_for_text_files: false # Disable UTF-8 preference
-
-# Security
-security_check: warn # Security check mode
-
-# Per-file settings still work
-per_file_settings:
-  "*.min.js":
-    processors:
-      - minify_content
-```
-
-## Test Suite Improvements
-
-- Fixed test isolation issues
-- Added proper async test support
-- Improved test server connectivity handling
-- Enhanced security test coverage
-
-## Migration Guide
-
-### From v3.1 to v3.2
-
-1. **Review Security Settings**:
-   - Default security scanning may flag legitimate content
-   - Use `--security-check warn` during migration
-
-2. **Check SSL Requirements**:
-   - Sites with self-signed certificates need `--ignore-https-errors`
-   - Review and update scraping scripts
-
-3. **Update Separator Parsing**:
-   - If you parse m1f output, update to handle new separator format
-   - s1f handles both formats automatically
-
-4. **Performance Tuning**:
-   - Parallel processing is automatic - no configuration needed
-   - Monitor memory usage with large file sets
-
-## Examples
-
-### Using New Features
-
-```bash
-# Security in warn mode (parallel processing is automatic)
-m1f -s ./src -o bundle.txt --security-check warn
-
-# Allow duplicates with custom encoding handling
-m1f -s ./legacy -o output.txt --allow-duplicate-files --no-prefer-utf8-for-text-files
-
-# Secure web scraping (robots.txt compliance is automatic)
-m1f-scrape https://example.com -o ./scraped
-
-# Using new features in presets
-m1f -s . -o bundle.txt --preset my-preset.yml
-```
-
-### Sample v3.2 Preset
-
-```yaml
-name: "Modern Web Project v3.2"
-version: "3.2"
-
-# Global settings with v3.2 features
-settings:
-  enable_content_deduplication: true
-  prefer_utf8_for_text_files: true
-  security_check: error
-
-# File patterns remain the same
-include_patterns:
-  - "src/**/*.{js,ts,jsx,tsx}"
-  - "**/*.md"
-
-exclude_patterns:
-  - "**/node_modules/**"
-  - "**/.git/**"
-
-# Per-file settings with processors
-per_file_settings:
-  "*.min.js":
-    processors:
-      - minify_content
-```
-
-## Performance Benchmarks
-
-Typical improvements with v3.2:
-
-- **Parallel Processing**: 3-5x faster for 1000+ files
-- **Memory Usage**: 50% reduction for large files
-- **s1f Extraction**: 2x faster with concurrent writes
-- **Checksum Calculation**: Constant memory usage regardless of file size
-
 ## Security Audit Results
 
-v3.2 addresses all HIGH and MEDIUM priority security issues:
+v3.2+ addresses all HIGH and MEDIUM priority security issues:
 
 - ✅ Path traversal vulnerabilities fixed
 - ✅ SSRF protection implemented
@@ -11429,14 +11286,9 @@ v3.2 addresses all HIGH and MEDIUM priority security issues:
 - ✅ JavaScript execution validated
 - ✅ Race conditions eliminated
 
-## Support and Resources
-
-- [Security Best Practices Guide](./40_security_best_practices.md)
-- [CLI Reference](./02_cli_reference.md)
-- [Preset System Guide](./10_m1f_presets.md)
-- [Troubleshooting Guide](./03_troubleshooting.md)
-
-For questions or issues, please refer to the project repository.
+Remember: Security is a shared responsibility. While m1f implements many
+protective measures, proper configuration and usage are essential for
+maintaining a secure environment.
 
 ======= docs/02_s1f/20_s1f.md ======
 # s1f (Split One File)
@@ -16141,7 +15993,18 @@ bundle-check:
 
 > ⚠️ **Early Alpha Warning**: m1f-research is in early alpha and under heavy development. Expect significant changes to features, APIs, and workflows.
 
-AI-powered research tool with a sophisticated 7-phase workflow system for comprehensive web research and analysis.
+AI-powered research orchestrator that automates the entire workflow from finding sources to creating Claude-ready knowledge bundles.
+
+## What is m1f-research?
+
+While the m1f toolkit provides individual tools (m1f-scrape, m1f-html2md, m1f), **m1f-research orchestrates them all** into an intelligent research pipeline:
+
+1. **AI finds sources** on any topic (using Claude/Gemini)
+2. **You review and curate** the URLs (unlike black-box LLM research modes)
+3. **Automatically processes** everything: scrape → convert → bundle
+4. **Creates knowledge bundles** ready for Claude's Project Knowledge
+
+**Key advantage**: Unlike LLM "research modes", YOU control which sources are used and can add your own trusted sources.
 
 ## 🚀 New: 7-Phase Workflow System
 
@@ -16208,18 +16071,48 @@ For detailed documentation, see the numbered files above.
 ======= docs/06_research/60_research_overview.md ======
 # m1f-research
 
-AI-powered research tool that automatically finds, scrapes, and bundles
-information on any topic.
+AI-powered research tool that orchestrates the entire research workflow: from finding sources to creating AI-ready knowledge bundles.
+
+## The Big Picture: Why m1f-research?
+
+The m1f toolkit already provides powerful individual tools:
+- **m1f-scrape**: Scrapes websites and downloads content
+- **m1f-html2md**: Converts HTML to clean Markdown
+- **m1f**: Bundles files for AI consumption
+
+**m1f-research takes this further by automating the entire research workflow:**
+
+1. **AI-Powered Discovery**: Instead of manually finding URLs, m1f-research uses AI (like Claude) to search for relevant sources on any topic
+2. **Human-in-the-Loop**: Review and curate the discovered URLs before scraping
+3. **Automated Pipeline**: Automatically scrapes approved URLs, converts to Markdown, and creates bundles
+4. **AI-Ready Output**: Produces research bundles perfect for uploading to Claude's Project Knowledge or other AI tools
+
+Think of it as your automated research assistant that:
+- Takes a topic (e.g., "microservices best practices")
+- Asks AI to find the best sources
+- Lets you review what it found
+- Downloads and processes everything
+- Creates a knowledge bundle ready for AI analysis
+
+### Key Advantage Over LLM "Research Mode"
+
+**The crucial difference from built-in LLM research modes:** 
+- **You control the sources**: Review and prioritize which URLs to include
+- **Custom curation**: Remove low-quality or irrelevant sources before processing
+- **Add your own sources**: Include specific URLs you trust
+- **Persistent knowledge**: Create reusable knowledge bundles for your projects
+- **No black box**: You see exactly what content goes into your research
 
 ## Overview
 
-m1f-research extends the m1f toolkit with intelligent research capabilities. It
-uses LLMs to:
+m1f-research orchestrates the complete research pipeline by intelligently combining all m1f tools:
 
-- Find relevant URLs for any research topic
-- Scrape and convert web content to clean Markdown
-- Analyze content for relevance and extract key insights
-- Create organized research bundles
+- **Discovers** relevant URLs using AI (instead of manual searching)
+- **Reviews** URLs with optional human curation
+- **Scrapes** approved content using m1f-scrape
+- **Converts** HTML to Markdown using m1f-html2md
+- **Bundles** everything using m1f for AI consumption
+- **Analyzes** content to extract key insights
 
 ### 7-Phase Workflow System
 
@@ -16235,14 +16128,61 @@ m1f-research implements a sophisticated workflow system that breaks research int
 
 This workflow allows for flexible research strategies, checkpoint resumption, and fine-grained control over each phase.
 
+## Practical Example: Research Workflow
+
+Let's say you want to research "Python async programming best practices":
+
+### Without m1f-research (Manual Process):
+1. Google search for relevant articles
+2. Open each link, evaluate quality
+3. Use `m1f-scrape` on each good URL
+4. Run `m1f-html2md` to convert each file
+5. Use `m1f` to bundle everything
+6. Upload to Claude's Project Knowledge
+
+### With m1f-research (Automated):
+```bash
+# One command does it all!
+m1f-research "Python async programming best practices"
+```
+
+What happens behind the scenes:
+1. **AI searches** for the best sources on Python async programming
+2. **You review** the URLs (optional - can be skipped)
+3. **Automatically scrapes** all approved URLs
+4. **Converts** everything to Markdown
+5. **Creates bundle** ready for Claude: `research_bundle.md`
+6. **Generates summary** with key insights
+
+The result: A complete research bundle you can directly upload to Claude's Project Knowledge!
+
 ## Quick Start
 
 ```bash
-# Basic research
+# Basic research - let AI find sources
 m1f-research "microservices best practices"
 
 # Research with more sources
 m1f-research "react state management" --urls 30 --scrape 15
+
+# Interactive URL review (recommended for important research)
+m1f-research "kubernetes security" --skip-review false
+
+# Control query expansion
+m1f-research "python asyncio" --max-queries 1  # Only use original query
+m1f-research "rust ownership" --max-queries 10  # More query variations
+
+# Provide custom query variations
+m1f-research "react hooks" --custom-queries \
+  "react hooks tutorial 2025" \
+  "useEffect vs useLayoutEffect" \
+  "custom react hooks patterns"
+
+# Interactive query input
+m1f-research "database optimization" --interactive-queries
+
+# Use the research bundle with Claude
+# The output file research_bundle.md can be uploaded directly to Claude's Project Knowledge
 
 # List all research jobs
 m1f-research --list-jobs
@@ -16279,15 +16219,27 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 ### 🔍 Intelligent Search
 
 - **Query Expansion**: Generate multiple search variations for comprehensive coverage
+  - Control expansion with `--max-queries` (1 = no expansion)
+  - Provide custom queries with `--custom-queries`
+  - Interactive query input with `--interactive-queries`
 - Uses LLMs to find high-quality, relevant URLs
 - Manual URL support via `--urls-file`
 - Focuses on authoritative sources
 - Mixes different content types
 
+### 🎯 URL Review & Prioritization
+
+This is where m1f-research shines compared to automated LLM research:
+
+- **Interactive Review Interface**: See all discovered URLs before scraping
+- **Quality Control**: Remove spam, paywalled, or low-quality sources
+- **Add Custom URLs**: Include your trusted sources or internal documentation
+- **Prioritize Sources**: Decide which sources are most important
+- **Skip if Needed**: Use `--skip-review` for fully automated research
+
 ### 🌐 Advanced Crawling
 
 - **Deep Crawling**: Follow links to specified depth levels
-- **URL Review**: Optional human curation of discovered URLs
 - **Intelligent Filtering**: Domain-based and pattern-based URL filtering
 - **Site Limits**: Control maximum pages per domain
 
@@ -16310,10 +16262,35 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 ### 📦 Organized Output
 
 - **Hierarchical structure**: YYYY/MM/DD/job_id/
-- Prominent bundle files (📚_RESEARCH_BUNDLE.md)
+- Prominent bundle files (research_bundle.md)
 - Clean Markdown output
 - Symlink to latest research
 - Phase-specific output organization
+
+## Integration with Claude Projects
+
+The research bundles created by m1f-research are perfect for Claude's Project Knowledge feature:
+
+1. **Run Research**:
+   ```bash
+   m1f-research "your research topic"
+   ```
+
+2. **Find Your Bundle**:
+   - Look in `./research-data/latest_research.md` (symlink to latest)
+   - Or navigate to `./research-data/YYYY/MM/DD/job_id/research_bundle.md`
+
+3. **Upload to Claude**:
+   - Open Claude.ai or Claude desktop app
+   - Create or open a project
+   - Add the `research_bundle.md` to Project Knowledge
+   - Claude now has deep knowledge about your research topic!
+
+4. **Benefits**:
+   - Claude can reference specific sources from your research
+   - Knowledge persists across conversations in the project
+   - You know exactly what information Claude is using
+   - Can update research and refresh Claude's knowledge anytime
 
 ## Usage Examples
 
@@ -16324,6 +16301,7 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 m1f-research "golang error handling"
 
 # Output saved to: ./research-data/golang-error-handling-20240120-143022/
+# Ready for upload to Claude Projects!
 ```
 
 ### Advanced Options
@@ -16474,8 +16452,8 @@ Research data uses hierarchical date-based organization:
         └── 23/
             └── abc123_topic-name/
                 ├── research.db           # Job-specific database
-                ├── 📚_RESEARCH_BUNDLE.md # Main bundle
-                ├── 📊_EXECUTIVE_SUMMARY.md # Summary
+                ├── research_bundle.md     # Main bundle
+                ├── research_summary.md    # Summary
                 ├── metadata.json         # Job metadata
                 └── search_results.json   # Found URLs
 ```
@@ -16623,8 +16601,8 @@ research-data/
         └── 23/
             └── abc123_query-name/
                 ├── research.db           # Job-specific database
-                ├── RESEARCH_BUNDLE.md    # Main research bundle
-                ├── EXECUTIVE_SUMMARY.md  # Executive summary
+                ├── research_bundle.md    # Main research bundle
+                ├── research_summary.md   # Research summary
                 └── metadata.json         # Job metadata
 ```
 
@@ -16800,8 +16778,8 @@ When deleting a job, the system will:
 - Job statistics in the database
 - Entire job directory including:
   - Job-specific database (`research.db`)
-  - Research bundle (`RESEARCH_BUNDLE.md`)
-  - Executive summary (`EXECUTIVE_SUMMARY.md`)
+  - Research bundle (`research_bundle.md`)
+  - Research summary (`research_summary.md`)
   - All scraped content and analysis
   - Any metadata files
 
@@ -17090,12 +17068,19 @@ management commands)
 | `--no-analysis`  |       | Skip AI analysis (just scrape)     | False   |
 | `--interactive`  | `-i`  | Start in interactive mode          | False   |
 
+### Query Control Options
+
+| Option                    | Description                              | Default |
+| ------------------------- | ---------------------------------------- | ------- |
+| `--max-queries N`         | Maximum number of query variations (1 = original only) | 5       |
+| `--custom-queries Q1 Q2...` | Provide custom query variations (overrides auto-expansion) | None    |
+| `--interactive-queries`   | Interactively enter custom query variations | False   |
+
 ### Workflow Options
 
 | Option                    | Description                              | Default |
 | ------------------------- | ---------------------------------------- | ------- |
 | `--expand-queries`        | Enable query expansion phase             | True    |
-| `--max-queries N`         | Maximum number of expanded queries       | 5       |
 | `--skip-review`           | Skip URL review phase                    | False   |
 | `--crawl-depth N`         | How many levels deep to crawl links     | 0       |
 | `--max-pages-per-site N`  | Maximum pages to crawl per domain       | 10      |
@@ -17261,6 +17246,19 @@ m1f-research "python async patterns" --skip-review --max-queries 8
 
 # Detailed analysis with external link following
 m1f-research "AI research 2024" --follow-external --analysis-type detailed
+
+# Control query expansion precisely
+m1f-research "rust ownership" --max-queries 1  # No expansion, original only
+m1f-research "golang channels" --max-queries 10  # More variations
+
+# Provide custom query variations
+m1f-research "react performance" --custom-queries \
+  "react performance optimization 2025" \
+  "react memo and useMemo patterns" \
+  "react virtual DOM optimization"
+
+# Interactive query input for careful research
+m1f-research "database indexing" --interactive-queries
 ```
 
 ## Date Format Examples
@@ -17919,6 +17917,39 @@ m1f-research --interactive
 # > Number to scrape [10]: 15
 # > Template [general]: technical
 # > Start research? [Y/n]: y
+```
+
+### Query Control Examples
+
+```bash
+# No query expansion - use only the original query
+m1f-research "python type hints" --max-queries 1
+
+# More query variations for comprehensive research
+m1f-research "distributed systems" --max-queries 10
+
+# Provide specific query variations
+m1f-research "react hooks" --custom-queries \
+  "react hooks best practices 2025" \
+  "useState vs useReducer" \
+  "custom hooks patterns" \
+  "react hooks testing strategies"
+
+# Interactive query input - enter variations manually
+m1f-research "database optimization" --interactive-queries
+# This will prompt:
+# Original query: database optimization
+# Enter custom query variations (one per line, empty line to finish):
+# 1> database index optimization
+# 2> query performance tuning
+# 3> database normalization best practices
+# 4> 
+
+# Combine with other options
+m1f-research "microservices" --custom-queries \
+  "microservices architecture patterns" \
+  "microservices vs monoliths 2025" \
+  --urls 40 --scrape 20 --template technical
 ```
 
 ## Configuration File Examples
@@ -18836,8 +18867,8 @@ When you delete a job, the following items are permanently removed:
 ### Filesystem Data
 - Entire job directory at `research-data/YYYY/MM/DD/job_id_query/`
 - Job-specific database (`research.db`)
-- Research bundle (`RESEARCH_BUNDLE.md`)
-- Executive summary (`EXECUTIVE_SUMMARY.md`)
+- Research bundle (`research_bundle.md`)
+- Research summary (`research_summary.md`)
 - All scraped HTML content
 - All converted Markdown content
 - Analysis results and metadata

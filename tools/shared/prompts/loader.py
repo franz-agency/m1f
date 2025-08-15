@@ -29,7 +29,7 @@ import logging
 from dataclasses import dataclass
 from functools import lru_cache
 
-from ...m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_is_file,
     safe_read_text,

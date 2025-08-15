@@ -22,13 +22,7 @@ def normalize_path(path: Path | str) -> str:
 """Main entry point for s1f - Split One File."""
 
 import sys
-
-# Try absolute imports first (for module execution), fall back to relative
-try:
-    from tools.s1f.cli import main
-except ImportError:
-    # Fallback for direct script execution
-    from s1f.cli import main
+from s1f.cli import main
 
 if __name__ == "__main__":
     sys.exit(main())
@@ -42,14 +36,14 @@ A modern Python tool to split a combined file (created by m1f) back into individ
 """
 
 try:
-    from tools._version import __version__, __version_info__
+    from _version import __version__, __version_info__
 except ImportError:
     try:
-        from .._version import __version__, __version_info__
+        from _version import __version__, __version_info__
     except ImportError:
         # Fallback when running as standalone script
-        __version__ = "3.8.1"
-        __version_info__ = (3, 8, 1)
+        __version__ = "3.8.2"
+        __version_info__ = (3, 8, 2)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
@@ -109,7 +103,7 @@ from .exceptions import ConfigurationError
 
 # Try absolute imports first (for module execution), fall back to relative
 try:
-    from ..m1f.file_operations import safe_exists, safe_is_file
+    from m1f.file_operations import safe_exists, safe_is_file
 except (ImportError, ValueError):
     # Fallback for direct script execution or when running as main module
     import sys
@@ -117,26 +111,26 @@ except (ImportError, ValueError):
 
     # Add parent directory to path for imports
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from tools.m1f.file_operations import safe_exists, safe_is_file
+    from m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
 try:
-    from ..shared.colors import (
+    from shared.colors import (
         Colors,
         ColoredHelpFormatter,
         error,
         COLORAMA_AVAILABLE,
     )
-    from ..shared.cli import CustomArgumentParser
+    from shared.cli import CustomArgumentParser
 except ImportError:
     try:
-        from tools.shared.colors import (
+        from shared.colors import (
             Colors,
             ColoredHelpFormatter,
             error,
             COLORAMA_AVAILABLE,
         )
-        from tools.shared.cli import CustomArgumentParser
+        from shared.cli import CustomArgumentParser
     except ImportError:
         COLORAMA_AVAILABLE = False
 
@@ -851,7 +845,7 @@ from pathlib import Path
 
 # Try different import strategies for shared logging
 try:
-    from ..shared.logging import (
+    from shared.logging import (
         LoggerManager as SharedLoggerManager,
         setup_logging as shared_setup_logging,
         get_logger as shared_get_logger,
@@ -863,7 +857,7 @@ except ImportError:
     sys.path.insert(
         0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     )
-    from tools.shared.logging import (
+    from shared.logging import (
         LoggerManager as SharedLoggerManager,
         setup_logging as shared_setup_logging,
         get_logger as shared_get_logger,
@@ -872,7 +866,7 @@ except ImportError:
 # Use unified colorama module for legacy compatibility
 try:
     # Try absolute import first (when running as installed package)
-    from tools.shared.colors import (
+    from shared.colors import (
         Colors,
         ColoredFormatter as BaseColoredFormatter,
         COLORAMA_AVAILABLE,
@@ -880,7 +874,7 @@ try:
 except ImportError:
     # Try relative import (when running from within package)
     try:
-        from ..shared.colors import (
+        from shared.colors import (
             Colors,
             ColoredFormatter as BaseColoredFormatter,
             COLORAMA_AVAILABLE,

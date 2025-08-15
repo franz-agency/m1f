@@ -51,7 +51,7 @@ try:
 except ImportError:
     # Try direct import if running as script
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from tools.shared.colors import (
+    from shared.colors import (
         Colors,
         ColoredHelpFormatter,
         success,
@@ -82,7 +82,7 @@ try:
         safe_stat,
     )
 except ImportError:
-    from tools.m1f.file_operations import (
+    from m1f.file_operations import (
         safe_exists,
         safe_is_file,
         safe_is_dir,

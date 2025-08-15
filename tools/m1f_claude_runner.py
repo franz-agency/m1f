@@ -33,7 +33,7 @@ try:
 except ImportError:
     # Try direct import if running as script
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from tools.shared.colors import success, error, warning, info
+    from shared.colors import success, error, warning, info
 
 # Import shared Claude utilities
 try:
@@ -44,7 +44,7 @@ try:
         ClaudeConfig,
     )
 except ImportError:
-    from tools.shared.claude_utils import (
+    from shared.claude_utils import (
         ClaudeBinaryFinder,
         ClaudeErrorHandler,
         ClaudeRunner,
@@ -58,7 +58,7 @@ try:
         safe_is_file,
     )
 except ImportError:
-    from tools.m1f.file_operations import (
+    from m1f.file_operations import (
         safe_exists,
         safe_is_file,
     )
@@ -334,7 +334,7 @@ class M1FClaudeRunner(ClaudeRunner):
                 from .shared.colors import Colors
             except ImportError:
                 # Fallback for when running as script
-                from tools.shared.colors import Colors
+                from shared.colors import Colors
 
             info(
                 f"{Colors.BLUE}🤖 Starting Claude with real-time streaming...{Colors.RESET}"
@@ -402,7 +402,7 @@ class M1FClaudeRunner(ClaudeRunner):
                                 try:
                                     from .shared.colors import Colors
                                 except ImportError:
-                                    from tools.shared.colors import Colors
+                                    from shared.colors import Colors
 
                                 info(
                                     f"{Colors.DIM}Raw: {line[:100]}{'...' if len(line) > 100 else ''}{Colors.RESET}"
@@ -435,7 +435,7 @@ class M1FClaudeRunner(ClaudeRunner):
                         try:
                             from .shared.colors import Colors
                         except ImportError:
-                            from tools.shared.colors import Colors
+                            from shared.colors import Colors
 
                         error(f"{Colors.DIM}Error: {stderr[:200]}...{Colors.RESET}")
 
@@ -451,7 +451,7 @@ class M1FClaudeRunner(ClaudeRunner):
         try:
             from .shared.colors import Colors
         except ImportError:
-            from tools.shared.colors import Colors
+            from shared.colors import Colors
 
         msg_type = json_obj.get("type", "unknown")
         elapsed = time.time() - start_time

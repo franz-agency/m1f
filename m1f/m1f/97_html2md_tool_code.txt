@@ -19,13 +19,13 @@ if __name__ == "__main__":
     # Try different import strategies based on execution context
     try:
         # First try as if we're in the m1f package
-        from tools.html2md_tool.cli import main
+        from html2md_tool.cli import main
     except ImportError:
         try:
             # Try adding parent to path and importing
             if str(parent_dir) not in sys.path:
                 sys.path.insert(0, str(parent_dir))
-            from tools.html2md_tool.cli import main
+            from html2md_tool.cli import main
         except ImportError:
             # Fallback for direct script execution
             if str(script_dir) not in sys.path:

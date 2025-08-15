@@ -37,7 +37,7 @@ except ImportError:
     import sys
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from tools.shared.colors import warning
+    from shared.colors import warning
 
 # Import safe file operations
 try:
@@ -47,7 +47,7 @@ except ImportError:
     import sys
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from tools.m1f.file_operations import safe_exists
+    from m1f.file_operations import safe_exists
 
 import os
 import subprocess

@@ -2,7 +2,18 @@
 
 > ⚠️ **Early Alpha Warning**: m1f-research is in early alpha and under heavy development. Expect significant changes to features, APIs, and workflows.
 
-AI-powered research tool with a sophisticated 7-phase workflow system for comprehensive web research and analysis.
+AI-powered research orchestrator that automates the entire workflow from finding sources to creating Claude-ready knowledge bundles.
+
+## What is m1f-research?
+
+While the m1f toolkit provides individual tools (m1f-scrape, m1f-html2md, m1f), **m1f-research orchestrates them all** into an intelligent research pipeline:
+
+1. **AI finds sources** on any topic (using Claude/Gemini)
+2. **You review and curate** the URLs (unlike black-box LLM research modes)
+3. **Automatically processes** everything: scrape → convert → bundle
+4. **Creates knowledge bundles** ready for Claude's Project Knowledge
+
+**Key advantage**: Unlike LLM "research modes", YOU control which sources are used and can add your own trusted sources.
 
 ## 🚀 New: 7-Phase Workflow System
 

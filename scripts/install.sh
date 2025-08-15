@@ -90,7 +90,11 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
         else
             echo -e "${RED}Error: Cannot determine script location when sourced.${NC}"
             echo -e "${YELLOW}Please run from project root as: source ./scripts/install.sh${NC}"
-            return 1 2>/dev/null || exit 1
+            if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+                return 1
+            else
+                exit 1
+            fi
         fi
     fi
 else
@@ -129,7 +133,11 @@ elif command -v python &> /dev/null; then
 else
     echo -e "${RED}Error: Python is not installed. Please install Python 3.10 or higher.${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    return 1 2>/dev/null || exit 1
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+        return 1
+    else
+        exit 1
+    fi
 fi
 
 # Check Python version is 3.10+
@@ -140,7 +148,11 @@ PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.minor)")
 if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]; }; then
     echo -e "${RED}Error: Python 3.10 or higher is required. Found Python $PYTHON_VERSION${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    return 1 2>/dev/null || exit 1
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+        return 1
+    else
+        exit 1
+    fi
 fi
 
 echo -e "${GREEN}✓ Python $PYTHON_VERSION found${NC}"
@@ -175,7 +187,11 @@ else
     echo -e "${YELLOW}PROJECT_ROOT is set to: $PROJECT_ROOT${NC}"
     echo -e "${YELLOW}Current directory is: $(pwd)${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    return 1 2>/dev/null || exit 1
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+        return 1
+    else
+        exit 1
+    fi
 fi
 
 # Install m1f package in editable mode (creates all entry points)

@@ -71,6 +71,39 @@ m1f-research --interactive
 # > Start research? [Y/n]: y
 ```
 
+### Query Control Examples
+
+```bash
+# No query expansion - use only the original query
+m1f-research "python type hints" --max-queries 1
+
+# More query variations for comprehensive research
+m1f-research "distributed systems" --max-queries 10
+
+# Provide specific query variations
+m1f-research "react hooks" --custom-queries \
+  "react hooks best practices 2025" \
+  "useState vs useReducer" \
+  "custom hooks patterns" \
+  "react hooks testing strategies"
+
+# Interactive query input - enter variations manually
+m1f-research "database optimization" --interactive-queries
+# This will prompt:
+# Original query: database optimization
+# Enter custom query variations (one per line, empty line to finish):
+# 1> database index optimization
+# 2> query performance tuning
+# 3> database normalization best practices
+# 4> 
+
+# Combine with other options
+m1f-research "microservices" --custom-queries \
+  "microservices architecture patterns" \
+  "microservices vs monoliths 2025" \
+  --urls 40 --scrape 20 --template technical
+```
+
 ## Configuration File Examples
 
 ### Basic Configuration

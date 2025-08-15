@@ -111,6 +111,13 @@ class TestResearchWorkflow:
         self, mock_config, mock_llm_provider, research_temp_dir
     ):
         """Test basic research workflow end-to-end"""
+        # Disable query expansion and URL review to make test more predictable
+        if not hasattr(mock_config, "workflow"):
+            from types import SimpleNamespace
+            mock_config.workflow = SimpleNamespace()
+        mock_config.workflow.max_queries = 1
+        mock_config.workflow.skip_review = True
+        
         # Create orchestrator with mocked LLM
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
@@ -207,6 +214,13 @@ Total sources: {len(content)}
     async def test_dry_run_mode(self, mock_config, mock_llm_provider, research_temp_dir):
         """Test dry run mode doesn't perform actual operations"""
         mock_config.dry_run = True
+        
+        # Disable query expansion and URL review for consistent testing
+        if not hasattr(mock_config, "workflow"):
+            from types import SimpleNamespace
+            mock_config.workflow = SimpleNamespace()
+        mock_config.workflow.max_queries = 1
+        mock_config.workflow.skip_review = True
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
@@ -221,9 +235,10 @@ Total sources: {len(content)}
         mock_llm_provider.search_web.assert_not_called()
         mock_llm_provider.analyze_content.assert_not_called()
 
-        # In dry run mode, bundle path is set to output dir but no bundle file is created
+        # In dry run mode, bundle path is set but no bundle file is created
         assert result.bundle_path is not None
-        assert result.bundle_path.is_dir()  # It's the output directory, not a file
+        assert result.bundle_path.suffix == ".md"  # It should be a .md file path
+        assert not result.bundle_path.exists()  # File doesn't exist in dry run
         assert not result.bundle_created  # Bundle was not actually created
         
         # Explicit cleanup for Windows
@@ -233,6 +248,13 @@ Total sources: {len(content)}
     async def test_no_analysis_mode(self, mock_config, mock_llm_provider, research_temp_dir):
         """Test running without analysis"""
         mock_config.no_analysis = True
+        
+        # Disable query expansion and URL review to ensure search_web is called only once
+        if not hasattr(mock_config, "workflow"):
+            from types import SimpleNamespace
+            mock_config.workflow = SimpleNamespace()
+        mock_config.workflow.max_queries = 1
+        mock_config.workflow.skip_review = True
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider

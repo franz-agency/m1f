@@ -25,9 +25,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from ..m1f.file_operations import (
-    safe_exists,
-)
+from m1f.file_operations import safe_exists
 
 from .config import ResearchConfig
 from .orchestrator import EnhancedResearchOrchestrator
@@ -35,7 +33,7 @@ from .output import OutputFormatter, ProgressTracker
 
 # Use unified colorama module
 try:
-    from ..shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE, info
+    from shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE, info
 except ImportError:
     # Fallback to local implementation
     from .output import Colors, COLORAMA_AVAILABLE
@@ -74,7 +72,7 @@ except ImportError:
 
 # Import version
 try:
-    from .._version import __version__
+    from _version import __version__
 except ImportError:
     __version__ = "3.8.0"
 
@@ -267,6 +265,27 @@ class EnhancedResearchCommand:
             choices=["general", "technical", "academic", "tutorial", "reference"],
             default="general",
             help="Analysis template",
+        )
+
+        # Query control options
+        query_group = parser.add_argument_group("query options")
+        query_group.add_argument(
+            "--max-queries",
+            type=int,
+            default=5,
+            help="Maximum number of query variations (1 = original only, default: 5)",
+        )
+
+        query_group.add_argument(
+            "--custom-queries",
+            nargs="+",
+            help="Provide custom query variations (overrides auto-expansion)",
+        )
+
+        query_group.add_argument(
+            "--interactive-queries",
+            action="store_true",
+            help="Interactively enter custom query variations",
         )
 
         # Behavior options
@@ -500,6 +519,25 @@ EOF
 # Use in research
 m1f-research "python async" --urls-file urls.txt
 
+## Query Control
+
+# Use only the original query (no expansion)
+m1f-research "Python dictionaries" --max-queries 1
+
+# Limit expansion to 3 variations
+m1f-research "machine learning" --max-queries 3
+
+# Provide custom query variations
+m1f-research "python" --custom-queries "Python tutorials" "Python best practices" "Python examples"
+
+# Interactive query input
+m1f-research "python" --interactive-queries
+# Then enter queries line by line:
+# 1> Python list comprehensions
+# 2> Python dictionary methods
+# 3> Python string formatting
+# 4> [press Enter to finish]
+
 ## Job Management
 
 # List recent jobs
@@ -728,7 +766,7 @@ research:
             self.formatter.list_item(f"Pages analyzed: {len(result.analyzed_content)}")
 
             if result.bundle_created:
-                bundle_path = result.output_dir / "RESEARCH_BUNDLE.md"
+                bundle_path = result.output_dir / "research_bundle.md"
                 self.formatter.success(f"Research bundle: {bundle_path}")
 
         return 0

@@ -28,8 +28,8 @@ import aiofiles
 from bs4 import BeautifulSoup
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
-from ...m1f.file_operations import safe_mkdir
-from ...html2md_tool.utils import sanitize_filename
+from m1f.file_operations import safe_mkdir
+from html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 

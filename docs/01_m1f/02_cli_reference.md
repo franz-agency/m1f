@@ -289,9 +289,11 @@ contain UTF-8 emojis or special characters.
 
 Check for sensitive information in files using detect-secrets.
 
-- **abort**: Stop processing if secrets are found
+- **abort**: Stop processing if secrets are found (default in v3.2+)
 - **warn**: Include files but show warnings
 - **skip**: Disable security scanning (not recommended)
+
+**v3.2+ Change**: Default changed from 'warn' to 'abort' for enhanced security.
 
 ## Archive Options
 

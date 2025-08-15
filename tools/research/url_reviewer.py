@@ -22,7 +22,7 @@ from dataclasses import dataclass
 import re
 
 try:
-    from ..shared.colors import Colors, info, success, warning, error
+    from shared.colors import Colors, info, success, warning, error
 except ImportError:
     # Fallback if colors not available
     class Colors:

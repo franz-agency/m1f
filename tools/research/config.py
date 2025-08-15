@@ -23,7 +23,7 @@ import yaml
 import os
 from argparse import Namespace
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_read_text,
 )
 
@@ -125,6 +125,10 @@ class ResearchConfig:
     query: Optional[str] = None
     url_count: int = 20
     scrape_count: int = 10
+
+    # Query control
+    custom_queries: Optional[List[str]] = None
+    interactive_queries: bool = False
 
     # Component configs
     llm: LLMConfig = field(default_factory=LLMConfig)
@@ -293,6 +297,14 @@ class ResearchConfig:
         config.verbose = args.verbose
         config.template = args.template
 
+        # Query control settings
+        config.custom_queries = (
+            args.custom_queries if hasattr(args, "custom_queries") else None
+        )
+        config.interactive_queries = (
+            args.interactive_queries if hasattr(args, "interactive_queries") else False
+        )
+
         # Load from config file if provided
         if args.config:
             base_config = cls.from_yaml(args.config)
@@ -309,6 +321,10 @@ class ResearchConfig:
         if args.model:
             config.llm.model = args.model
 
+        # Override workflow settings from command line
+        if hasattr(args, "max_queries"):
+            config.workflow.max_queries = args.max_queries
+
         # Output settings
         config.output.directory = args.output
         if args.name:
@@ -316,6 +332,12 @@ class ResearchConfig:
 
         # Scraping settings
         config.scraping.max_concurrent = args.concurrent
+        config.scraping.search_limit = (
+            config.url_count
+        )  # Set search limit from url_count
+        config.scraping.scrape_limit = (
+            config.scrape_count
+        )  # Set scrape limit from scrape_count
 
         # Apply template if specified
         if config.template and config.template in config.templates:

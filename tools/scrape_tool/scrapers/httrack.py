@@ -26,8 +26,8 @@ from urllib.parse import urlparse, urljoin
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
 from .python_mirror import PythonMirrorScraper
-from ...m1f.file_operations import safe_exists, safe_is_file, safe_is_dir
-from ...html2md_tool.utils import sanitize_filename
+from m1f.file_operations import safe_exists, safe_is_file, safe_is_dir
+from html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -510,7 +510,7 @@ class HTTrackScraper(PythonMirrorScraper):
 
                     # 3. Content duplicate check
                     if self.config.check_content_duplicates:
-                        from ..utils import calculate_content_checksum
+                        from scrape_tool.utils import calculate_content_checksum
 
                         content_checksum = calculate_content_checksum(content)
 

@@ -28,7 +28,7 @@ from .exceptions import ConfigurationError
 
 # Try absolute imports first (for module execution), fall back to relative
 try:
-    from ..m1f.file_operations import safe_exists, safe_is_file
+    from m1f.file_operations import safe_exists, safe_is_file
 except (ImportError, ValueError):
     # Fallback for direct script execution or when running as main module
     import sys
@@ -36,26 +36,26 @@ except (ImportError, ValueError):
 
     # Add parent directory to path for imports
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from tools.m1f.file_operations import safe_exists, safe_is_file
+    from m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
 try:
-    from ..shared.colors import (
+    from shared.colors import (
         Colors,
         ColoredHelpFormatter,
         error,
         COLORAMA_AVAILABLE,
     )
-    from ..shared.cli import CustomArgumentParser
+    from shared.cli import CustomArgumentParser
 except ImportError:
     try:
-        from tools.shared.colors import (
+        from shared.colors import (
             Colors,
             ColoredHelpFormatter,
             error,
             COLORAMA_AVAILABLE,
         )
-        from tools.shared.cli import CustomArgumentParser
+        from shared.cli import CustomArgumentParser
     except ImportError:
         COLORAMA_AVAILABLE = False
 
