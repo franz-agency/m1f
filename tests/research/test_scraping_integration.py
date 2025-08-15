@@ -18,7 +18,7 @@ Integration tests for m1f-research scraping pipeline
 import pytest
 import asyncio
 import aiohttp
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from datetime import datetime
 import json
 

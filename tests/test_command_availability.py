@@ -194,22 +194,36 @@ class TestImportStructure:
     
     def test_submodules_importable(self):
         """Test that submodules can be imported correctly."""
-        import_tests = [
-            "from m1f import cli",
-            "from s1f import cli",
-            "from html2md_tool import cli",
-            "from scrape_tool import cli",
-            "from research import cli",
-            "from shared import colors",
-        ]
+        import sys
+        import os
         
-        for import_stmt in import_tests:
-            try:
-                exec(import_stmt)
-            except ImportError as e:
-                # Some imports might legitimately fail if dependencies are missing
-                if "No module named" not in str(e):
-                    pytest.fail(f"Failed to {import_stmt}: {e}")
+        # Make sure we import from tools directory, not tests directory
+        original_path = sys.path.copy()
+        try:
+            # Add tools directory to the front of sys.path
+            tools_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tools')
+            if tools_dir not in sys.path:
+                sys.path.insert(0, tools_dir)
+            
+            import_tests = [
+                "from m1f import cli",
+                "from s1f import cli",
+                "from html2md_tool import cli",
+                "from scrape_tool import cli",
+                "from research import cli",
+                "from shared import colors",
+            ]
+            
+            for import_stmt in import_tests:
+                try:
+                    exec(import_stmt)
+                except ImportError as e:
+                    # Some imports might legitimately fail if dependencies are missing
+                    if "No module named" not in str(e):
+                        pytest.fail(f"Failed to {import_stmt}: {e}")
+        finally:
+            # Restore original sys.path
+            sys.path = original_path
     
     def test_cross_package_imports(self):
         """Test that cross-package imports work correctly."""

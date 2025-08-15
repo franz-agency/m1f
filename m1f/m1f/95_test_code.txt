@@ -1282,22 +1282,36 @@ class TestImportStructure:
     
     def test_submodules_importable(self):
         """Test that submodules can be imported correctly."""
-        import_tests = [
-            "from m1f import cli",
-            "from s1f import cli",
-            "from html2md_tool import cli",
-            "from scrape_tool import cli",
-            "from research import cli",
-            "from shared import colors",
-        ]
+        import sys
+        import os
         
-        for import_stmt in import_tests:
-            try:
-                exec(import_stmt)
-            except ImportError as e:
-                # Some imports might legitimately fail if dependencies are missing
-                if "No module named" not in str(e):
-                    pytest.fail(f"Failed to {import_stmt}: {e}")
+        # Make sure we import from tools directory, not tests directory
+        original_path = sys.path.copy()
+        try:
+            # Add tools directory to the front of sys.path
+            tools_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tools')
+            if tools_dir not in sys.path:
+                sys.path.insert(0, tools_dir)
+            
+            import_tests = [
+                "from m1f import cli",
+                "from s1f import cli",
+                "from html2md_tool import cli",
+                "from scrape_tool import cli",
+                "from research import cli",
+                "from shared import colors",
+            ]
+            
+            for import_stmt in import_tests:
+                try:
+                    exec(import_stmt)
+                except ImportError as e:
+                    # Some imports might legitimately fail if dependencies are missing
+                    if "No module named" not in str(e):
+                        pytest.fail(f"Failed to {import_stmt}: {e}")
+        finally:
+            # Restore original sys.path
+            sys.path = original_path
     
     def test_cross_package_imports(self):
         """Test that cross-package imports work correctly."""
@@ -2646,6 +2660,7 @@ from pathlib import Path
 import json
 import sys
 import os
+import pytest
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -2705,6 +2720,7 @@ Python's async capabilities are mature and well-documented.
             return Response("Generic response", None)
 
 
+@pytest.mark.asyncio
 async def test_query_expansion():
     """Test query expansion functionality"""
     print("\n=== Testing Query Expansion ===")
@@ -2732,8 +2748,6 @@ async def test_query_expansion():
     assert len(result2.expanded_queries) >= 1
     assert result2.expansion_metadata["method"] == "no_expansion"
     print("✓ Fallback expansion works without LLM")
-
-    return True
 
 
 def test_url_reviewer():
@@ -2772,9 +2786,8 @@ def test_url_reviewer():
     print("✓ URL deletion/keep/restore works")
     print("✓ URL filtering works")
 
-    return True
 
-
+@pytest.mark.asyncio
 async def test_deep_crawler():
     """Test deep crawling functionality"""
     print("\n=== Testing Deep Crawler ===")
@@ -2820,6 +2833,7 @@ async def test_deep_crawler():
     return True
 
 
+@pytest.mark.asyncio
 async def test_analysis_generator():
     """Test analysis generation"""
     print("\n=== Testing Analysis Generator ===")
@@ -2919,9 +2933,8 @@ def test_workflow_phases():
         print("✓ Resume capability works")
         print("✓ Phase completion advances workflow")
 
-    return True
 
-
+@pytest.mark.asyncio
 async def test_workflow_config():
     """Test workflow configuration"""
     print("\n=== Testing Workflow Configuration ===")
@@ -11944,7 +11957,7 @@ Integration tests for m1f-research scraping pipeline
 import pytest
 import asyncio
 import aiohttp
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from datetime import datetime
 import json
 
@@ -13037,19 +13050,21 @@ def run_s1f(monkeypatch, capture_logs):
     import sys
     from pathlib import Path
 
-    # Add tools directory to path to import s1f script
+    # Add tools directory to path to import s1f
     tools_dir = str(Path(__file__).parent.parent.parent / "tools")
-    if tools_dir not in sys.path:
-        sys.path.insert(0, tools_dir)
+    
+    # Remove tests/s1f from path if it exists to avoid conflicts
+    test_s1f_dir = str(Path(__file__).parent)
+    if test_s1f_dir in sys.path:
+        sys.path.remove(test_s1f_dir)
+    
+    # Add tools directory to the beginning of the path
+    if tools_dir in sys.path:
+        sys.path.remove(tools_dir)
+    sys.path.insert(0, tools_dir)
 
-    # Import from the s1f.py script, not the package
-    import importlib.util
-
-    s1f_script_path = Path(__file__).parent.parent.parent / "tools" / "s1f.py"
-    spec = importlib.util.spec_from_file_location("s1f_script", s1f_script_path)
-    s1f_script = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(s1f_script)
-    main = s1f_script.main
+    # Import the main function from s1f.cli
+    from s1f.cli import main
 
     def _run_s1f(args: list[str]) -> tuple[int, str]:
         """
@@ -21594,6 +21609,15 @@ file_extensions_test\test.log
 file_extensions_test\test.md
 file_extensions_test\test.py
 file_extensions_test\test.txt
+
+======= s1f/output/encoding_test.txt ======
+========================================================================================
+== FILE: test_file.txt
+== DATE: 2023-06-15 14:30:21 | SIZE: 2.50 KB | TYPE: .txt
+== ENCODING: latin-1 (with conversion errors)
+========================================================================================
+
+Hello with special chars: äöüß привет こんにちは 你好
 
 ======= s1f/output/machinereadable.txt ======
 --- PYMK1F_BEGIN_FILE_METADATA_BLOCK_84f5279b-3632-468e-99fb-503b653a5816 ---

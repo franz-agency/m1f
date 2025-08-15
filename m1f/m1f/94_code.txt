@@ -2101,7 +2101,11 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
         else
             echo -e "${RED}Error: Cannot determine script location when sourced.${NC}"
             echo -e "${YELLOW}Please run from project root as: source ./scripts/install.sh${NC}"
-            return 1 2>/dev/null || exit 1
+            if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+                return 1
+            else
+                exit 1
+            fi
         fi
     fi
 else
@@ -2140,7 +2144,11 @@ elif command -v python &> /dev/null; then
 else
     echo -e "${RED}Error: Python is not installed. Please install Python 3.10 or higher.${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    return 1 2>/dev/null || exit 1
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+        return 1
+    else
+        exit 1
+    fi
 fi
 
 # Check Python version is 3.10+
@@ -2151,7 +2159,11 @@ PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.minor)")
 if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]; }; then
     echo -e "${RED}Error: Python 3.10 or higher is required. Found Python $PYTHON_VERSION${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    return 1 2>/dev/null || exit 1
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+        return 1
+    else
+        exit 1
+    fi
 fi
 
 echo -e "${GREEN}✓ Python $PYTHON_VERSION found${NC}"
@@ -2186,7 +2198,11 @@ else
     echo -e "${YELLOW}PROJECT_ROOT is set to: $PROJECT_ROOT${NC}"
     echo -e "${YELLOW}Current directory is: $(pwd)${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    return 1 2>/dev/null || exit 1
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+        return 1
+    else
+        exit 1
+    fi
 fi
 
 # Install m1f package in editable mode (creates all entry points)
@@ -2534,7 +2550,7 @@ OPTIONS:
 
 WHAT IT REMOVES:
     - PowerShell functions added to your profile
-    - Command Prompt batch files directory
+    - m1f pip package (editable installation)
     - Python virtual environment (optional)
     - Generated m1f bundles (optional)
 
@@ -2600,7 +2616,7 @@ if (Test-Path $venvDir) {
     $componentsToRemove += "Python virtual environment (.venv)"
 }
 
-# Check for batch directory
+# Check for batch directory (legacy - may not exist in newer installations)
 if (Test-Path $batchDir) {
     $componentsToRemove += "Command Prompt batch files ($batchDir)"
 }
@@ -2620,6 +2636,23 @@ if (Test-Path "m1f") {
     $bundleFiles = Get-ChildItem -Path "m1f" -Filter "*.txt" | Where-Object { $_.Name -notlike "*config*" }
     if ($bundleFiles.Count -gt 0) {
         $componentsToRemove += "Generated m1f bundles ($($bundleFiles.Count) files)"
+    }
+}
+
+# Check for pip-installed package
+$pipPackageFound = $false
+if (Test-Path $venvDir) {
+    try {
+        $pythonExe = Join-Path $venvDir "Scripts\python.exe"
+        if (Test-Path $pythonExe) {
+            $checkResult = & $pythonExe -c "import pkg_resources; pkg_resources.get_distribution('m1f'); print('found')" 2>$null
+            if ($checkResult -eq "found") {
+                $pipPackageFound = $true
+                $componentsToRemove += "m1f pip package (editable installation)"
+            }
+        }
+    } catch {
+        # Ignore errors when checking for pip package
     }
 }
 
@@ -2681,6 +2714,22 @@ if ($bundleFiles.Count -gt 0) {
         Write-ColorOutput "✓ Bundles removed" -Color $colors.Green
     } else {
         Write-ColorOutput "Keeping generated bundles" -Color $colors.Yellow
+    }
+}
+
+# Remove pip package if found
+if ($pipPackageFound -and (Test-Path $venvDir)) {
+    Write-Host
+    Write-ColorOutput "Uninstalling m1f pip package..." -Color $colors.Green
+    try {
+        $pipExe = Join-Path $venvDir "Scripts\pip.exe"
+        if (Test-Path $pipExe) {
+            & $pipExe uninstall m1f -y >$null 2>&1
+            Write-ColorOutput "✓ m1f package uninstalled" -Color $colors.Green
+        }
+    } catch {
+        Write-ColorOutput "Warning: Could not uninstall m1f package automatically" -Color $colors.Yellow
+        Write-ColorOutput "You may need to run: $pipExe uninstall m1f" -Color $colors.Yellow
     }
 }
 
@@ -2758,6 +2807,7 @@ ${YELLOW}OPTIONS:${NC}
 ${YELLOW}WHAT IT REMOVES:${NC}
     - PATH entries added to shell configuration files
     - Symbolic links in ~/.local/bin
+    - m1f pip package (editable installation)
     - Python virtual environment (optional)
     - Generated m1f bundles (optional)
     - Creates backups of modified shell configs
@@ -2833,7 +2883,7 @@ done
 
 # Check for symlinks in ~/.local/bin
 if [ -d "$HOME/.local/bin" ]; then
-    for cmd in m1f m1f-s1f m1f-html2md m1f-scrape m1f-token-counter m1f-update m1f-link m1f-help m1f-init m1f-claude; do
+    for cmd in m1f m1f-s1f m1f-html2md m1f-scrape m1f-research m1f-token-counter m1f-update m1f-help m1f-init m1f-claude; do
         if [ -L "$HOME/.local/bin/$cmd" ]; then
             # Check if symlink points to our bin directory
             link_target=$(readlink -f "$HOME/.local/bin/$cmd" 2>/dev/null || true)
@@ -2855,6 +2905,16 @@ if [ -d "$PROJECT_ROOT/m1f" ]; then
     done < <(find "$PROJECT_ROOT/m1f" -name "*.txt" -type f -print0)
     if [ ${#BUNDLE_FILES[@]} -gt 0 ]; then
         COMPONENTS_TO_REMOVE+=("Generated m1f bundles (${#BUNDLE_FILES[@]} files)")
+    fi
+fi
+
+# Check for pip-installed package
+PIP_PACKAGE_FOUND=false
+if [ -d "$VENV_DIR" ]; then
+    # Check if m1f is installed as a pip package
+    if "$VENV_DIR/bin/python" -c "import pkg_resources; pkg_resources.get_distribution('m1f')" >/dev/null 2>&1; then
+        PIP_PACKAGE_FOUND=true
+        COMPONENTS_TO_REMOVE+=("m1f pip package (editable installation)")
     fi
 fi
 
@@ -2944,6 +3004,18 @@ if [ ${#BUNDLE_FILES[@]} -gt 0 ]; then
         echo -e "${GREEN}✓ Bundles removed${NC}"
     else
         echo "Keeping generated bundles"
+    fi
+fi
+
+# Remove pip package if found
+if [ "$PIP_PACKAGE_FOUND" = true ] && [ -d "$VENV_DIR" ]; then
+    echo
+    echo -e "${GREEN}Uninstalling m1f pip package...${NC}"
+    if "$VENV_DIR/bin/pip" uninstall m1f -y >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ m1f package uninstalled${NC}"
+    else
+        echo -e "${YELLOW}Warning: Could not uninstall m1f package automatically${NC}"
+        echo -e "${YELLOW}You may need to run: $VENV_DIR/bin/pip uninstall m1f${NC}"
     fi
 fi
 
@@ -8939,13 +9011,7 @@ if __name__ == "__main__":
 """Main entry point for s1f - Split One File."""
 
 import sys
-
-# Try absolute imports first (for module execution), fall back to relative
-try:
-    from s1f.cli import main
-except ImportError:
-    # Fallback for direct script execution
-    from s1f.cli import main
+from s1f.cli import main
 
 if __name__ == "__main__":
     sys.exit(main())

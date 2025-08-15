@@ -23,6 +23,7 @@ from pathlib import Path
 import json
 import sys
 import os
+import pytest
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -82,6 +83,7 @@ Python's async capabilities are mature and well-documented.
             return Response("Generic response", None)
 
 
+@pytest.mark.asyncio
 async def test_query_expansion():
     """Test query expansion functionality"""
     print("\n=== Testing Query Expansion ===")
@@ -109,8 +111,6 @@ async def test_query_expansion():
     assert len(result2.expanded_queries) >= 1
     assert result2.expansion_metadata["method"] == "no_expansion"
     print("✓ Fallback expansion works without LLM")
-
-    return True
 
 
 def test_url_reviewer():
@@ -149,9 +149,8 @@ def test_url_reviewer():
     print("✓ URL deletion/keep/restore works")
     print("✓ URL filtering works")
 
-    return True
 
-
+@pytest.mark.asyncio
 async def test_deep_crawler():
     """Test deep crawling functionality"""
     print("\n=== Testing Deep Crawler ===")
@@ -197,6 +196,7 @@ async def test_deep_crawler():
     return True
 
 
+@pytest.mark.asyncio
 async def test_analysis_generator():
     """Test analysis generation"""
     print("\n=== Testing Analysis Generator ===")
@@ -296,9 +296,8 @@ def test_workflow_phases():
         print("✓ Resume capability works")
         print("✓ Phase completion advances workflow")
 
-    return True
 
-
+@pytest.mark.asyncio
 async def test_workflow_config():
     """Test workflow configuration"""
     print("\n=== Testing Workflow Configuration ===")

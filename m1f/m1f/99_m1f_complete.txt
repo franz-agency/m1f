@@ -6295,7 +6295,11 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
         else
             echo -e "${RED}Error: Cannot determine script location when sourced.${NC}"
             echo -e "${YELLOW}Please run from project root as: source ./scripts/install.sh${NC}"
-            return 1 2>/dev/null || exit 1
+            if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+                return 1
+            else
+                exit 1
+            fi
         fi
     fi
 else
@@ -6334,7 +6338,11 @@ elif command -v python &> /dev/null; then
 else
     echo -e "${RED}Error: Python is not installed. Please install Python 3.10 or higher.${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    return 1 2>/dev/null || exit 1
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+        return 1
+    else
+        exit 1
+    fi
 fi
 
 # Check Python version is 3.10+
@@ -6345,7 +6353,11 @@ PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.minor)")
 if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]; }; then
     echo -e "${RED}Error: Python 3.10 or higher is required. Found Python $PYTHON_VERSION${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    return 1 2>/dev/null || exit 1
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+        return 1
+    else
+        exit 1
+    fi
 fi
 
 echo -e "${GREEN}✓ Python $PYTHON_VERSION found${NC}"
@@ -6380,7 +6392,11 @@ else
     echo -e "${YELLOW}PROJECT_ROOT is set to: $PROJECT_ROOT${NC}"
     echo -e "${YELLOW}Current directory is: $(pwd)${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    return 1 2>/dev/null || exit 1
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+        return 1
+    else
+        exit 1
+    fi
 fi
 
 # Install m1f package in editable mode (creates all entry points)
@@ -6728,7 +6744,7 @@ OPTIONS:
 
 WHAT IT REMOVES:
     - PowerShell functions added to your profile
-    - Command Prompt batch files directory
+    - m1f pip package (editable installation)
     - Python virtual environment (optional)
     - Generated m1f bundles (optional)
 
@@ -6794,7 +6810,7 @@ if (Test-Path $venvDir) {
     $componentsToRemove += "Python virtual environment (.venv)"
 }
 
-# Check for batch directory
+# Check for batch directory (legacy - may not exist in newer installations)
 if (Test-Path $batchDir) {
     $componentsToRemove += "Command Prompt batch files ($batchDir)"
 }
@@ -6814,6 +6830,23 @@ if (Test-Path "m1f") {
     $bundleFiles = Get-ChildItem -Path "m1f" -Filter "*.txt" | Where-Object { $_.Name -notlike "*config*" }
     if ($bundleFiles.Count -gt 0) {
         $componentsToRemove += "Generated m1f bundles ($($bundleFiles.Count) files)"
+    }
+}
+
+# Check for pip-installed package
+$pipPackageFound = $false
+if (Test-Path $venvDir) {
+    try {
+        $pythonExe = Join-Path $venvDir "Scripts\python.exe"
+        if (Test-Path $pythonExe) {
+            $checkResult = & $pythonExe -c "import pkg_resources; pkg_resources.get_distribution('m1f'); print('found')" 2>$null
+            if ($checkResult -eq "found") {
+                $pipPackageFound = $true
+                $componentsToRemove += "m1f pip package (editable installation)"
+            }
+        }
+    } catch {
+        # Ignore errors when checking for pip package
     }
 }
 
@@ -6875,6 +6908,22 @@ if ($bundleFiles.Count -gt 0) {
         Write-ColorOutput "✓ Bundles removed" -Color $colors.Green
     } else {
         Write-ColorOutput "Keeping generated bundles" -Color $colors.Yellow
+    }
+}
+
+# Remove pip package if found
+if ($pipPackageFound -and (Test-Path $venvDir)) {
+    Write-Host
+    Write-ColorOutput "Uninstalling m1f pip package..." -Color $colors.Green
+    try {
+        $pipExe = Join-Path $venvDir "Scripts\pip.exe"
+        if (Test-Path $pipExe) {
+            & $pipExe uninstall m1f -y >$null 2>&1
+            Write-ColorOutput "✓ m1f package uninstalled" -Color $colors.Green
+        }
+    } catch {
+        Write-ColorOutput "Warning: Could not uninstall m1f package automatically" -Color $colors.Yellow
+        Write-ColorOutput "You may need to run: $pipExe uninstall m1f" -Color $colors.Yellow
     }
 }
 
@@ -6952,6 +7001,7 @@ ${YELLOW}OPTIONS:${NC}
 ${YELLOW}WHAT IT REMOVES:${NC}
     - PATH entries added to shell configuration files
     - Symbolic links in ~/.local/bin
+    - m1f pip package (editable installation)
     - Python virtual environment (optional)
     - Generated m1f bundles (optional)
     - Creates backups of modified shell configs
@@ -7027,7 +7077,7 @@ done
 
 # Check for symlinks in ~/.local/bin
 if [ -d "$HOME/.local/bin" ]; then
-    for cmd in m1f m1f-s1f m1f-html2md m1f-scrape m1f-token-counter m1f-update m1f-link m1f-help m1f-init m1f-claude; do
+    for cmd in m1f m1f-s1f m1f-html2md m1f-scrape m1f-research m1f-token-counter m1f-update m1f-help m1f-init m1f-claude; do
         if [ -L "$HOME/.local/bin/$cmd" ]; then
             # Check if symlink points to our bin directory
             link_target=$(readlink -f "$HOME/.local/bin/$cmd" 2>/dev/null || true)
@@ -7049,6 +7099,16 @@ if [ -d "$PROJECT_ROOT/m1f" ]; then
     done < <(find "$PROJECT_ROOT/m1f" -name "*.txt" -type f -print0)
     if [ ${#BUNDLE_FILES[@]} -gt 0 ]; then
         COMPONENTS_TO_REMOVE+=("Generated m1f bundles (${#BUNDLE_FILES[@]} files)")
+    fi
+fi
+
+# Check for pip-installed package
+PIP_PACKAGE_FOUND=false
+if [ -d "$VENV_DIR" ]; then
+    # Check if m1f is installed as a pip package
+    if "$VENV_DIR/bin/python" -c "import pkg_resources; pkg_resources.get_distribution('m1f')" >/dev/null 2>&1; then
+        PIP_PACKAGE_FOUND=true
+        COMPONENTS_TO_REMOVE+=("m1f pip package (editable installation)")
     fi
 fi
 
@@ -7138,6 +7198,18 @@ if [ ${#BUNDLE_FILES[@]} -gt 0 ]; then
         echo -e "${GREEN}✓ Bundles removed${NC}"
     else
         echo "Keeping generated bundles"
+    fi
+fi
+
+# Remove pip package if found
+if [ "$PIP_PACKAGE_FOUND" = true ] && [ -d "$VENV_DIR" ]; then
+    echo
+    echo -e "${GREEN}Uninstalling m1f pip package...${NC}"
+    if "$VENV_DIR/bin/pip" uninstall m1f -y >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ m1f package uninstalled${NC}"
+    else
+        echo -e "${YELLOW}Warning: Could not uninstall m1f package automatically${NC}"
+        echo -e "${YELLOW}You may need to run: $VENV_DIR/bin/pip uninstall m1f${NC}"
     fi
 fi
 
@@ -10243,22 +10315,36 @@ class TestImportStructure:
     
     def test_submodules_importable(self):
         """Test that submodules can be imported correctly."""
-        import_tests = [
-            "from m1f import cli",
-            "from s1f import cli",
-            "from html2md_tool import cli",
-            "from scrape_tool import cli",
-            "from research import cli",
-            "from shared import colors",
-        ]
+        import sys
+        import os
         
-        for import_stmt in import_tests:
-            try:
-                exec(import_stmt)
-            except ImportError as e:
-                # Some imports might legitimately fail if dependencies are missing
-                if "No module named" not in str(e):
-                    pytest.fail(f"Failed to {import_stmt}: {e}")
+        # Make sure we import from tools directory, not tests directory
+        original_path = sys.path.copy()
+        try:
+            # Add tools directory to the front of sys.path
+            tools_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tools')
+            if tools_dir not in sys.path:
+                sys.path.insert(0, tools_dir)
+            
+            import_tests = [
+                "from m1f import cli",
+                "from s1f import cli",
+                "from html2md_tool import cli",
+                "from scrape_tool import cli",
+                "from research import cli",
+                "from shared import colors",
+            ]
+            
+            for import_stmt in import_tests:
+                try:
+                    exec(import_stmt)
+                except ImportError as e:
+                    # Some imports might legitimately fail if dependencies are missing
+                    if "No module named" not in str(e):
+                        pytest.fail(f"Failed to {import_stmt}: {e}")
+        finally:
+            # Restore original sys.path
+            sys.path = original_path
     
     def test_cross_package_imports(self):
         """Test that cross-package imports work correctly."""
@@ -11607,6 +11693,7 @@ from pathlib import Path
 import json
 import sys
 import os
+import pytest
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -11666,6 +11753,7 @@ Python's async capabilities are mature and well-documented.
             return Response("Generic response", None)
 
 
+@pytest.mark.asyncio
 async def test_query_expansion():
     """Test query expansion functionality"""
     print("\n=== Testing Query Expansion ===")
@@ -11693,8 +11781,6 @@ async def test_query_expansion():
     assert len(result2.expanded_queries) >= 1
     assert result2.expansion_metadata["method"] == "no_expansion"
     print("✓ Fallback expansion works without LLM")
-
-    return True
 
 
 def test_url_reviewer():
@@ -11733,9 +11819,8 @@ def test_url_reviewer():
     print("✓ URL deletion/keep/restore works")
     print("✓ URL filtering works")
 
-    return True
 
-
+@pytest.mark.asyncio
 async def test_deep_crawler():
     """Test deep crawling functionality"""
     print("\n=== Testing Deep Crawler ===")
@@ -11781,6 +11866,7 @@ async def test_deep_crawler():
     return True
 
 
+@pytest.mark.asyncio
 async def test_analysis_generator():
     """Test analysis generation"""
     print("\n=== Testing Analysis Generator ===")
@@ -11880,9 +11966,8 @@ def test_workflow_phases():
         print("✓ Resume capability works")
         print("✓ Phase completion advances workflow")
 
-    return True
 
-
+@pytest.mark.asyncio
 async def test_workflow_config():
     """Test workflow configuration"""
     print("\n=== Testing Workflow Configuration ===")
@@ -17425,13 +17510,7 @@ if __name__ == "__main__":
 """Main entry point for s1f - Split One File."""
 
 import sys
-
-# Try absolute imports first (for module execution), fall back to relative
-try:
-    from s1f.cli import main
-except ImportError:
-    # Fallback for direct script execution
-    from s1f.cli import main
+from s1f.cli import main
 
 if __name__ == "__main__":
     sys.exit(main())
@@ -44652,7 +44731,8 @@ class TestM1FAdvanced(BaseM1FTest):
     def test_large_file_handling(self, run_m1f, create_test_file, temp_dir):
         """Test handling of files with size limit.
 
-        Tests that files larger than a specified limit are skipped.
+        Tests that files larger than the specified limit are completely excluded
+        from the output (both from file lists and content sections).
         """
         # Create a small file (5KB - below limit)
         small_content = "x" * (5 * 1024)  # 5KB
@@ -44687,9 +44767,20 @@ class TestM1FAdvanced(BaseM1FTest):
         assert "small_file.txt" in output_content
         assert small_content in output_content
 
-        # Large file should be mentioned in file list but content not included
-        assert "large_file.txt" in output_content  # Should be in file list
+        # Large file should be excluded due to size limit
         assert large_content not in output_content  # Content should not be included
+        
+        # Check that large file doesn't appear in any file content sections
+        # Split by separators to get individual file sections
+        content_sections = output_content.split("=======")
+        file_content_sections = [
+            section for section in content_sections 
+            if section.strip() and not section.strip().startswith("size_limit_output.log")
+        ]
+        
+        # Large file should not appear in any content section
+        large_file_in_content = any("large_file.txt" in section for section in file_content_sections)
+        assert not large_file_in_content, f"large_file.txt found in content sections when it should be excluded due to size limit"
 
     @pytest.mark.unit
     def test_include_binary_files(
@@ -51895,7 +51986,7 @@ Integration tests for m1f-research scraping pipeline
 import pytest
 import asyncio
 import aiohttp
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from datetime import datetime
 import json
 
@@ -52988,19 +53079,21 @@ def run_s1f(monkeypatch, capture_logs):
     import sys
     from pathlib import Path
 
-    # Add tools directory to path to import s1f script
+    # Add tools directory to path to import s1f
     tools_dir = str(Path(__file__).parent.parent.parent / "tools")
-    if tools_dir not in sys.path:
-        sys.path.insert(0, tools_dir)
+    
+    # Remove tests/s1f from path if it exists to avoid conflicts
+    test_s1f_dir = str(Path(__file__).parent)
+    if test_s1f_dir in sys.path:
+        sys.path.remove(test_s1f_dir)
+    
+    # Add tools directory to the beginning of the path
+    if tools_dir in sys.path:
+        sys.path.remove(tools_dir)
+    sys.path.insert(0, tools_dir)
 
-    # Import from the s1f.py script, not the package
-    import importlib.util
-
-    s1f_script_path = Path(__file__).parent.parent.parent / "tools" / "s1f.py"
-    spec = importlib.util.spec_from_file_location("s1f_script", s1f_script_path)
-    s1f_script = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(s1f_script)
-    main = s1f_script.main
+    # Import the main function from s1f.cli
+    from s1f.cli import main
 
     def _run_s1f(args: list[str]) -> tuple[int, str]:
         """

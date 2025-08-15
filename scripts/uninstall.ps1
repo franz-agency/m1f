@@ -25,7 +25,7 @@ OPTIONS:
 
 WHAT IT REMOVES:
     - PowerShell functions added to your profile
-    - Command Prompt batch files directory
+    - m1f pip package (editable installation)
     - Python virtual environment (optional)
     - Generated m1f bundles (optional)
 
@@ -91,7 +91,7 @@ if (Test-Path $venvDir) {
     $componentsToRemove += "Python virtual environment (.venv)"
 }
 
-# Check for batch directory
+# Check for batch directory (legacy - may not exist in newer installations)
 if (Test-Path $batchDir) {
     $componentsToRemove += "Command Prompt batch files ($batchDir)"
 }
@@ -111,6 +111,23 @@ if (Test-Path "m1f") {
     $bundleFiles = Get-ChildItem -Path "m1f" -Filter "*.txt" | Where-Object { $_.Name -notlike "*config*" }
     if ($bundleFiles.Count -gt 0) {
         $componentsToRemove += "Generated m1f bundles ($($bundleFiles.Count) files)"
+    }
+}
+
+# Check for pip-installed package
+$pipPackageFound = $false
+if (Test-Path $venvDir) {
+    try {
+        $pythonExe = Join-Path $venvDir "Scripts\python.exe"
+        if (Test-Path $pythonExe) {
+            $checkResult = & $pythonExe -c "import pkg_resources; pkg_resources.get_distribution('m1f'); print('found')" 2>$null
+            if ($checkResult -eq "found") {
+                $pipPackageFound = $true
+                $componentsToRemove += "m1f pip package (editable installation)"
+            }
+        }
+    } catch {
+        # Ignore errors when checking for pip package
     }
 }
 
@@ -172,6 +189,22 @@ if ($bundleFiles.Count -gt 0) {
         Write-ColorOutput "✓ Bundles removed" -Color $colors.Green
     } else {
         Write-ColorOutput "Keeping generated bundles" -Color $colors.Yellow
+    }
+}
+
+# Remove pip package if found
+if ($pipPackageFound -and (Test-Path $venvDir)) {
+    Write-Host
+    Write-ColorOutput "Uninstalling m1f pip package..." -Color $colors.Green
+    try {
+        $pipExe = Join-Path $venvDir "Scripts\pip.exe"
+        if (Test-Path $pipExe) {
+            & $pipExe uninstall m1f -y >$null 2>&1
+            Write-ColorOutput "✓ m1f package uninstalled" -Color $colors.Green
+        }
+    } catch {
+        Write-ColorOutput "Warning: Could not uninstall m1f package automatically" -Color $colors.Yellow
+        Write-ColorOutput "You may need to run: $pipExe uninstall m1f" -Color $colors.Yellow
     }
 }
 
