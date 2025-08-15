@@ -542,7 +542,6 @@ and this project adheres to
 - **research**: Enabled WebSearch tool for Claude Code provider - now finds real URLs instead of generating hypothetical ones
 - **research**: Created missing `default_analysis.md` prompt file for content analysis
 - **research**: Research tool now works end-to-end with Claude Code provider using web search
-- **research**: Removed emojis from bundle filenames (RESEARCH_BUNDLE.md, EXECUTIVE_SUMMARY.md) for better compatibility
 - **research**: Added real-time feedback display for Claude WebSearch operations
 - **research**: Improved WebSearch feedback to show search queries and result counts
 - **research**: Fixed optional URL parameter handling in analysis prompts
