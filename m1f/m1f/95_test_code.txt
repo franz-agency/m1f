@@ -9659,6 +9659,9 @@ from pathlib import Path
 import tempfile
 import shutil
 import asyncio
+import time
+import gc
+import sys
 from unittest.mock import AsyncMock, MagicMock
 import json
 
@@ -9669,10 +9672,62 @@ from tools.research.llm_interface import LLMProvider, LLMResponse
 
 @pytest.fixture
 def temp_dir():
-    """Create a temporary directory for test files"""
+    """Create a temporary directory for test files with proper cleanup"""
     temp_dir = tempfile.mkdtemp()
-    yield Path(temp_dir)
-    shutil.rmtree(temp_dir)
+    temp_path = Path(temp_dir)
+    yield temp_path
+    
+    # Windows-specific cleanup to handle SQLite file locking
+    _cleanup_temp_dir_with_retry(temp_path)
+
+
+def _cleanup_temp_dir_with_retry(temp_path: Path, max_retries: int = 3):
+    """Clean up temporary directory with retry logic for Windows SQLite issues"""
+    
+    # Force garbage collection to close any remaining database connections
+    gc.collect()
+    
+    for attempt in range(max_retries):
+        try:
+            # First, try to find and cleanup any SQLite databases
+            for db_file in temp_path.rglob("*.db"):
+                try:
+                    # Force close any connections by attempting to connect and immediately close
+                    import sqlite3
+                    conn = sqlite3.connect(str(db_file))
+                    conn.close()
+                    
+                    # On Windows, sometimes we need a brief delay
+                    if sys.platform == "win32":
+                        time.sleep(0.1)
+                        
+                except Exception:
+                    pass  # Ignore errors here
+            
+            # Now try to remove the directory
+            shutil.rmtree(temp_path)
+            return  # Success!
+            
+        except (OSError, PermissionError) as e:
+            if attempt < max_retries - 1:
+                # Wait a bit and try again
+                time.sleep(0.5 * (attempt + 1))
+                gc.collect()  # Force garbage collection again
+            else:
+                # Last attempt failed, log the error but don't fail the test
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to cleanup temp directory after {max_retries} attempts: {e}")
+                # Try to at least remove files one by one
+                try:
+                    for file_path in temp_path.rglob("*"):
+                        if file_path.is_file():
+                            try:
+                                file_path.unlink()
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
 
 
 @pytest.fixture
@@ -9833,6 +9888,52 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture
+def research_temp_dir():
+    """
+    Specialized temporary directory fixture for research tests that need database cleanup
+    This ensures proper cleanup of SQLite databases before directory removal
+    """
+    temp_dir = tempfile.mkdtemp()
+    temp_path = Path(temp_dir)
+    
+    # Store references to cleanup functions
+    orchestrators = []
+    
+    class TempDirManager:
+        def __init__(self, path):
+            self.path = path
+            self.orchestrators = []
+        
+        def register_orchestrator(self, orchestrator):
+            """Register an orchestrator for cleanup"""
+            self.orchestrators.append(orchestrator)
+        
+        def cleanup_orchestrators(self):
+            """Clean up all registered orchestrators"""
+            for orchestrator in self.orchestrators:
+                try:
+                    if hasattr(orchestrator, 'cleanup_databases'):
+                        orchestrator.cleanup_databases()
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.debug(f"Error cleaning up orchestrator: {e}")
+            self.orchestrators.clear()
+    
+    manager = TempDirManager(temp_path)
+    yield manager
+    
+    # Cleanup orchestrators first
+    manager.cleanup_orchestrators()
+    
+    # Force garbage collection
+    gc.collect()
+    
+    # Then cleanup the directory
+    _cleanup_temp_dir_with_retry(temp_path)
 
 ======= research/test_analysis_templates.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -11190,7 +11291,7 @@ class TestResearchWorkflow:
             yield Path(tmpdir)
 
     @pytest.fixture
-    def mock_config(self, temp_dir):
+    def mock_config(self, research_temp_dir):
         """Create a test configuration"""
         config = ResearchConfig(
             query="test query",
@@ -11203,7 +11304,7 @@ class TestResearchWorkflow:
         )
         # Set the search limit explicitly
         config.scraping.search_limit = 5
-        config.output.directory = temp_dir
+        config.output.directory = research_temp_dir.path
         # Adjust minimum content length for test content
         config.analysis.min_content_length = 20
         return config
@@ -11258,12 +11359,15 @@ class TestResearchWorkflow:
 
     @pytest.mark.asyncio
     async def test_basic_research_workflow(
-        self, mock_config, mock_llm_provider, temp_dir
+        self, mock_config, mock_llm_provider, research_temp_dir
     ):
         """Test basic research workflow end-to-end"""
         # Create orchestrator with mocked LLM
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Mock scraping to avoid actual web requests
         async def mock_scrape_urls(urls):
@@ -11346,14 +11450,20 @@ Total sources: {len(content)}
         mock_llm_provider.search_web.assert_called_once_with("test query", 5)
         # Analysis is now mocked directly, so query won't be called
         # Just verify the workflow completed successfully
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_dry_run_mode(self, mock_config, mock_llm_provider, temp_dir):
+    async def test_dry_run_mode(self, mock_config, mock_llm_provider, research_temp_dir):
         """Test dry run mode doesn't perform actual operations"""
         mock_config.dry_run = True
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Run in dry mode
         result = await orchestrator.research("test query")
@@ -11366,14 +11476,20 @@ Total sources: {len(content)}
         assert result.bundle_path is not None
         assert result.bundle_path.is_dir()  # It's the output directory, not a file
         assert not result.bundle_created  # Bundle was not actually created
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_no_analysis_mode(self, mock_config, mock_llm_provider, temp_dir):
+    async def test_no_analysis_mode(self, mock_config, mock_llm_provider, research_temp_dir):
         """Test running without analysis"""
         mock_config.no_analysis = True
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Mock scraping
         async def mock_scrape_urls(urls):
@@ -11397,14 +11513,20 @@ Total sources: {len(content)}
 
         # But search should still happen
         mock_llm_provider.search_web.assert_called_once()
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_content_filtering(self, mock_config, temp_dir):
+    async def test_content_filtering(self, mock_config, research_temp_dir):
         """Test content filtering based on relevance"""
         mock_config.analysis.relevance_threshold = 7.0
         mock_config.analysis.min_content_length = 50  # Lower threshold for test
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Create test content with different relevance scores
         content = [
@@ -11447,6 +11569,9 @@ Total sources: {len(content)}
         assert len(filtered) == 2
         assert all(item.relevance_score >= 7.0 for item in filtered)
         assert filtered[0].relevance_score == 9.0  # Should be sorted by relevance
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     def test_cli_argument_parsing(self):
         """Test CLI argument parsing"""
@@ -11470,7 +11595,7 @@ Total sources: {len(content)}
         assert args.query is None  # Query not required in interactive mode
 
     @pytest.mark.asyncio
-    async def test_config_from_yaml(self, temp_dir):
+    async def test_config_from_yaml(self, research_temp_dir):
         """Test loading configuration from YAML"""
         # Create test YAML config
         yaml_content = """
@@ -11490,7 +11615,7 @@ research:
       analysis_focus: implementation
       url_count: 30
 """
-        config_path = temp_dir / "test_config.yml"
+        config_path = research_temp_dir.path / "test_config.yml"
         config_path.write_text(yaml_content)
 
         # Load config

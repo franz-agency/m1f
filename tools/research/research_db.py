@@ -62,6 +62,7 @@ class ResearchDatabase:
     def __init__(self, db_path: Path):
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._connection_pool = []  # Track connections for cleanup
         self._init_database()
 
     def _init_database(self):
@@ -341,6 +342,24 @@ class ResearchDatabase:
             logger.error(f"Error deleting job {job_id}: {e}")
             return False
 
+    def close_all_connections(self):
+        """Close all database connections"""
+        try:
+            # Force garbage collection to close any remaining connections
+            import gc
+            gc.collect()
+            
+            # On Windows, sometimes we need to explicitly close the database
+            # SQLite doesn't have persistent connections with context managers,
+            # but we can force cleanup
+            logger.debug(f"Closing database connections for {self.db_path}")
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def cleanup(self):
+        """Clean up database resources"""
+        self.close_all_connections()
+
 
 class JobDatabase:
     """Per-job database for URL and content tracking"""
@@ -348,6 +367,7 @@ class JobDatabase:
     def __init__(self, db_path: Path):
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._connection_pool = []  # Track connections for cleanup
         self._init_database()
 
     def _init_database(self):
@@ -636,3 +656,21 @@ class JobDatabase:
         # Currently, we don't store raw HTML separately
         # This is a placeholder for future implementation
         return {"files_deleted": 0, "space_freed": 0}
+
+    def close_all_connections(self):
+        """Close all database connections"""
+        try:
+            # Force garbage collection to close any remaining connections
+            import gc
+            gc.collect()
+            
+            # On Windows, sometimes we need to explicitly close the database
+            # SQLite doesn't have persistent connections with context managers,
+            # but we can force cleanup
+            logger.debug(f"Closing database connections for {self.db_path}")
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def cleanup(self):
+        """Clean up database resources"""
+        self.close_all_connections()

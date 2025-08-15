@@ -2846,10 +2846,22 @@ The installation script automatically:
 
 - ✅ Checks Python version (3.10+ required)
 - ✅ Creates virtual environment
-- ✅ Installs all dependencies
+- ✅ Installs all dependencies (including Playwright)
 - ✅ Adds commands to your PATH
 - ✅ Creates global command shortcuts
 - ✅ Sets up symlinks
+
+### Optional: Playwright Browser Installation
+
+If you want to use the Playwright scraper backend for JavaScript-heavy websites:
+
+```bash
+# After running the install script, install browser binaries:
+playwright install
+```
+
+This downloads Chromium, Firefox, and WebKit browsers (~300MB) for web scraping.
+On Windows, browsers are installed to `%LOCALAPPDATA%\ms-playwright\`.
 
 ## Test Your Installation
 
@@ -5429,7 +5441,7 @@ exit $?
     
     Copy-Item -Path $sourceFile -Destination $targetPsFile -Force
     
-    Write-ColorOutput "✓ Installed $HookType pre-commit hook" -Color $colors.Green
+    Write-ColorOutput "[OK] Installed $HookType pre-commit hook" -Color $colors.Green
 }
 
 # Show hook options
@@ -5476,7 +5488,7 @@ if ((Test-Path $existingHook) -or (Test-Path $existingPsHook)) {
 Install-Hook -HookType $hookType
 
 Write-Host
-Write-ColorOutput "✓ Git hook installation complete!" -Color $colors.Green
+Write-ColorOutput "[OK] Git hook installation complete!" -Color $colors.Green
 Write-Host
 
 # Show usage instructions based on hook type
@@ -5828,7 +5840,7 @@ Write-Host
 
 # Check if this is an upgrade from an old installation
 if ((Test-Path ".venv") -and (Test-Path "bin") -and (Test-Path "bin\m1f")) {
-    Write-ColorOutput "📦 Upgrade detected: Migrating to Python entry points system" -Color $colors.Yellow
+    Write-ColorOutput "[UPGRADE] Detected: Migrating to Python entry points system" -Color $colors.Yellow
     Write-Host
 }
 
@@ -5839,7 +5851,7 @@ if ($executionPolicy -eq "Restricted") {
     Write-ColorOutput "Updating execution policy for current user..." -Color $colors.Yellow
     try {
         Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-        Write-ColorOutput "✓ Execution policy updated" -Color $colors.Green
+        Write-ColorOutput "[OK] Execution policy updated" -Color $colors.Green
     } catch {
         Write-ColorOutput "Error: Could not update execution policy. Please run as administrator or run:" -Color $colors.Red
         Write-ColorOutput "  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" -Color $colors.Blue
@@ -5886,7 +5898,7 @@ try {
         exit 1
     }
     
-    Write-ColorOutput "✓ Python $versionOutput found" -Color $colors.Green
+    Write-ColorOutput "[OK] Python $versionOutput found" -Color $colors.Green
 } catch {
     Write-ColorOutput "Error: Could not determine Python version" -Color $colors.Red
     Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
@@ -5903,7 +5915,7 @@ if (Test-Path ".venv") {
     Write-ColorOutput "Virtual environment already exists." -Color $colors.Yellow
 } else {
     & $pythonCmd -m venv .venv
-    Write-ColorOutput "✓ Virtual environment created" -Color $colors.Green
+    Write-ColorOutput "[OK] Virtual environment created" -Color $colors.Green
 }
 
 # Step 2: Activate virtual environment and install dependencies
@@ -5920,7 +5932,7 @@ python -m pip install --upgrade pip --quiet
 # Install requirements
 if (Test-Path "requirements.txt") {
     pip install -r requirements.txt --quiet
-    Write-ColorOutput "✓ Dependencies installed" -Color $colors.Green
+    Write-ColorOutput "[OK] Dependencies installed" -Color $colors.Green
 } else {
     Write-ColorOutput "Error: requirements.txt not found" -Color $colors.Red
     Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
@@ -5930,21 +5942,28 @@ if (Test-Path "requirements.txt") {
 # Install m1f package in editable mode (creates all entry points)
 Write-ColorOutput "Installing m1f package with all tools..." -Color $colors.Green
 pip install -e tools\ --quiet
-Write-ColorOutput "✓ m1f package installed with all entry points" -Color $colors.Green
+Write-ColorOutput "[OK] m1f package installed with all entry points" -Color $colors.Green
+
+# Create .pth file for Windows compatibility
+# This ensures that modules in tools/ root are found on Windows
+$pthFile = Join-Path $projectRoot ".venv\Lib\site-packages\m1f_tools.pth"
+$toolsPath = Join-Path $projectRoot "tools"
+Set-Content -Path $pthFile -Value $toolsPath -Encoding ASCII
+Write-ColorOutput "[OK] Created .pth file for Windows module resolution" -Color $colors.Green
 
 # Step 3: Test m1f installation
 Write-Host
 Write-ColorOutput "Step 3: Testing m1f installation..." -Color $colors.Green
 try {
     $null = & python -m tools.m1f --version 2>&1
-    Write-ColorOutput "✓ m1f is working correctly" -Color $colors.Green
+    Write-ColorOutput "[OK] m1f is working correctly" -Color $colors.Green
     
     # Create symlink for main documentation if needed
     $m1fDocPath = Join-Path $projectRoot "m1f\m1f\87_m1f_only_docs.txt"
     $m1fLinkPath = Join-Path $projectRoot "m1f\m1f.txt"
     if ((Test-Path $m1fDocPath) -and !(Test-Path $m1fLinkPath)) {
         New-Item -ItemType SymbolicLink -Path $m1fLinkPath -Target "m1f\87_m1f_only_docs.txt" -Force | Out-Null
-        Write-ColorOutput "✓ Created m1f.txt symlink to main documentation" -Color $colors.Green
+        Write-ColorOutput "[OK] Created m1f.txt symlink to main documentation" -Color $colors.Green
     }
 } catch {
     Write-ColorOutput "Warning: Could not verify m1f installation" -Color $colors.Yellow
@@ -5966,10 +5985,10 @@ $profileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
 if ($profileContent -match "# m1f tools functions") {
     # Check if we need to update from old bin path to new venv path
     if ($profileContent -match [regex]::Escape($oldBinDir)) {
-        Write-ColorOutput "🔄 Updating PowerShell profile from old paths to new entry points..." -Color $colors.Yellow
+        Write-ColorOutput "[UPDATE] PowerShell profile from old paths to new entry points..." -Color $colors.Yellow
         $profileContent = $profileContent -replace [regex]::Escape($oldBinDir), $venvBinDir
         Set-Content $PROFILE $profileContent
-        Write-ColorOutput "✓ Updated PowerShell profile to use Python entry points" -Color $colors.Green
+        Write-ColorOutput "[OK] Updated PowerShell profile to use Python entry points" -Color $colors.Green
     } else {
         Write-ColorOutput "m1f functions already exist in profile" -Color $colors.Yellow
     }
@@ -5988,7 +6007,7 @@ if (Test-Path "$projectRoot\scripts\m1f_aliases.ps1") {
 
 "@
     Add-Content $PROFILE $functionsContent
-    Write-ColorOutput "✓ PowerShell functions added to profile" -Color $colors.Green
+    Write-ColorOutput "[OK] PowerShell functions added to profile" -Color $colors.Green
 }
 
 # Step 5: Create batch files for Command Prompt (optional)
@@ -6059,13 +6078,13 @@ foreach ($file in $commands.Keys) {
     Set-Content -Path $filePath -Value $content -Encoding ASCII
 }
 
-Write-ColorOutput "✓ Batch files created in $batchDir" -Color $colors.Green
+Write-ColorOutput "[OK] Batch files created in $batchDir" -Color $colors.Green
 
 # Installation complete
 Write-Host
-Write-ColorOutput "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -Color $colors.Green
-Write-ColorOutput "✨ Installation complete!" -Color $colors.Green
-Write-ColorOutput "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -Color $colors.Green
+Write-ColorOutput "============================================================" -Color $colors.Green
+Write-ColorOutput "[SUCCESS] Installation complete!" -Color $colors.Green
+Write-ColorOutput "============================================================" -Color $colors.Green
 Write-Host
 
 Write-ColorOutput "Available commands in PowerShell:" -Color $colors.Yellow
@@ -6087,7 +6106,7 @@ Write-ColorOutput "  Add $batchDir to your PATH environment variable" -Color $co
 Write-Host
 
 Write-ColorOutput "Next step:" -Color $colors.Yellow
-Write-ColorOutput "  Restart PowerShell or run: . `$PROFILE" -Color $colors.Blue
+Write-ColorOutput "  Restart PowerShell or run: . `"`$PROFILE`"" -Color $colors.Blue
 Write-Host
 
 Write-ColorOutput "Test installation:" -Color $colors.Yellow
@@ -12727,7 +12746,7 @@ class M1FClaude:
         enhanced = []
 
         # Add m1f context
-        enhanced.append("🚀 m1f Context Enhancement Active\n")
+        enhanced.append("[m1f Context Enhancement Active]\n")
         enhanced.append("=" * 50)
 
         # Check if user wants to set up m1f
@@ -12881,7 +12900,7 @@ CRITICAL CONFIG RULES:
 - Separator: Use "Standard" (or omit), NOT "Detailed"
 - ALWAYS test with m1f-update after creating/editing configs!
 
-📝 PROJECT CONTEXT FOR m1f SETUP:
+[PROJECT CONTEXT FOR m1f SETUP]:
 
 **Project Analysis Results:**
 - Total Files: {project_context.get('total_files', 'Unknown')}
@@ -12983,9 +13002,9 @@ bundles:
         if self.has_m1f_docs:
             enhanced.append(
                 f"""
-📚 Complete m1f documentation is available at: @{self.m1f_docs_path.relative_to(self.project_path)}
+[INFO] Complete m1f documentation is available at: @{self.m1f_docs_path.relative_to(self.project_path)}
 
-⚡ ALWAYS consult @m1f/m1f.txt for:
+[IMPORTANT] ALWAYS consult @m1f/m1f.txt for:
 - Exact command syntax and parameters
 - Configuration file formats
 - Preset definitions and usage
@@ -12995,7 +13014,7 @@ bundles:
         else:
             enhanced.append(
                 """
-⚠️  m1f documentation not linked yet. Run 'm1f-link' first to give me full context!
+[WARNING] m1f documentation not linked yet. Run 'm1f-link' first to give me full context!
 """
             )
 
@@ -13007,11 +13026,11 @@ bundles:
 
         # Add user's original prompt
         enhanced.append("\n" + "=" * 50)
-        enhanced.append("\n🎯 User Request:\n")
+        enhanced.append("\n[User Request]:\n")
         enhanced.append(user_prompt)
 
         # Add action plan
-        enhanced.append("\n\n💡 m1f Action Plan:")
+        enhanced.append("\n\n[m1f Action Plan]:")
         if wants_setup:
             enhanced.append(
                 """
@@ -13037,7 +13056,7 @@ Start with Task 1: Project Analysis
         enhanced.append("- Lines 421-459: Best practices for AI context")
         enhanced.append("- Lines 461-494: Project-specific patterns")
         enhanced.append(
-            "\n⚠️ REMEMBER: Keep configs MINIMAL - don't repeat default excludes!"
+            "\n[REMEMBER]: Keep configs MINIMAL - don't repeat default excludes!"
         )
 
         return "\n".join(enhanced)
@@ -13049,7 +13068,7 @@ Start with Task 1: Project Analysis
         # Check for AI context files first
         ai_files = {
             "CLAUDE.md": "🤖 Claude instructions found",
-            ".cursorrules": "🖱️ Cursor rules found",
+            ".cursorrules": "[Cursor rules found]",
             ".windsurfrules": "🌊 Windsurf rules found",
             ".aiderignore": "🤝 Aider configuration found",
             ".copilot-instructions.md": "🚁 Copilot instructions found",
@@ -13066,14 +13085,14 @@ Start with Task 1: Project Analysis
 
         # Check for common project files
         config_files = {
-            ".m1f.config.yml": "✅ Auto-bundle config found",
-            "package.json": "📦 Node.js project detected",
+            ".m1f.config.yml": "[OK] Auto-bundle config found",
+            "package.json": "[Node.js project detected]",
             "requirements.txt": "🐍 Python project detected",
             "composer.json": "🎼 PHP project detected",
             "Gemfile": "💎 Ruby project detected",
             "Cargo.toml": "🦀 Rust project detected",
             "go.mod": "🐹 Go project detected",
-            ".git": "📚 Git repository",
+            ".git": "[Git repository]",
         }
 
         detected = []
@@ -13091,7 +13110,7 @@ Start with Task 1: Project Analysis
         if safe_exists(m1f_dir, logger) and safe_is_dir(m1f_dir, logger):
             bundles = list(m1f_dir.glob("*.txt"))
             if bundles:
-                context_parts.append(f"\n📦 Existing m1f bundles: {len(bundles)} found")
+                context_parts.append(f"\n[INFO] Existing m1f bundles: {len(bundles)} found")
                 for bundle in bundles[:3]:  # Show first 3
                     context_parts.append(f"  • {bundle.name}")
                 if len(bundles) > 3:
@@ -13101,16 +13120,16 @@ Start with Task 1: Project Analysis
 
     def _get_m1f_recommendations(self) -> str:
         """Provide m1f setup recommendations based on project type."""
-        recommendations = ["\n🎯 m1f Setup Recommendations:"]
+        recommendations = ["\n[m1f Setup Recommendations]:"]
 
         # Check if .m1f.config.yml exists
         m1f_config = self.project_path / ".m1f.config.yml"
         if safe_exists(m1f_config, logger):
-            recommendations.append("  ✅ Auto-bundle config found (.m1f.config.yml)")
+            recommendations.append("  [OK] Auto-bundle config found (.m1f.config.yml)")
             recommendations.append("     Run 'm1f-update' to generate bundles")
         else:
             recommendations.append(
-                "  📝 No .m1f.config.yml found - I'll help create one!"
+                "  [INFO] No .m1f.config.yml found - I'll help create one!"
             )
 
         # Check for m1f directory
@@ -13119,14 +13138,14 @@ Start with Task 1: Project Analysis
             bundle_count = len(list(m1f_dir.glob("*.txt")))
             if bundle_count > 0:
                 recommendations.append(
-                    f"  📦 Found {bundle_count} existing m1f bundles"
+                    f"  [INFO] Found {bundle_count} existing m1f bundles"
                 )
         else:
             recommendations.append("  📁 'mkdir m1f' to create bundle output directory")
 
         # Suggest project-specific setup
         if safe_exists(self.project_path / "package.json", logger):
-            recommendations.append("\n  🔧 Node.js project detected:")
+            recommendations.append("\n  [Node.js project detected]:")
             recommendations.append(
                 "     - Bundle source code separately from node_modules"
             )
@@ -13158,7 +13177,7 @@ Start with Task 1: Project Analysis
             safe_exists(self.project_path / indicator, logger)
             for indicator in wp_indicators
         ):
-            recommendations.append("\n  🎨 WordPress project detected:")
+            recommendations.append("\n  [WordPress project detected]:")
             recommendations.append("     - Use --preset wordpress for optimal bundling")
             recommendations.append("     - Separate theme/plugin bundles")
             recommendations.append("     - Exclude uploads and cache directories")
@@ -13721,7 +13740,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                             # Show progress for init prompts
                             if is_first_prompt and message_count % 3 == 0:
                                 logger.info(
-                                    f"📝 Processing... ({message_count} messages received)"
+                                    f"[Processing...] ({message_count} messages received)"
                                 )
 
                             # Extract session ID from ResultMessage - handle missing fields gracefully
@@ -13808,7 +13827,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             # Send to Claude Code using --print for non-interactive mode
             logger.info("\n🤖 Displaying prompt for manual use...\n")
             logger.info(
-                "⚠️  Due to subprocess limitations, please run the following command manually:"
+                "[WARNING] Due to subprocess limitations, please run the following command manually:"
             )
             logger.info("")
 
@@ -13837,7 +13856,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
             info(f"\n{Colors.GREEN}{cmd_display}{Colors.RESET}\n")
             info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
-            header("📝 Then paste this prompt:")
+            header("[Then paste this prompt]:")
             info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
             info(f"\n{Colors.YELLOW}{enhanced_prompt}{Colors.RESET}\n")
             info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
@@ -13944,7 +13963,7 @@ I'll analyze your project and create an optimal m1f configuration that:
         info("=" * 50)
 
         info("\nThis command adds topic-specific bundles to your existing m1f setup.")
-        info("\n✅ Prerequisites:")
+        info("\n[Prerequisites]:")
         info("  • Run 'm1f-init' first to create basic bundles")
         info("  • Claude Code must be installed")
         info("  • .m1f.config.yml should exist")
@@ -13952,7 +13971,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Collect project description and priorities if not provided via CLI
         if not self.project_description and not self.project_priorities:
-            header("📝 Project Information")
+            header("[Project Information]")
             info("=" * 50)
             info(
                 "Please provide some information about your project to help create better bundles."
@@ -13969,7 +13988,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             # Interactive project priorities input
             if not self.project_priorities:
-                info("\n🎯 Project Priorities")
+                info("\n[Project Priorities]")
                 info(
                     "What's important for this project? (e.g., performance, security, maintainability, documentation):"
                 )
@@ -14083,15 +14102,15 @@ I'll analyze your project and create an optimal m1f configuration that:
                 f"Found {context.get('total_files', 0)} files in {context.get('total_dirs', 0)} directories"
             )
             info(f"📁 Project Type: {context.get('type', 'Unknown')}")
-            info(f"💻 Languages: {context.get('languages', 'Unknown')}")
+            info(f"[Languages]: {context.get('languages', 'Unknown')}")
             if context.get("main_code_dirs"):
                 info(f"📂 Code Dirs: {', '.join(context['main_code_dirs'][:3])}")
 
             # Display user-provided info
             if self.project_description:
-                info(f"\n📝 User Description: {self.project_description}")
+                info(f"\n[User Description]: {self.project_description}")
             if self.project_priorities:
-                info(f"🎯 User Priorities: {self.project_priorities}")
+                info(f"[User Priorities]: {self.project_priorities}")
 
         except Exception as e:
             warning(f"Failed to analyze project structure: {e}")
@@ -14124,7 +14143,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Show prompt in verbose mode
         if self.verbose:
-            header("📝 PHASE 1 PROMPT (Segmentation):")
+            header("[PHASE 1 PROMPT (Segmentation)]:")
             info("=" * 80)
             info(segmentation_prompt)
             info("=" * 80)
@@ -14174,14 +14193,14 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             if result.returncode == 0:
                 success("Phase 1 complete: Topic-specific bundles added!")
-                info("📝 Claude has analyzed your project and updated .m1f.config.yml")
+                info("[INFO] Claude has analyzed your project and updated .m1f.config.yml")
             else:
                 warning(f"Claude exited with code {result.returncode}")
                 info("Please check your .m1f.config.yml manually.")
                 return
 
             # PHASE 2: Run m1f-update and have Claude verify the results
-            info("\n🔄 Phase 2: Generating bundles and verifying configuration...")
+            info("\n[Phase 2]: Generating bundles and verifying configuration...")
             info("⏳ Running m1f-update to generate bundles...")
 
             # Run m1f-update to generate the bundles in current directory
@@ -14192,7 +14211,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             if update_result.returncode != 0:
                 warning("m1f-update failed:")
                 error(update_result.stderr)
-                info("\n📝 Running verification anyway to help fix issues...")
+                info("\n[INFO] Running verification anyway to help fix issues...")
             else:
                 success("Bundles generated successfully!")
 
@@ -14201,7 +14220,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             # Show prompt in verbose mode
             if self.verbose:
-                header("📝 PHASE 2 PROMPT (Verification):")
+                header("[PHASE 2 PROMPT (Verification)]:")
                 info("=" * 80)
                 info(verification_prompt)
                 info("=" * 80)
@@ -14237,7 +14256,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             # Fall back to showing manual instructions
             self.send_to_claude_code_subprocess(segmentation_prompt)
 
-        info("\n🚀 Next steps:")
+        info("\n[Next steps]:")
         info("• Your .m1f.config.yml has been created and verified")
         info("• Run 'm1f-update' to regenerate bundles with any improvements")
         info("• Use topic-specific bundles with your AI tools")
@@ -14475,7 +14494,7 @@ bundles:
                             # Handle permission prompt for MCP tools
                             tool_name = data.get("tool_name", "Unknown")
                             tool_params = data.get("parameters", {})
-                            warning(f"[⚠️  Permission required for {tool_name}]")
+                            warning(f"[WARNING: Permission required for {tool_name}]")
                             if self.debug:
                                 info(f"[DEBUG] Parameters: {tool_params}")
                         elif self.debug:
@@ -14514,7 +14533,7 @@ bundles:
                             elif tool_name == "Task" and "description" in tool_input:
                                 param_info = f" → {tool_input['description']}"
 
-                        info(f"[🔧 {tool_name}]{param_info}")
+                        info(f"[{tool_name}]{param_info}")
 
                     elif event_type == "tool_result":
                         # Tool result events
@@ -14537,7 +14556,7 @@ bundles:
                                     # Short output
                                     info(f"[📄 {output}]", flush=True)
                             elif output == True:
-                                success("[✓ Success]", flush=True)
+                                success("[Success]", flush=True)
                             elif output == False:
                                 error("[✗ Failed]", flush=True)
 
@@ -14619,14 +14638,14 @@ bundles:
                         # Final result message with various subtypes
                         subtype = data.get("subtype", "")
                         if subtype == "error":
-                            error(f"[❌ Error: {data.get('error', 'Unknown error')}]")
+                            error(f"[ERROR: {data.get('error', 'Unknown error')}]")
                         elif subtype == "cancelled":
-                            warning("[⚠️  Response cancelled]")
+                            warning("[WARNING: Response cancelled]")
                         else:
                             # Normal completion
                             new_session_id = data.get("session_id", session_id)
                             # Show completion indicator
-                            success("[✅ Response complete]", flush=True)
+                            success("[Response complete]", flush=True)
                             if self.debug:
                                 info(f"[DEBUG] Session ID: {new_session_id}")
                                 info(
@@ -14732,7 +14751,7 @@ bundles:
         """Show help information."""
         info(
             """
-🎯 m1f-claude Help
+[m1f-claude Help]
 
 Commands:
   help     - Show this help
@@ -14753,7 +14772,7 @@ Tips:
         """Show example prompts that work well."""
         info(
             """
-📚 Example Prompts That Work Great:
+[Example Prompts That Work Great]:
 
 1. "Help me set up m1f for my Django project with separate bundles for models, views, and templates"
 
@@ -14774,6 +14793,12 @@ Tips:
 
 def main():
     """Main entry point for m1f-claude."""
+    
+    # Import version
+    try:
+        from _version import __version__
+    except ImportError:
+        __version__ = "dev"
 
     # Check if running on Windows/PowerShell
     import platform
@@ -14785,7 +14810,7 @@ def main():
         info("=" * 50)
         error("Claude Code doesn't run on Windows yet!")
         print("")
-        info("📚 Alternative approaches:")
+        info("[Alternative approaches]:")
         info("1. Use m1f-init for basic setup:")
         info("   - m1f-init                  # Initialize project")
         info("   - m1f-update                # Auto-bundle your project")
@@ -14817,7 +14842,7 @@ def main():
   
 {Colors.BOLD}Note:{Colors.RESET} {Colors.CYAN}m1f-init{Colors.RESET} works on all platforms (Windows, Linux, Mac)
   
-{Colors.YELLOW}💡 Recommended:{Colors.RESET} Use Claude Code with a subscription plan due to 
+{Colors.YELLOW}[Recommended]:{Colors.RESET} Use Claude Code with a subscription plan due to 
    potentially high token usage during project setup and configuration.
   
 {Colors.GREEN}First time? Run 'm1f-init' to set up your project!{Colors.RESET}
@@ -14826,6 +14851,13 @@ def main():
 
     parser.add_argument(
         "prompt", nargs="*", help="Your prompt to enhance with m1f context"
+    )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"m1f-claude {__version__}",
+        help="Show version information"
     )
 
     parser.add_argument(
@@ -15623,16 +15655,16 @@ def show_help():
     """Display the main help information."""
     # Header with ASCII art
     info(
-        f"{Colors.CYAN}{Colors.BOLD}╔══════════════════════════════════════════════════════════════╗"
+        f"{Colors.CYAN}{Colors.BOLD}================================================================"
     )
-    info("║                     m1f Tools Suite                          ║")
-    info("║              Make One File - Bundle Everything               ║")
+    info("|                     m1f Tools Suite                          |")
+    info("|              Make One File - Bundle Everything               |")
     info(
-        f"╚══════════════════════════════════════════════════════════════╝{Colors.RESET}"
+        f"================================================================{Colors.RESET}"
     )
     info("")
 
-    header("🛠️  Available Commands", "Your complete toolkit for bundling codebases")
+    header("[Available Commands]", "Your complete toolkit for bundling codebases")
     info("")
 
     # Core tools
@@ -15675,7 +15707,7 @@ def show_help():
     info("")
 
     # Quick start
-    header("🚀 Quick Start Examples")
+    header("[Quick Start Examples]")
     info(f"{Colors.CYAN}# Bundle a Python project:{Colors.RESET}")
     info(f"  m1f -s ./my-project -o project-bundle.md")
     info("")
@@ -15701,6 +15733,12 @@ def show_help():
 def main():
     """Main entry point."""
     import argparse
+    
+    # Import version
+    try:
+        from _version import __version__
+    except ImportError:
+        __version__ = "dev"
 
     parser = argparse.ArgumentParser(
         description="Display help information for m1f tools",
@@ -15714,6 +15752,13 @@ def main():
 
     parser.add_argument(
         "-h", "--help", action="store_true", help="Show this help message"
+    )
+    
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"m1f-help {__version__}",
+        help="Show version information"
     )
 
     args = parser.parse_args()
@@ -15772,6 +15817,12 @@ from typing import Dict, List, Optional, Tuple
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Import version
+try:
+    from _version import __version__
+except ImportError:
+    __version__ = "dev"
 
 # Use unified colorama module
 try:
@@ -15845,7 +15896,7 @@ class M1FInit:
 
     def run(self):
         """Run the initialization process."""
-        header("🚀 m1f Project Initialization")
+        header("[m1f Project Initialization]")
         info("=" * 50)
 
         # Step 1: Link m1f documentation
@@ -15862,12 +15913,12 @@ class M1FInit:
 
         # Step 4: If config exists, run m1f-update instead of creating bundles
         if config_exists:
-            header("📦 Running m1f-update with existing configuration")
+            header("[Running m1f-update with existing configuration]")
             info("=" * 30)
             self._run_m1f_update()
         else:
             # Create bundles only if no config exists
-            header("📦 Creating Initial Bundles")
+            header("[Creating Initial Bundles]")
             info("=" * 30)
             self._create_bundles(context)
 
@@ -15891,7 +15942,7 @@ class M1FInit:
         # Check if already linked
         link_path = m1f_dir / "m1f.txt"
         if self.safe_exists(link_path):
-            success("✅ m1f documentation already linked")
+            success("[OK] m1f documentation already linked")
             self.created_files.append("m1f/m1f.txt (symlink)")
             return
 
@@ -15902,7 +15953,7 @@ class M1FInit:
                 try:
                     link_path.symlink_to(self.m1f_docs_source)
                     success(
-                        f"✅ Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}"
+                        f"[OK] Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}"
                     )
                     self.created_files.append("m1f/m1f.txt (symlink)")
                 except OSError:
@@ -15919,31 +15970,31 @@ class M1FInit:
                         # Read and write safely
                         content = self.safe_read_text(validated_source)
                         self.safe_write_text(validated_dest, content)
-                        success(f"✅ Copied m1f documentation to m1f/m1f.txt")
+                        success(f"[OK] Copied m1f documentation to m1f/m1f.txt")
                         info(
                             "   (Symlink creation requires admin rights or developer mode on Windows)"
                         )
                         self.created_files.append("m1f/m1f.txt (copy)")
                     except Exception as copy_e:
-                        warning(f"⚠️  Failed to copy m1f documentation: {copy_e}")
+                        warning(f"[WARNING] Failed to copy m1f documentation: {copy_e}")
                         info(
                             f"   You can manually copy {self.m1f_docs_source} to m1f/m1f.txt"
                         )
             else:
                 # Unix-like systems
                 link_path.symlink_to(self.m1f_docs_source)
-                success(f"✅ Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}")
+                success(f"[OK] Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}")
                 self.created_files.append("m1f/m1f.txt (symlink)")
 
         except Exception as e:
-            warning(f"⚠️  Failed to link m1f documentation: {e}")
+            warning(f"[WARNING] Failed to link m1f documentation: {e}")
             info(f"   You can manually copy {self.m1f_docs_source} to m1f/m1f.txt")
 
     def _check_git_repository(self) -> Path:
         """Check if we're in a git repository."""
         git_root = self.project_path
         if self.safe_exists(self.project_path / ".git"):
-            success(f"✅ Git repository detected in current directory")
+            success(f"[OK] Git repository detected in current directory")
         else:
             # Look for git root in parent directories
             current = self.project_path
@@ -15954,7 +16005,7 @@ class M1FInit:
                 current = current.parent
             else:
                 warning(
-                    f"⚠️  No git repository found - initializing in current directory: {self.project_path}"
+                    f"[WARNING] No git repository found - initializing in current directory: {self.project_path}"
                 )
         return git_root
 
@@ -15962,10 +16013,10 @@ class M1FInit:
         """Check for existing .m1f.config.yml."""
         config_path = self.project_path / ".m1f.config.yml"
         if self.safe_exists(config_path):
-            success(f"✅ m1f configuration found: {config_path.name}")
+            success(f"[OK] m1f configuration found: {config_path.name}")
             return True
         else:
-            warning(f"⚠️  No m1f configuration found - will create one")
+            warning(f"[WARNING] No m1f configuration found - will create one")
             return False
 
     def _run_m1f_update(self):
@@ -16011,10 +16062,10 @@ class M1FInit:
                             if file.name != "m1f.txt":  # Don't list the symlink
                                 self.created_files.append(f"m1f/{file.name}")
             else:
-                warning(f"⚠️  Failed to run m1f-update: {result.stderr}")
+                warning(f"[WARNING] Failed to run m1f-update: {result.stderr}")
 
         except Exception as e:
-            warning(f"⚠️  Error running m1f-update: {e}")
+            warning(f"[WARNING] Error running m1f-update: {e}")
 
     def _analyze_project(self) -> Dict:
         """Analyze project structure."""
@@ -16077,18 +16128,18 @@ class M1FInit:
                 # Note: Temporary files are automatically cleaned up when exiting the context
 
                 success(
-                    f"✅ Found {len(files_list)} files in {len(dirs_list)} directories"
+                    f"[OK] Found {len(files_list)} files in {len(dirs_list)} directories"
                 )
                 info(f"📁 Project Type: {context.get('type', 'Unknown')}")
                 if context.get("languages") != "No programming languages detected":
                     info(
-                        f"💻 Programming Languages: {context.get('languages', 'Unknown')}"
+                        f"[Programming Languages]: {context.get('languages', 'Unknown')}"
                     )
 
                 return context
 
             except Exception as e:
-                warning(f"⚠️  Failed to analyze project: {e}")
+                warning(f"[WARNING] Failed to analyze project: {e}")
                 return {
                     "type": "Unknown",
                     "languages": "No programming languages detected",
@@ -16356,10 +16407,10 @@ class M1FInit:
 
             result = subprocess.run(complete_cmd, capture_output=True, text=True)
             if result.returncode == 0:
-                success(f"✅ Created: m1f/{project_name}_complete.txt")
+                success(f"[OK] Created: m1f/{project_name}_complete.txt")
                 self.created_files.append(f"m1f/{project_name}_complete.txt")
             else:
-                warning(f"⚠️  Failed to create complete bundle: {result.stderr}")
+                warning(f"[WARNING] Failed to create complete bundle: {result.stderr}")
 
         # Create docs bundle
         info(f"Creating documentation bundle...")
@@ -16394,21 +16445,21 @@ class M1FInit:
 
         result = subprocess.run(docs_cmd, capture_output=True, text=True)
         if result.returncode == 0:
-            success(f"✅ Created: m1f/{project_name}_docs.txt")
+            success(f"[OK] Created: m1f/{project_name}_docs.txt")
             self.created_files.append(f"m1f/{project_name}_docs.txt")
             if only_docs:
                 info(
-                    f"ℹ️  Skipped complete bundle (all {total_file_count} files are documentation)"
+                    f"[INFO] Skipped complete bundle (all {total_file_count} files are documentation)"
                 )
         else:
-            warning(f"⚠️  Failed to create docs bundle: {result.stderr}")
+            warning(f"[WARNING] Failed to create docs bundle: {result.stderr}")
 
     def _create_config(self, context: Dict):
         """Create basic .m1f.config.yml."""
         project_name = self.safe_name
         config_path = self.project_path / ".m1f.config.yml"
 
-        info(f"\n📝 Creating .m1f.config.yml...")
+        info(f"\n[Creating .m1f.config.yml...]")
 
         # Check if all files are documentation
         files_list = context.get("files", [])
@@ -16480,12 +16531,12 @@ global:
         )
         self.safe_write_text(validated_config_path, yaml_content)
 
-        success(f"✅ Configuration created: .m1f.config.yml")
+        success(f"[OK] Configuration created: .m1f.config.yml")
         self.created_files.append(".m1f.config.yml")
 
     def _show_next_steps(self):
         """Show next steps to the user."""
-        success(f"\n✅ Quick Setup Complete!")
+        success(f"\n[Quick Setup Complete!]")
 
         # Show created files nicely formatted
         if self.created_files:
@@ -16493,7 +16544,7 @@ global:
                 f"\n📁 {'Here is your file:' if len(self.created_files) == 1 else 'Here are your files:'}\n"
             )
             for file in self.created_files:
-                info(f"   • {file}")
+                info(f"   - {file}")
             info("")  # Empty line for spacing
 
         # Show next steps
@@ -16511,15 +16562,15 @@ global:
             info(f"3. Preview your bundle: cat {first_bundle} | head -50")
 
         if not self.is_windows:
-            header(f"\n🚀 Additional Setup Available!")
+            header(f"\n[Additional Setup Available!]")
             info(f"For topic-specific bundles (components, API, tests, etc.), run:")
             info(f"  m1f-claude --setup")
             info(f"\nThis will:")
-            info(f"  • Analyze your project structure in detail")
-            info(f"  • Create focused bundles for different aspects")
-            info(f"  • Optimize configuration for your project type")
+            info(f"  - Analyze your project structure in detail")
+            info(f"  - Create focused bundles for different aspects")
+            info(f"  - Optimize configuration for your project type")
         else:
-            info(f"\n💡 Note: Additional setup with Claude is not available on Windows")
+            info(f"\n[Note]: Additional setup with Claude is not available on Windows")
             info(f"You can manually add topic-specific bundles to .m1f.config.yml")
 
 
@@ -16530,23 +16581,30 @@ def main():
         formatter_class=ColoredHelpFormatter,
         epilog=f"""
 {Colors.BOLD}This tool provides cross-platform m1f initialization:{Colors.RESET}
-  • Links m1f documentation (like m1f-link)
-  • Analyzes your project structure
-  • Creates complete and docs bundles
-  • Generates .m1f.config.yml
-  • Shows platform-specific next steps
+  - Links m1f documentation (like m1f-link)
+  - Analyzes your project structure
+  - Creates complete and docs bundles
+  - Generates .m1f.config.yml
+  - Shows platform-specific next steps
 
 {Colors.BOLD}Examples:{Colors.RESET}
   {Colors.CYAN}m1f-init{Colors.RESET}                # Initialize in current directory
   {Colors.CYAN}m1f-init --verbose{Colors.RESET}      # Show detailed output
   
 {Colors.BOLD}After initialization:{Colors.RESET}
-  • Use {Colors.CYAN}'m1f-update'{Colors.RESET} to regenerate bundles
-  • On Linux/Mac: Use {Colors.CYAN}'m1f-claude --setup'{Colors.RESET} for topic bundles
-  • Reference {Colors.YELLOW}@m1f/m1f.txt{Colors.RESET} in AI tools
+  - Use {Colors.CYAN}'m1f-update'{Colors.RESET} to regenerate bundles
+  - On Linux/Mac: Use {Colors.CYAN}'m1f-claude --setup'{Colors.RESET} for topic bundles
+  - Reference {Colors.YELLOW}@m1f/m1f.txt{Colors.RESET} in AI tools
 """,
     )
 
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"m1f-init {__version__}",
+        help="Show version information"
+    )
+    
     parser.add_argument(
         "--verbose",
         "-v",
@@ -16589,7 +16647,7 @@ if __name__ == "__main__":
 """Wrapper for m1f-update command that calls m1f auto-bundle."""
 
 import sys
-from m1f.cli import main as m1f_main
+from m1f import main as m1f_main
 
 
 def main():
@@ -17172,6 +17230,12 @@ def main():
     """
     Main function to parse arguments and print token count.
     """
+    # Import version
+    try:
+        from _version import __version__
+    except ImportError:
+        __version__ = "dev"
+    
     parser = argparse.ArgumentParser(
         description="Count tokens in a text file using OpenAI's tiktoken library.",
         formatter_class=ColoredHelpFormatter,
@@ -17182,6 +17246,12 @@ def main():
     )
     parser.add_argument(
         "file_path", type=str, help="Path to the text file (txt, php, md, etc.)."
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"m1f-token-counter {__version__}",
+        help="Show version information"
     )
     parser.add_argument(
         "-e",
@@ -28084,9 +28154,18 @@ Browser automation for JavaScript-heavy websites and SPAs.
 **Installation:**
 
 ```bash
-pip install playwright
-playwright install  # Install browser binaries
+# The Playwright package is already included in requirements.txt
+# Just install the browser binaries:
+playwright install  # Install browser binaries (Chromium, Firefox, WebKit)
+
+# On Windows, you might need to run PowerShell as Administrator
+# if you encounter permission issues
 ```
+
+**Windows-specific notes:**
+- Playwright will download browsers to `%LOCALAPPDATA%\ms-playwright\` (typically `C:\Users\YourName\AppData\Local\ms-playwright\`)
+- First run will download ~300MB of browser binaries
+- No additional configuration needed after `playwright install`
 
 **Usage:**
 
@@ -34002,10 +34081,10 @@ function Invoke-AutoBundle {
         if (Get-Command m1f-update -ErrorAction SilentlyContinue) {
             & m1f-update --quiet
             if ($LASTEXITCODE -eq 0) {
-                Write-ColorOutput "✓ Auto-bundle completed successfully" -Color "Green"
+                Write-ColorOutput "[OK] Auto-bundle completed successfully" -Color "Green"
                 return $true
             } else {
-                Write-ColorOutput "✗ Auto-bundle failed" -Color "Red"
+                Write-ColorOutput "[FAIL] Auto-bundle failed" -Color "Red"
                 return $false
             }
         }
@@ -34013,15 +34092,15 @@ function Invoke-AutoBundle {
         elseif (Get-Command m1f -ErrorAction SilentlyContinue) {
             & m1f auto-bundle --quiet
             if ($LASTEXITCODE -eq 0) {
-                Write-ColorOutput "✓ Auto-bundle completed successfully" -Color "Green"
+                Write-ColorOutput "[OK] Auto-bundle completed successfully" -Color "Green"
                 return $true
             } else {
-                Write-ColorOutput "✗ Auto-bundle failed" -Color "Red"
+                Write-ColorOutput "[FAIL] Auto-bundle failed" -Color "Red"
                 return $false
             }
         }
     } catch {
-        Write-ColorOutput "✗ Auto-bundle error: $_" -Color "Red"
+        Write-ColorOutput "[ERROR] Auto-bundle error: $_" -Color "Red"
         return $false
     }
     
@@ -34040,18 +34119,22 @@ if (Invoke-AutoBundle) {
 if ($filesModified) {
     Write-ColorOutput "Re-staging m1f bundle files..." -Color "Cyan"
     
-    # Find and stage all .txt files in m1f directories
+    # Find and stage all .txt files in m1f directories (excluding .venv, dev, test output, and egg-info)
     Get-ChildItem -Path . -Filter "*.txt" -Recurse | Where-Object { 
-        $_.FullName -match "[\\/]m1f[\\/]" 
+        $_.FullName -match "[\\/]m1f[\\/]" -and 
+        $_.FullName -notmatch "[\\/]\.venv[\\/]" -and
+        $_.FullName -notmatch "[\\/]dev[\\/]" -and
+        $_.FullName -notmatch "[\\/]tests[\\/]s1f[\\/]output[\\/]" -and
+        $_.FullName -notmatch "\.egg-info[\\/]"
     } | ForEach-Object {
         $file = $_.FullName
         $relativePath = Resolve-Path -Path $file -Relative
         
-        # Check if file is tracked by git
-        $inGit = git ls-files --error-unmatch $relativePath 2>$null
+        # Check if file is tracked by git (suppress error output)
+        git ls-files --error-unmatch $relativePath 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) {
             git add $relativePath
-            Write-ColorOutput "✓ Staged: $relativePath" -Color "Green"
+            Write-ColorOutput "[OK] Staged: $relativePath" -Color "Green"
         }
     }
     
@@ -34065,13 +34148,13 @@ if ($filesModified) {
             $inGit = git ls-files --error-unmatch $relativePath 2>$null
             if ($LASTEXITCODE -eq 0) {
                 git add $relativePath
-                Write-ColorOutput "✓ Staged: $relativePath" -Color "Green"
+                Write-ColorOutput "[OK] Staged: $relativePath" -Color "Green"
             }
         }
     }
 }
 
-Write-ColorOutput "✓ m1f pre-commit hook completed" -Color "Green"
+Write-ColorOutput "[OK] m1f pre-commit hook completed" -Color "Green"
 exit 0
 
 ======= scripts/hooks/pre-commit-internal ======
@@ -34265,9 +34348,9 @@ if ($pythonFiles) {
                 }
             }
         }
-        Write-ColorOutput "✓ Python formatting complete" -Color "Green"
+        Write-ColorOutput "[OK] Python formatting complete" -Color "Green"
     } else {
-        Write-ColorOutput "⚠ Black not found. Skipping Python formatting." -Color "Yellow"
+        Write-ColorOutput "[WARNING] Black not found. Skipping Python formatting." -Color "Yellow"
         Write-ColorOutput "  Install with: pip install black" -Color "Gray"
     }
 }
@@ -34289,9 +34372,9 @@ if ($markdownFiles) {
                 }
             }
         }
-        Write-ColorOutput "✓ Markdown formatting complete" -Color "Green"
+        Write-ColorOutput "[OK] Markdown formatting complete" -Color "Green"
     } else {
-        Write-ColorOutput "⚠ Prettier not found. Skipping Markdown formatting." -Color "Yellow"
+        Write-ColorOutput "[WARNING] Prettier not found. Skipping Markdown formatting." -Color "Yellow"
         Write-ColorOutput "  Install with: npm install -g prettier" -Color "Gray"
     }
 }
@@ -34304,25 +34387,25 @@ if (Test-Path ".m1f.config.yml") {
     try {
         if (Get-Command m1f-update -ErrorAction SilentlyContinue) {
             & m1f-update --quiet
-            Write-ColorOutput "✓ Auto-bundle completed successfully" -Color "Green"
+            Write-ColorOutput "[OK] Auto-bundle completed successfully" -Color "Green"
             $filesModified = $true
         } elseif (Get-Command m1f -ErrorAction SilentlyContinue) {
             & m1f auto-bundle --quiet
-            Write-ColorOutput "✓ Auto-bundle completed successfully" -Color "Green"
+            Write-ColorOutput "[OK] Auto-bundle completed successfully" -Color "Green"
             $filesModified = $true
         } else {
             # Try direct Python execution
             $m1fScript = Join-Path $PSScriptRoot "..\..\..\tools\m1f.py"
             if (Test-Path $m1fScript) {
                 & python $m1fScript auto-bundle --quiet
-                Write-ColorOutput "✓ Auto-bundle completed successfully" -Color "Green"
+                Write-ColorOutput "[OK] Auto-bundle completed successfully" -Color "Green"
                 $filesModified = $true
             } else {
-                Write-ColorOutput "⚠ m1f not found. Skipping auto-bundle." -Color "Yellow"
+                Write-ColorOutput "[WARNING] m1f not found. Skipping auto-bundle." -Color "Yellow"
             }
         }
     } catch {
-        Write-ColorOutput "✗ Auto-bundle failed: $_" -Color "Red"
+        Write-ColorOutput "[ERROR] Auto-bundle failed: $_" -Color "Red"
         exit 1
     }
 }
@@ -34331,14 +34414,16 @@ if (Test-Path ".m1f.config.yml") {
 if ($filesModified) {
     Write-ColorOutput "Re-staging modified files..." -Color "Cyan"
     
-    # Stage m1f bundle files
-    Get-ChildItem -Path "m1f" -Filter "*.txt" -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+    # Stage m1f bundle files (excluding .venv)
+    Get-ChildItem -Path "m1f" -Filter "*.txt" -Recurse -ErrorAction SilentlyContinue | Where-Object { 
+        $_.FullName -notmatch "[\\/]\.venv[\\/]"
+    } | ForEach-Object {
         $file = $_.FullName
         $relativePath = Resolve-Path -Path $file -Relative
         $inGit = git ls-files --error-unmatch $relativePath 2>$null
         if ($LASTEXITCODE -eq 0) {
             git add $relativePath
-            Write-ColorOutput "✓ Staged: $relativePath" -Color "Green"
+            Write-ColorOutput "[OK] Staged: $relativePath" -Color "Green"
         }
     }
 }
@@ -34346,10 +34431,10 @@ if ($filesModified) {
 # Show warning if files were modified
 if ($filesModified) {
     Write-ColorOutput "" -Color "White"
-    Write-ColorOutput "⚠️  Files were modified by formatters and re-staged" -Color "Yellow"
+    Write-ColorOutput "[WARNING] Files were modified by formatters and re-staged" -Color "Yellow"
 }
 
-Write-ColorOutput "✓ Pre-commit hook completed" -Color "Green"
+Write-ColorOutput "[OK] Pre-commit hook completed" -Color "Green"
 exit 0
 
 ======= tests/html2md/__init__.py ======
@@ -44382,18 +44467,18 @@ This is not a real file separator
     @pytest.mark.unit
     def test_symlinks(self, run_m1f, create_test_file, temp_dir, is_windows):
         """Test handling of symbolic links."""
-        if is_windows:
-            pytest.skip("Symlink test requires Unix-like system")
-
         source_dir = temp_dir / "symlink_test"
         source_dir.mkdir()
 
         # Create regular file
         target_file = create_test_file("symlink_test/target.txt", "Target content")
 
-        # Create symlink
+        # Try to create symlink - skip if not supported
         symlink = source_dir / "link.txt"
-        symlink.symlink_to(target_file)
+        try:
+            symlink.symlink_to(target_file)
+        except OSError:
+            pytest.skip("Cannot create symbolic links on this system (requires admin privileges or developer mode on Windows)")
 
         output_file = temp_dir / "symlink_output.txt"
 
@@ -44630,9 +44715,6 @@ test_*.py
         self, run_m1f, create_test_file, temp_dir, is_windows
     ):
         """Test handling of circular directory references (symlinks)."""
-        if is_windows:
-            pytest.skip("Circular symlink test requires Unix-like system")
-
         source_dir = temp_dir / "circular_test"
         source_dir.mkdir()
 
@@ -44640,9 +44722,12 @@ test_*.py
         subdir = source_dir / "subdir"
         subdir.mkdir()
 
-        # Create circular symlink
+        # Try to create circular symlink - skip if not supported
         circular_link = subdir / "circular"
-        circular_link.symlink_to(source_dir)
+        try:
+            circular_link.symlink_to(source_dir)
+        except OSError:
+            pytest.skip("Cannot create symbolic links on this system (requires admin privileges or developer mode on Windows)")
 
         # Create a test file
         create_test_file("circular_test/test.txt", "Test content")
@@ -49054,6 +49139,9 @@ from pathlib import Path
 import tempfile
 import shutil
 import asyncio
+import time
+import gc
+import sys
 from unittest.mock import AsyncMock, MagicMock
 import json
 
@@ -49064,10 +49152,62 @@ from tools.research.llm_interface import LLMProvider, LLMResponse
 
 @pytest.fixture
 def temp_dir():
-    """Create a temporary directory for test files"""
+    """Create a temporary directory for test files with proper cleanup"""
     temp_dir = tempfile.mkdtemp()
-    yield Path(temp_dir)
-    shutil.rmtree(temp_dir)
+    temp_path = Path(temp_dir)
+    yield temp_path
+    
+    # Windows-specific cleanup to handle SQLite file locking
+    _cleanup_temp_dir_with_retry(temp_path)
+
+
+def _cleanup_temp_dir_with_retry(temp_path: Path, max_retries: int = 3):
+    """Clean up temporary directory with retry logic for Windows SQLite issues"""
+    
+    # Force garbage collection to close any remaining database connections
+    gc.collect()
+    
+    for attempt in range(max_retries):
+        try:
+            # First, try to find and cleanup any SQLite databases
+            for db_file in temp_path.rglob("*.db"):
+                try:
+                    # Force close any connections by attempting to connect and immediately close
+                    import sqlite3
+                    conn = sqlite3.connect(str(db_file))
+                    conn.close()
+                    
+                    # On Windows, sometimes we need a brief delay
+                    if sys.platform == "win32":
+                        time.sleep(0.1)
+                        
+                except Exception:
+                    pass  # Ignore errors here
+            
+            # Now try to remove the directory
+            shutil.rmtree(temp_path)
+            return  # Success!
+            
+        except (OSError, PermissionError) as e:
+            if attempt < max_retries - 1:
+                # Wait a bit and try again
+                time.sleep(0.5 * (attempt + 1))
+                gc.collect()  # Force garbage collection again
+            else:
+                # Last attempt failed, log the error but don't fail the test
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to cleanup temp directory after {max_retries} attempts: {e}")
+                # Try to at least remove files one by one
+                try:
+                    for file_path in temp_path.rglob("*"):
+                        if file_path.is_file():
+                            try:
+                                file_path.unlink()
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
 
 
 @pytest.fixture
@@ -49228,6 +49368,52 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture
+def research_temp_dir():
+    """
+    Specialized temporary directory fixture for research tests that need database cleanup
+    This ensures proper cleanup of SQLite databases before directory removal
+    """
+    temp_dir = tempfile.mkdtemp()
+    temp_path = Path(temp_dir)
+    
+    # Store references to cleanup functions
+    orchestrators = []
+    
+    class TempDirManager:
+        def __init__(self, path):
+            self.path = path
+            self.orchestrators = []
+        
+        def register_orchestrator(self, orchestrator):
+            """Register an orchestrator for cleanup"""
+            self.orchestrators.append(orchestrator)
+        
+        def cleanup_orchestrators(self):
+            """Clean up all registered orchestrators"""
+            for orchestrator in self.orchestrators:
+                try:
+                    if hasattr(orchestrator, 'cleanup_databases'):
+                        orchestrator.cleanup_databases()
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.debug(f"Error cleaning up orchestrator: {e}")
+            self.orchestrators.clear()
+    
+    manager = TempDirManager(temp_path)
+    yield manager
+    
+    # Cleanup orchestrators first
+    manager.cleanup_orchestrators()
+    
+    # Force garbage collection
+    gc.collect()
+    
+    # Then cleanup the directory
+    _cleanup_temp_dir_with_retry(temp_path)
 
 ======= tests/research/test_analysis_templates.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -50585,7 +50771,7 @@ class TestResearchWorkflow:
             yield Path(tmpdir)
 
     @pytest.fixture
-    def mock_config(self, temp_dir):
+    def mock_config(self, research_temp_dir):
         """Create a test configuration"""
         config = ResearchConfig(
             query="test query",
@@ -50598,7 +50784,7 @@ class TestResearchWorkflow:
         )
         # Set the search limit explicitly
         config.scraping.search_limit = 5
-        config.output.directory = temp_dir
+        config.output.directory = research_temp_dir.path
         # Adjust minimum content length for test content
         config.analysis.min_content_length = 20
         return config
@@ -50653,12 +50839,15 @@ class TestResearchWorkflow:
 
     @pytest.mark.asyncio
     async def test_basic_research_workflow(
-        self, mock_config, mock_llm_provider, temp_dir
+        self, mock_config, mock_llm_provider, research_temp_dir
     ):
         """Test basic research workflow end-to-end"""
         # Create orchestrator with mocked LLM
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Mock scraping to avoid actual web requests
         async def mock_scrape_urls(urls):
@@ -50741,14 +50930,20 @@ Total sources: {len(content)}
         mock_llm_provider.search_web.assert_called_once_with("test query", 5)
         # Analysis is now mocked directly, so query won't be called
         # Just verify the workflow completed successfully
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_dry_run_mode(self, mock_config, mock_llm_provider, temp_dir):
+    async def test_dry_run_mode(self, mock_config, mock_llm_provider, research_temp_dir):
         """Test dry run mode doesn't perform actual operations"""
         mock_config.dry_run = True
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Run in dry mode
         result = await orchestrator.research("test query")
@@ -50761,14 +50956,20 @@ Total sources: {len(content)}
         assert result.bundle_path is not None
         assert result.bundle_path.is_dir()  # It's the output directory, not a file
         assert not result.bundle_created  # Bundle was not actually created
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_no_analysis_mode(self, mock_config, mock_llm_provider, temp_dir):
+    async def test_no_analysis_mode(self, mock_config, mock_llm_provider, research_temp_dir):
         """Test running without analysis"""
         mock_config.no_analysis = True
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Mock scraping
         async def mock_scrape_urls(urls):
@@ -50792,14 +50993,20 @@ Total sources: {len(content)}
 
         # But search should still happen
         mock_llm_provider.search_web.assert_called_once()
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_content_filtering(self, mock_config, temp_dir):
+    async def test_content_filtering(self, mock_config, research_temp_dir):
         """Test content filtering based on relevance"""
         mock_config.analysis.relevance_threshold = 7.0
         mock_config.analysis.min_content_length = 50  # Lower threshold for test
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Create test content with different relevance scores
         content = [
@@ -50842,6 +51049,9 @@ Total sources: {len(content)}
         assert len(filtered) == 2
         assert all(item.relevance_score >= 7.0 for item in filtered)
         assert filtered[0].relevance_score == 9.0  # Should be sorted by relevance
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     def test_cli_argument_parsing(self):
         """Test CLI argument parsing"""
@@ -50865,7 +51075,7 @@ Total sources: {len(content)}
         assert args.query is None  # Query not required in interactive mode
 
     @pytest.mark.asyncio
-    async def test_config_from_yaml(self, temp_dir):
+    async def test_config_from_yaml(self, research_temp_dir):
         """Test loading configuration from YAML"""
         # Create test YAML config
         yaml_content = """
@@ -50885,7 +51095,7 @@ research:
       analysis_focus: implementation
       url_count: 30
 """
-        config_path = temp_dir / "test_config.yml"
+        config_path = research_temp_dir.path / "test_config.yml"
         config_path.write_text(yaml_content)
 
         # Load config
@@ -74511,6 +74721,9 @@ class EnhancedResearchOrchestrator:
                 )
                 self.job_manager.update_job_status(self.current_job.job_id, "failed")
             raise
+        finally:
+            # Always cleanup database connections to prevent file locking on Windows
+            self.cleanup_databases()
 
     async def _execute_phased_workflow(
         self, query: str, urls_file: Optional[Path], start_phase: WorkflowPhase
@@ -75226,6 +75439,31 @@ Research on "{query}" yielded {len(content)} high-quality sources.
     async def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all research jobs"""
         return self.job_manager.list_jobs(status)
+
+    def cleanup_databases(self):
+        """Clean up database connections to prevent file locking issues on Windows"""
+        try:
+            if self.job_db:
+                self.job_db.cleanup()
+                logger.debug("Cleaned up job database connections")
+            
+            if self.job_manager and hasattr(self.job_manager, 'main_db'):
+                self.job_manager.main_db.cleanup()
+                logger.debug("Cleaned up main database connections")
+                
+            # Force garbage collection to ensure connections are closed
+            import gc
+            gc.collect()
+            
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def __del__(self):
+        """Ensure cleanup when object is destroyed"""
+        try:
+            self.cleanup_databases()
+        except Exception:
+            pass  # Ignore errors during cleanup in destructor
 
 ======= tools/research/output.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -76241,6 +76479,7 @@ class ResearchDatabase:
     def __init__(self, db_path: Path):
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._connection_pool = []  # Track connections for cleanup
         self._init_database()
 
     def _init_database(self):
@@ -76520,6 +76759,24 @@ class ResearchDatabase:
             logger.error(f"Error deleting job {job_id}: {e}")
             return False
 
+    def close_all_connections(self):
+        """Close all database connections"""
+        try:
+            # Force garbage collection to close any remaining connections
+            import gc
+            gc.collect()
+            
+            # On Windows, sometimes we need to explicitly close the database
+            # SQLite doesn't have persistent connections with context managers,
+            # but we can force cleanup
+            logger.debug(f"Closing database connections for {self.db_path}")
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def cleanup(self):
+        """Clean up database resources"""
+        self.close_all_connections()
+
 
 class JobDatabase:
     """Per-job database for URL and content tracking"""
@@ -76527,6 +76784,7 @@ class JobDatabase:
     def __init__(self, db_path: Path):
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._connection_pool = []  # Track connections for cleanup
         self._init_database()
 
     def _init_database(self):
@@ -76815,6 +77073,24 @@ class JobDatabase:
         # Currently, we don't store raw HTML separately
         # This is a placeholder for future implementation
         return {"files_deleted": 0, "space_freed": 0}
+
+    def close_all_connections(self):
+        """Close all database connections"""
+        try:
+            # Force garbage collection to close any remaining connections
+            import gc
+            gc.collect()
+            
+            # On Windows, sometimes we need to explicitly close the database
+            # SQLite doesn't have persistent connections with context managers,
+            # but we can force cleanup
+            logger.debug(f"Closing database connections for {self.db_path}")
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def cleanup(self):
+        """Clean up database resources"""
+        self.close_all_connections()
 
 ======= tools/research/scraper.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -82313,6 +82589,7 @@ from urllib.parse import urlparse, urljoin
 from .scrapers import create_scraper, ScraperConfig, ScrapedPage
 from .config import CrawlerConfig, ScraperBackend
 from ..m1f.file_operations import safe_exists, safe_mkdir
+from ..html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -83006,7 +83283,9 @@ class WebCrawler:
         # Parse URL to get domain for output structure
         parsed_url = urlparse(start_url)
         domain = parsed_url.netloc
-        site_dir = output_dir / domain
+        # Sanitize domain name for Windows compatibility (remove colons, etc.)
+        sanitized_domain = sanitize_filename(domain)
+        site_dir = output_dir / sanitized_domain
         site_dir.mkdir(exist_ok=True)
 
         # Initialize database for tracking
@@ -84950,6 +85229,8 @@ from __future__ import annotations
 import os
 import subprocess
 import logging
+import platform
+import shutil
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass, field
@@ -85031,13 +85312,31 @@ class ClaudeConfig:
 class ClaudeBinaryFinder:
     """Utility for finding Claude CLI binary."""
 
-    DEFAULT_PATHS = [
-        Path.home() / ".claude" / "local" / "claude",
-        Path("/usr/local/bin/claude"),
-        Path("/usr/bin/claude"),
-        Path("/opt/homebrew/bin/claude"),  # macOS with Homebrew
-        Path.home() / ".local/bin/claude",  # Linux user install
-    ]
+    @classmethod
+    def get_default_paths(cls) -> List[Path]:
+        """Get default paths for Claude binary based on platform."""
+        paths = []
+        
+        if platform.system() == "Windows":
+            # Windows-specific paths
+            paths.extend([
+                Path.home() / ".claude" / "local" / "claude.exe",
+                Path.home() / "AppData" / "Local" / "claude" / "claude.exe",
+                Path.home() / "AppData" / "Roaming" / "claude" / "claude.exe",
+                Path("C:") / "Program Files" / "Claude" / "claude.exe",
+                Path("C:") / "Program Files (x86)" / "Claude" / "claude.exe",
+            ])
+        else:
+            # Unix-like systems (Linux, macOS)
+            paths.extend([
+                Path.home() / ".claude" / "local" / "claude",
+                Path("/usr/local/bin/claude"),
+                Path("/usr/bin/claude"),
+                Path("/opt/homebrew/bin/claude"),  # macOS with Homebrew
+                Path.home() / ".local/bin/claude",  # Linux user install
+            ])
+        
+        return paths
 
     @classmethod
     def find(cls, custom_path: Optional[str] = None) -> str:
@@ -85058,21 +85357,15 @@ class ClaudeBinaryFinder:
             if safe_exists(custom_path) and safe_is_file(custom_path):
                 return custom_path
 
-        # Try default command
-        if cls._command_exists("claude"):
-            return "claude"
+        # Try to find claude in PATH using shutil.which (cross-platform)
+        claude_path = shutil.which("claude")
+        if claude_path:
+            return claude_path
 
         # Check known locations
-        for path in cls.DEFAULT_PATHS:
+        for path in cls.get_default_paths():
             if safe_exists(path) and safe_is_file(path):
                 return str(path)
-
-        # Try to find in PATH
-        result = subprocess.run(
-            ["which", "claude"], capture_output=True, text=True, timeout=5
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip()
 
         raise FileNotFoundError(
             "Claude binary not found. Please install Claude CLI from "
@@ -85082,17 +85375,7 @@ class ClaudeBinaryFinder:
     @staticmethod
     def _command_exists(command: str) -> bool:
         """Check if a command exists in PATH."""
-        try:
-            subprocess.run(
-                [command, "--version"], capture_output=True, check=True, timeout=5
-            )
-            return True
-        except (
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            subprocess.TimeoutExpired,
-        ):
-            return False
+        return shutil.which(command) is not None
 
 
 class ClaudeSessionManager:
@@ -85925,13 +86208,13 @@ def success(message: str, file=None) -> None:
 
 def error(message: str, file=None) -> None:
     """Print an error message in red"""
-    print(f"{Colors.RED}❌ Error: {message}{Colors.RESET}", file=file or sys.stderr)
+    print(f"{Colors.RED}[ERROR]: {message}{Colors.RESET}", file=file or sys.stderr)
 
 
 def warning(message: str, file=None) -> None:
     """Print a warning message in yellow"""
     print(
-        f"{Colors.YELLOW}⚠️  Warning: {message}{Colors.RESET}", file=file or sys.stdout
+        f"{Colors.YELLOW}[WARNING]: {message}{Colors.RESET}", file=file or sys.stdout
     )
 
 
@@ -92224,6 +92507,7 @@ from urllib.parse import urlparse, urljoin
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
 from .python_mirror import PythonMirrorScraper
 from ...m1f.file_operations import safe_exists, safe_is_file, safe_is_dir
+from ...html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -92349,13 +92633,15 @@ class HTTrackScraper(PythonMirrorScraper):
         # Find the downloaded file
         # HTTrack creates files in a domain subdirectory
         parsed_url = urlparse(url)
+        # Sanitize domain name for Windows compatibility (remove colons, etc.)
+        sanitized_domain = sanitize_filename(parsed_url.netloc)
 
         # Try multiple possible locations
         possible_files = [
             # Domain/path structure
-            output_dir / parsed_url.netloc / parsed_url.path.lstrip("/"),
-            output_dir / parsed_url.netloc / (parsed_url.path.lstrip("/") + ".html"),
-            output_dir / parsed_url.netloc / "index.html",
+            output_dir / sanitized_domain / parsed_url.path.lstrip("/"),
+            output_dir / sanitized_domain / (parsed_url.path.lstrip("/") + ".html"),
+            output_dir / sanitized_domain / "index.html",
             # Sometimes HTTrack puts files directly in output dir
             output_dir / "index.html",
         ]
@@ -92365,7 +92651,7 @@ class HTTrackScraper(PythonMirrorScraper):
             possible_files.insert(
                 0,
                 output_dir
-                / parsed_url.netloc
+                / sanitized_domain
                 / parsed_url.path.lstrip("/")
                 / "index.html",
             )
@@ -92378,7 +92664,7 @@ class HTTrackScraper(PythonMirrorScraper):
 
         if not expected_file:
             # Try to find any HTML file in the domain directory
-            domain_dir = output_dir / parsed_url.netloc
+            domain_dir = output_dir / sanitized_domain
             if safe_exists(domain_dir):
                 html_files = list(domain_dir.rglob("*.html"))
                 # Exclude HTTrack's own index files
@@ -93285,6 +93571,7 @@ from bs4 import BeautifulSoup
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
 from ...m1f.file_operations import safe_mkdir
+from ...html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -93357,7 +93644,9 @@ class PythonMirrorScraper(WebScraperBase):
         parsed = urlparse(url)
 
         # Create domain directory
-        domain_dir = output_dir / parsed.netloc
+        # Sanitize domain name for Windows compatibility (remove colons, etc.)
+        sanitized_domain = sanitize_filename(parsed.netloc)
+        domain_dir = output_dir / sanitized_domain
 
         # Handle path
         path = parsed.path.strip("/")

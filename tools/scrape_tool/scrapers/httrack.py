@@ -27,6 +27,7 @@ from urllib.parse import urlparse, urljoin
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
 from .python_mirror import PythonMirrorScraper
 from ...m1f.file_operations import safe_exists, safe_is_file, safe_is_dir
+from ...html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -152,13 +153,15 @@ class HTTrackScraper(PythonMirrorScraper):
         # Find the downloaded file
         # HTTrack creates files in a domain subdirectory
         parsed_url = urlparse(url)
+        # Sanitize domain name for Windows compatibility (remove colons, etc.)
+        sanitized_domain = sanitize_filename(parsed_url.netloc)
 
         # Try multiple possible locations
         possible_files = [
             # Domain/path structure
-            output_dir / parsed_url.netloc / parsed_url.path.lstrip("/"),
-            output_dir / parsed_url.netloc / (parsed_url.path.lstrip("/") + ".html"),
-            output_dir / parsed_url.netloc / "index.html",
+            output_dir / sanitized_domain / parsed_url.path.lstrip("/"),
+            output_dir / sanitized_domain / (parsed_url.path.lstrip("/") + ".html"),
+            output_dir / sanitized_domain / "index.html",
             # Sometimes HTTrack puts files directly in output dir
             output_dir / "index.html",
         ]
@@ -168,7 +171,7 @@ class HTTrackScraper(PythonMirrorScraper):
             possible_files.insert(
                 0,
                 output_dir
-                / parsed_url.netloc
+                / sanitized_domain
                 / parsed_url.path.lstrip("/")
                 / "index.html",
             )
@@ -181,7 +184,7 @@ class HTTrackScraper(PythonMirrorScraper):
 
         if not expected_file:
             # Try to find any HTML file in the domain directory
-            domain_dir = output_dir / parsed_url.netloc
+            domain_dir = output_dir / sanitized_domain
             if safe_exists(domain_dir):
                 html_files = list(domain_dir.rglob("*.html"))
                 # Exclude HTTrack's own index files

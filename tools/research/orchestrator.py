@@ -187,6 +187,9 @@ class EnhancedResearchOrchestrator:
                 )
                 self.job_manager.update_job_status(self.current_job.job_id, "failed")
             raise
+        finally:
+            # Always cleanup database connections to prevent file locking on Windows
+            self.cleanup_databases()
 
     async def _execute_phased_workflow(
         self, query: str, urls_file: Optional[Path], start_phase: WorkflowPhase
@@ -902,3 +905,28 @@ Research on "{query}" yielded {len(content)} high-quality sources.
     async def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all research jobs"""
         return self.job_manager.list_jobs(status)
+
+    def cleanup_databases(self):
+        """Clean up database connections to prevent file locking issues on Windows"""
+        try:
+            if self.job_db:
+                self.job_db.cleanup()
+                logger.debug("Cleaned up job database connections")
+            
+            if self.job_manager and hasattr(self.job_manager, 'main_db'):
+                self.job_manager.main_db.cleanup()
+                logger.debug("Cleaned up main database connections")
+                
+            # Force garbage collection to ensure connections are closed
+            import gc
+            gc.collect()
+            
+        except Exception as e:
+            logger.warning(f"Error during database cleanup: {e}")
+
+    def __del__(self):
+        """Ensure cleanup when object is destroyed"""
+        try:
+            self.cleanup_databases()
+        except Exception:
+            pass  # Ignore errors during cleanup in destructor

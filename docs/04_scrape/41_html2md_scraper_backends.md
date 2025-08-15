@@ -368,9 +368,18 @@ Browser automation for JavaScript-heavy websites and SPAs.
 **Installation:**
 
 ```bash
-pip install playwright
-playwright install  # Install browser binaries
+# The Playwright package is already included in requirements.txt
+# Just install the browser binaries:
+playwright install  # Install browser binaries (Chromium, Firefox, WebKit)
+
+# On Windows, you might need to run PowerShell as Administrator
+# if you encounter permission issues
 ```
+
+**Windows-specific notes:**
+- Playwright will download browsers to `%LOCALAPPDATA%\ms-playwright\` (typically `C:\Users\YourName\AppData\Local\ms-playwright\`)
+- First run will download ~300MB of browser binaries
+- No additional configuration needed after `playwright install`
 
 **Usage:**
 

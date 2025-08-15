@@ -245,7 +245,7 @@ class M1FClaude:
         enhanced = []
 
         # Add m1f context
-        enhanced.append("🚀 m1f Context Enhancement Active\n")
+        enhanced.append("[m1f Context Enhancement Active]\n")
         enhanced.append("=" * 50)
 
         # Check if user wants to set up m1f
@@ -399,7 +399,7 @@ CRITICAL CONFIG RULES:
 - Separator: Use "Standard" (or omit), NOT "Detailed"
 - ALWAYS test with m1f-update after creating/editing configs!
 
-📝 PROJECT CONTEXT FOR m1f SETUP:
+[PROJECT CONTEXT FOR m1f SETUP]:
 
 **Project Analysis Results:**
 - Total Files: {project_context.get('total_files', 'Unknown')}
@@ -501,9 +501,9 @@ bundles:
         if self.has_m1f_docs:
             enhanced.append(
                 f"""
-📚 Complete m1f documentation is available at: @{self.m1f_docs_path.relative_to(self.project_path)}
+[INFO] Complete m1f documentation is available at: @{self.m1f_docs_path.relative_to(self.project_path)}
 
-⚡ ALWAYS consult @m1f/m1f.txt for:
+[IMPORTANT] ALWAYS consult @m1f/m1f.txt for:
 - Exact command syntax and parameters
 - Configuration file formats
 - Preset definitions and usage
@@ -513,7 +513,7 @@ bundles:
         else:
             enhanced.append(
                 """
-⚠️  m1f documentation not linked yet. Run 'm1f-link' first to give me full context!
+[WARNING] m1f documentation not linked yet. Run 'm1f-link' first to give me full context!
 """
             )
 
@@ -525,11 +525,11 @@ bundles:
 
         # Add user's original prompt
         enhanced.append("\n" + "=" * 50)
-        enhanced.append("\n🎯 User Request:\n")
+        enhanced.append("\n[User Request]:\n")
         enhanced.append(user_prompt)
 
         # Add action plan
-        enhanced.append("\n\n💡 m1f Action Plan:")
+        enhanced.append("\n\n[m1f Action Plan]:")
         if wants_setup:
             enhanced.append(
                 """
@@ -555,7 +555,7 @@ Start with Task 1: Project Analysis
         enhanced.append("- Lines 421-459: Best practices for AI context")
         enhanced.append("- Lines 461-494: Project-specific patterns")
         enhanced.append(
-            "\n⚠️ REMEMBER: Keep configs MINIMAL - don't repeat default excludes!"
+            "\n[REMEMBER]: Keep configs MINIMAL - don't repeat default excludes!"
         )
 
         return "\n".join(enhanced)
@@ -567,7 +567,7 @@ Start with Task 1: Project Analysis
         # Check for AI context files first
         ai_files = {
             "CLAUDE.md": "🤖 Claude instructions found",
-            ".cursorrules": "🖱️ Cursor rules found",
+            ".cursorrules": "[Cursor rules found]",
             ".windsurfrules": "🌊 Windsurf rules found",
             ".aiderignore": "🤝 Aider configuration found",
             ".copilot-instructions.md": "🚁 Copilot instructions found",
@@ -584,14 +584,14 @@ Start with Task 1: Project Analysis
 
         # Check for common project files
         config_files = {
-            ".m1f.config.yml": "✅ Auto-bundle config found",
-            "package.json": "📦 Node.js project detected",
+            ".m1f.config.yml": "[OK] Auto-bundle config found",
+            "package.json": "[Node.js project detected]",
             "requirements.txt": "🐍 Python project detected",
             "composer.json": "🎼 PHP project detected",
             "Gemfile": "💎 Ruby project detected",
             "Cargo.toml": "🦀 Rust project detected",
             "go.mod": "🐹 Go project detected",
-            ".git": "📚 Git repository",
+            ".git": "[Git repository]",
         }
 
         detected = []
@@ -609,7 +609,7 @@ Start with Task 1: Project Analysis
         if safe_exists(m1f_dir, logger) and safe_is_dir(m1f_dir, logger):
             bundles = list(m1f_dir.glob("*.txt"))
             if bundles:
-                context_parts.append(f"\n📦 Existing m1f bundles: {len(bundles)} found")
+                context_parts.append(f"\n[INFO] Existing m1f bundles: {len(bundles)} found")
                 for bundle in bundles[:3]:  # Show first 3
                     context_parts.append(f"  • {bundle.name}")
                 if len(bundles) > 3:
@@ -619,16 +619,16 @@ Start with Task 1: Project Analysis
 
     def _get_m1f_recommendations(self) -> str:
         """Provide m1f setup recommendations based on project type."""
-        recommendations = ["\n🎯 m1f Setup Recommendations:"]
+        recommendations = ["\n[m1f Setup Recommendations]:"]
 
         # Check if .m1f.config.yml exists
         m1f_config = self.project_path / ".m1f.config.yml"
         if safe_exists(m1f_config, logger):
-            recommendations.append("  ✅ Auto-bundle config found (.m1f.config.yml)")
+            recommendations.append("  [OK] Auto-bundle config found (.m1f.config.yml)")
             recommendations.append("     Run 'm1f-update' to generate bundles")
         else:
             recommendations.append(
-                "  📝 No .m1f.config.yml found - I'll help create one!"
+                "  [INFO] No .m1f.config.yml found - I'll help create one!"
             )
 
         # Check for m1f directory
@@ -637,14 +637,14 @@ Start with Task 1: Project Analysis
             bundle_count = len(list(m1f_dir.glob("*.txt")))
             if bundle_count > 0:
                 recommendations.append(
-                    f"  📦 Found {bundle_count} existing m1f bundles"
+                    f"  [INFO] Found {bundle_count} existing m1f bundles"
                 )
         else:
             recommendations.append("  📁 'mkdir m1f' to create bundle output directory")
 
         # Suggest project-specific setup
         if safe_exists(self.project_path / "package.json", logger):
-            recommendations.append("\n  🔧 Node.js project detected:")
+            recommendations.append("\n  [Node.js project detected]:")
             recommendations.append(
                 "     - Bundle source code separately from node_modules"
             )
@@ -676,7 +676,7 @@ Start with Task 1: Project Analysis
             safe_exists(self.project_path / indicator, logger)
             for indicator in wp_indicators
         ):
-            recommendations.append("\n  🎨 WordPress project detected:")
+            recommendations.append("\n  [WordPress project detected]:")
             recommendations.append("     - Use --preset wordpress for optimal bundling")
             recommendations.append("     - Separate theme/plugin bundles")
             recommendations.append("     - Exclude uploads and cache directories")
@@ -1239,7 +1239,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                             # Show progress for init prompts
                             if is_first_prompt and message_count % 3 == 0:
                                 logger.info(
-                                    f"📝 Processing... ({message_count} messages received)"
+                                    f"[Processing...] ({message_count} messages received)"
                                 )
 
                             # Extract session ID from ResultMessage - handle missing fields gracefully
@@ -1326,7 +1326,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             # Send to Claude Code using --print for non-interactive mode
             logger.info("\n🤖 Displaying prompt for manual use...\n")
             logger.info(
-                "⚠️  Due to subprocess limitations, please run the following command manually:"
+                "[WARNING] Due to subprocess limitations, please run the following command manually:"
             )
             logger.info("")
 
@@ -1355,7 +1355,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
             info(f"\n{Colors.GREEN}{cmd_display}{Colors.RESET}\n")
             info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
-            header("📝 Then paste this prompt:")
+            header("[Then paste this prompt]:")
             info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
             info(f"\n{Colors.YELLOW}{enhanced_prompt}{Colors.RESET}\n")
             info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
@@ -1462,7 +1462,7 @@ I'll analyze your project and create an optimal m1f configuration that:
         info("=" * 50)
 
         info("\nThis command adds topic-specific bundles to your existing m1f setup.")
-        info("\n✅ Prerequisites:")
+        info("\n[Prerequisites]:")
         info("  • Run 'm1f-init' first to create basic bundles")
         info("  • Claude Code must be installed")
         info("  • .m1f.config.yml should exist")
@@ -1470,7 +1470,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Collect project description and priorities if not provided via CLI
         if not self.project_description and not self.project_priorities:
-            header("📝 Project Information")
+            header("[Project Information]")
             info("=" * 50)
             info(
                 "Please provide some information about your project to help create better bundles."
@@ -1487,7 +1487,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             # Interactive project priorities input
             if not self.project_priorities:
-                info("\n🎯 Project Priorities")
+                info("\n[Project Priorities]")
                 info(
                     "What's important for this project? (e.g., performance, security, maintainability, documentation):"
                 )
@@ -1601,15 +1601,15 @@ I'll analyze your project and create an optimal m1f configuration that:
                 f"Found {context.get('total_files', 0)} files in {context.get('total_dirs', 0)} directories"
             )
             info(f"📁 Project Type: {context.get('type', 'Unknown')}")
-            info(f"💻 Languages: {context.get('languages', 'Unknown')}")
+            info(f"[Languages]: {context.get('languages', 'Unknown')}")
             if context.get("main_code_dirs"):
                 info(f"📂 Code Dirs: {', '.join(context['main_code_dirs'][:3])}")
 
             # Display user-provided info
             if self.project_description:
-                info(f"\n📝 User Description: {self.project_description}")
+                info(f"\n[User Description]: {self.project_description}")
             if self.project_priorities:
-                info(f"🎯 User Priorities: {self.project_priorities}")
+                info(f"[User Priorities]: {self.project_priorities}")
 
         except Exception as e:
             warning(f"Failed to analyze project structure: {e}")
@@ -1642,7 +1642,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Show prompt in verbose mode
         if self.verbose:
-            header("📝 PHASE 1 PROMPT (Segmentation):")
+            header("[PHASE 1 PROMPT (Segmentation)]:")
             info("=" * 80)
             info(segmentation_prompt)
             info("=" * 80)
@@ -1692,14 +1692,14 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             if result.returncode == 0:
                 success("Phase 1 complete: Topic-specific bundles added!")
-                info("📝 Claude has analyzed your project and updated .m1f.config.yml")
+                info("[INFO] Claude has analyzed your project and updated .m1f.config.yml")
             else:
                 warning(f"Claude exited with code {result.returncode}")
                 info("Please check your .m1f.config.yml manually.")
                 return
 
             # PHASE 2: Run m1f-update and have Claude verify the results
-            info("\n🔄 Phase 2: Generating bundles and verifying configuration...")
+            info("\n[Phase 2]: Generating bundles and verifying configuration...")
             info("⏳ Running m1f-update to generate bundles...")
 
             # Run m1f-update to generate the bundles in current directory
@@ -1710,7 +1710,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             if update_result.returncode != 0:
                 warning("m1f-update failed:")
                 error(update_result.stderr)
-                info("\n📝 Running verification anyway to help fix issues...")
+                info("\n[INFO] Running verification anyway to help fix issues...")
             else:
                 success("Bundles generated successfully!")
 
@@ -1719,7 +1719,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             # Show prompt in verbose mode
             if self.verbose:
-                header("📝 PHASE 2 PROMPT (Verification):")
+                header("[PHASE 2 PROMPT (Verification)]:")
                 info("=" * 80)
                 info(verification_prompt)
                 info("=" * 80)
@@ -1755,7 +1755,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             # Fall back to showing manual instructions
             self.send_to_claude_code_subprocess(segmentation_prompt)
 
-        info("\n🚀 Next steps:")
+        info("\n[Next steps]:")
         info("• Your .m1f.config.yml has been created and verified")
         info("• Run 'm1f-update' to regenerate bundles with any improvements")
         info("• Use topic-specific bundles with your AI tools")
@@ -1993,7 +1993,7 @@ bundles:
                             # Handle permission prompt for MCP tools
                             tool_name = data.get("tool_name", "Unknown")
                             tool_params = data.get("parameters", {})
-                            warning(f"[⚠️  Permission required for {tool_name}]")
+                            warning(f"[WARNING: Permission required for {tool_name}]")
                             if self.debug:
                                 info(f"[DEBUG] Parameters: {tool_params}")
                         elif self.debug:
@@ -2032,7 +2032,7 @@ bundles:
                             elif tool_name == "Task" and "description" in tool_input:
                                 param_info = f" → {tool_input['description']}"
 
-                        info(f"[🔧 {tool_name}]{param_info}")
+                        info(f"[{tool_name}]{param_info}")
 
                     elif event_type == "tool_result":
                         # Tool result events
@@ -2055,7 +2055,7 @@ bundles:
                                     # Short output
                                     info(f"[📄 {output}]", flush=True)
                             elif output == True:
-                                success("[✓ Success]", flush=True)
+                                success("[Success]", flush=True)
                             elif output == False:
                                 error("[✗ Failed]", flush=True)
 
@@ -2137,14 +2137,14 @@ bundles:
                         # Final result message with various subtypes
                         subtype = data.get("subtype", "")
                         if subtype == "error":
-                            error(f"[❌ Error: {data.get('error', 'Unknown error')}]")
+                            error(f"[ERROR: {data.get('error', 'Unknown error')}]")
                         elif subtype == "cancelled":
-                            warning("[⚠️  Response cancelled]")
+                            warning("[WARNING: Response cancelled]")
                         else:
                             # Normal completion
                             new_session_id = data.get("session_id", session_id)
                             # Show completion indicator
-                            success("[✅ Response complete]", flush=True)
+                            success("[Response complete]", flush=True)
                             if self.debug:
                                 info(f"[DEBUG] Session ID: {new_session_id}")
                                 info(
@@ -2250,7 +2250,7 @@ bundles:
         """Show help information."""
         info(
             """
-🎯 m1f-claude Help
+[m1f-claude Help]
 
 Commands:
   help     - Show this help
@@ -2271,7 +2271,7 @@ Tips:
         """Show example prompts that work well."""
         info(
             """
-📚 Example Prompts That Work Great:
+[Example Prompts That Work Great]:
 
 1. "Help me set up m1f for my Django project with separate bundles for models, views, and templates"
 
@@ -2292,6 +2292,12 @@ Tips:
 
 def main():
     """Main entry point for m1f-claude."""
+    
+    # Import version
+    try:
+        from _version import __version__
+    except ImportError:
+        __version__ = "dev"
 
     # Check if running on Windows/PowerShell
     import platform
@@ -2303,7 +2309,7 @@ def main():
         info("=" * 50)
         error("Claude Code doesn't run on Windows yet!")
         print("")
-        info("📚 Alternative approaches:")
+        info("[Alternative approaches]:")
         info("1. Use m1f-init for basic setup:")
         info("   - m1f-init                  # Initialize project")
         info("   - m1f-update                # Auto-bundle your project")
@@ -2335,7 +2341,7 @@ def main():
   
 {Colors.BOLD}Note:{Colors.RESET} {Colors.CYAN}m1f-init{Colors.RESET} works on all platforms (Windows, Linux, Mac)
   
-{Colors.YELLOW}💡 Recommended:{Colors.RESET} Use Claude Code with a subscription plan due to 
+{Colors.YELLOW}[Recommended]:{Colors.RESET} Use Claude Code with a subscription plan due to 
    potentially high token usage during project setup and configuration.
   
 {Colors.GREEN}First time? Run 'm1f-init' to set up your project!{Colors.RESET}
@@ -2344,6 +2350,13 @@ def main():
 
     parser.add_argument(
         "prompt", nargs="*", help="Your prompt to enhance with m1f context"
+    )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"m1f-claude {__version__}",
+        help="Show version information"
     )
 
     parser.add_argument(
