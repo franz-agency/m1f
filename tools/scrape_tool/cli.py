@@ -23,11 +23,11 @@ from pathlib import Path
 from typing import Optional
 
 # Import safe file operations
-from ..m1f.file_operations import safe_exists, safe_is_dir, safe_is_file, safe_open
+from m1f.file_operations import safe_exists, safe_is_dir, safe_is_file, safe_open
 
 # Use unified colorama module
 try:
-    from ..shared.colors import (
+    from shared.colors import (
         Colors,
         success,
         error,
@@ -37,7 +37,7 @@ try:
         COLORAMA_AVAILABLE,
         ColoredHelpFormatter,
     )
-    from ..shared.cli import CustomArgumentParser
+    from shared.cli import CustomArgumentParser
 except ImportError:
     COLORAMA_AVAILABLE = False
 

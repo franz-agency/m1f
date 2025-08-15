@@ -8,6 +8,55 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.8.3] - 2025-08-15
+
+### Fixed
+
+- **Global Tool Execution**: Fixed module import errors when running m1f tools from any directory
+  - Replaced `python -m tools.*` module imports with direct file paths in all bin scripts
+  - Updated bin/m1f to run tools/m1f.py directly
+  - Updated bin/m1f-update to run tools/m1f_update.py directly
+  - Updated bin/m1f-s1f to run tools/s1f/__main__.py directly
+  - Updated bin/m1f-html2md to run tools/html2md_tool/__main__.py directly
+  - Updated bin/m1f-scrape to run tools/scrape_tool/__main__.py directly
+  - Updated bin/m1f-research to run tools/research/__main__.py directly
+  - Updated bin/m1f-help to run tools/m1f_help.py directly
+  - Fixed auto_bundle.py to use direct path to m1f.py instead of `-m tools.m1f`
+  - Resolves "ModuleNotFoundError: No module named 'tools'" when running from outside project root
+  - All m1f tools now work globally from any directory
+
+## [3.8.2] - 2025-08-15
+
+### Fixed
+
+- **Package Installation**: Fixed module import errors for all m1f commands
+  - Created new root-level setup.py with proper package_dir configuration
+  - Migrated from relative imports to absolute imports across 40+ files
+  - Fixed entry point definitions to work with editable installations
+  - All commands (m1f, m1f-s1f, m1f-scrape, m1f-research, etc.) now work correctly
+  - Added comprehensive test suite with 33 passing tests
+  - Ensures cross-platform compatibility (Linux/Windows)
+
+- **Test Suite**: Resolved 26 test failures and 13 errors
+  - Fixed s1f module import errors in test fixtures
+  - Added missing @pytest.mark.asyncio decorators for async tests
+  - Fixed AsyncMock import issues in research tests
+  - Corrected test_large_file_handling assertions
+  - Removed invalid return statements from test functions
+  - Fixed test_submodules_importable path conflicts
+
+- **Research Workflow**: Fixed workflow test failures
+  - Corrected bundle_path handling in dry run mode
+  - Fixed workflow phase transitions (INITIALIZATION → URL_COLLECTION)
+  - Disabled query expansion in tests to prevent multiple search_web calls
+  - Added skip_review=True to avoid interactive URL review in tests
+
+- **Installation Scripts**: Improved robustness
+  - Fixed tmux pane termination issue in install.sh when sourced
+  - Added pip package uninstallation to uninstall scripts
+  - Enhanced error handling for editable installations
+  - Fixed PowerShell path resolution in install.ps1
+
 ## [3.8.1] - 2025-08-15
 
 ### Fixed
@@ -51,7 +100,6 @@ and this project adheres to
 - **research**: Enabled WebSearch tool for Claude Code provider - now finds real URLs instead of generating hypothetical ones
 - **research**: Created missing `default_analysis.md` prompt file for content analysis
 - **research**: Research tool now works end-to-end with Claude Code provider using web search
-- **research**: Removed emojis from bundle filenames (RESEARCH_BUNDLE.md, EXECUTIVE_SUMMARY.md) for better compatibility
 - **research**: Added real-time feedback display for Claude WebSearch operations
 - **research**: Improved WebSearch feedback to show search queries and result counts
 - **research**: Fixed optional URL parameter handling in analysis prompts

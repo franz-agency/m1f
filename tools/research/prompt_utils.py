@@ -17,7 +17,7 @@ Prompt utilities for m1f-research using shared prompt loader
 """
 
 from pathlib import Path
-from tools.shared.prompts import PromptLoader, format_prompt
+from shared.prompts import PromptLoader, format_prompt
 
 # Initialize loader with research-specific prompts
 _loader = PromptLoader(

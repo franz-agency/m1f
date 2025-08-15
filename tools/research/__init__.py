@@ -38,11 +38,11 @@ from .url_manager import URLManager
 from .smart_scraper import EnhancedSmartScraper
 
 try:
-    from .._version import __version__, __version_info__
+    from _version import __version__, __version_info__
 except ImportError:
     # Fallback for when running as a script
-    __version__ = "3.8.1"
-    __version_info__ = (3, 8, 1)
+    __version__ = "3.9.0"
+    __version_info__ = (3, 9, 0)
 __all__ = [
     # Version
     "__version__",

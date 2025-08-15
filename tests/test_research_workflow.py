@@ -23,6 +23,7 @@ from pathlib import Path
 import json
 import sys
 import os
+import pytest
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -82,6 +83,7 @@ Python's async capabilities are mature and well-documented.
             return Response("Generic response", None)
 
 
+@pytest.mark.asyncio
 async def test_query_expansion():
     """Test query expansion functionality"""
     print("\n=== Testing Query Expansion ===")
@@ -109,8 +111,6 @@ async def test_query_expansion():
     assert len(result2.expanded_queries) >= 1
     assert result2.expansion_metadata["method"] == "no_expansion"
     print("✓ Fallback expansion works without LLM")
-
-    return True
 
 
 def test_url_reviewer():
@@ -149,9 +149,8 @@ def test_url_reviewer():
     print("✓ URL deletion/keep/restore works")
     print("✓ URL filtering works")
 
-    return True
 
-
+@pytest.mark.asyncio
 async def test_deep_crawler():
     """Test deep crawling functionality"""
     print("\n=== Testing Deep Crawler ===")
@@ -197,6 +196,7 @@ async def test_deep_crawler():
     return True
 
 
+@pytest.mark.asyncio
 async def test_analysis_generator():
     """Test analysis generation"""
     print("\n=== Testing Analysis Generator ===")
@@ -264,41 +264,51 @@ def test_workflow_phases():
         job_manager = JobManager(Path(tmpdir))
         workflow_manager = WorkflowManager(job_manager, config)
 
-        # Create a test job - create_job returns a ResearchJob object
-        job = job_manager.create_job("test query", config)
-        job_id = job.job_id
+        try:
+            # Create a test job - create_job returns a ResearchJob object
+            job = job_manager.create_job("test query", config)
+            job_id = job.job_id
 
-        # Job starts in initialization phase already
-        # Test phase transitions
-        assert workflow_manager.transition_to(job_id, WorkflowPhase.QUERY_EXPANSION)
-        assert workflow_manager.transition_to(job_id, WorkflowPhase.URL_COLLECTION)
-        assert workflow_manager.transition_to(job_id, WorkflowPhase.URL_REVIEW)
+            # Get job database for cleanup
+            job_db = job_manager.get_job_database(job)
 
-        # Test invalid transition (skipping phases)
-        assert not workflow_manager.transition_to(job_id, WorkflowPhase.COMPLETED)
+            # Job starts in initialization phase already
+            # Test phase transitions
+            assert workflow_manager.transition_to(job_id, WorkflowPhase.QUERY_EXPANSION)
+            assert workflow_manager.transition_to(job_id, WorkflowPhase.URL_COLLECTION)
+            assert workflow_manager.transition_to(job_id, WorkflowPhase.URL_REVIEW)
 
-        # Test phase retrieval
-        context = workflow_manager.get_phase(job_id)
-        assert context.phase == WorkflowPhase.URL_REVIEW
+            # Test invalid transition (skipping phases)
+            assert not workflow_manager.transition_to(job_id, WorkflowPhase.COMPLETED)
 
-        # Test resumable phase
-        resume_phase = workflow_manager.get_resumable_phase(job_id)
-        assert resume_phase == WorkflowPhase.URL_REVIEW
+            # Test phase retrieval
+            context = workflow_manager.get_phase(job_id)
+            assert context.phase == WorkflowPhase.URL_REVIEW
 
-        # Test phase completion
-        workflow_manager.mark_phase_complete(job_id)
-        context = workflow_manager.get_phase(job_id)
-        # Should have advanced to next phase
+            # Test resumable phase
+            resume_phase = workflow_manager.get_resumable_phase(job_id)
+            assert resume_phase == WorkflowPhase.URL_REVIEW
 
-        print("✓ Phase transitions work")
-        print("✓ Invalid transitions blocked")
-        print("✓ Phase retrieval works")
-        print("✓ Resume capability works")
-        print("✓ Phase completion advances workflow")
+            # Test phase completion
+            workflow_manager.mark_phase_complete(job_id)
+            context = workflow_manager.get_phase(job_id)
+            # Should have advanced to next phase
 
-    return True
+            print("[OK] Phase transitions work")
+            print("[OK] Invalid transitions blocked")
+            print("[OK] Phase retrieval works")
+            print("[OK] Resume capability works")
+            print("[OK] Phase completion advances workflow")
+
+        finally:
+            # Clean up database connections
+            if "job_db" in locals():
+                job_db.cleanup()
+            if hasattr(job_manager, "main_db"):
+                job_manager.main_db.cleanup()
 
 
+@pytest.mark.asyncio
 async def test_workflow_config():
     """Test workflow configuration"""
     print("\n=== Testing Workflow Configuration ===")

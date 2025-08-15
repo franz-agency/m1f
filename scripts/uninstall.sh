@@ -30,6 +30,7 @@ ${YELLOW}OPTIONS:${NC}
 ${YELLOW}WHAT IT REMOVES:${NC}
     - PATH entries added to shell configuration files
     - Symbolic links in ~/.local/bin
+    - m1f pip package (editable installation)
     - Python virtual environment (optional)
     - Generated m1f bundles (optional)
     - Creates backups of modified shell configs
@@ -105,7 +106,7 @@ done
 
 # Check for symlinks in ~/.local/bin
 if [ -d "$HOME/.local/bin" ]; then
-    for cmd in m1f m1f-s1f m1f-html2md m1f-scrape m1f-token-counter m1f-update m1f-link m1f-help m1f-init m1f-claude; do
+    for cmd in m1f m1f-s1f m1f-html2md m1f-scrape m1f-research m1f-token-counter m1f-update m1f-help m1f-init m1f-claude; do
         if [ -L "$HOME/.local/bin/$cmd" ]; then
             # Check if symlink points to our bin directory
             link_target=$(readlink -f "$HOME/.local/bin/$cmd" 2>/dev/null || true)
@@ -127,6 +128,16 @@ if [ -d "$PROJECT_ROOT/m1f" ]; then
     done < <(find "$PROJECT_ROOT/m1f" -name "*.txt" -type f -print0)
     if [ ${#BUNDLE_FILES[@]} -gt 0 ]; then
         COMPONENTS_TO_REMOVE+=("Generated m1f bundles (${#BUNDLE_FILES[@]} files)")
+    fi
+fi
+
+# Check for pip-installed package
+PIP_PACKAGE_FOUND=false
+if [ -d "$VENV_DIR" ]; then
+    # Check if m1f is installed as a pip package
+    if "$VENV_DIR/bin/python" -c "import pkg_resources; pkg_resources.get_distribution('m1f')" >/dev/null 2>&1; then
+        PIP_PACKAGE_FOUND=true
+        COMPONENTS_TO_REMOVE+=("m1f pip package (editable installation)")
     fi
 fi
 
@@ -216,6 +227,18 @@ if [ ${#BUNDLE_FILES[@]} -gt 0 ]; then
         echo -e "${GREEN}✓ Bundles removed${NC}"
     else
         echo "Keeping generated bundles"
+    fi
+fi
+
+# Remove pip package if found
+if [ "$PIP_PACKAGE_FOUND" = true ] && [ -d "$VENV_DIR" ]; then
+    echo
+    echo -e "${GREEN}Uninstalling m1f pip package...${NC}"
+    if "$VENV_DIR/bin/pip" uninstall m1f -y >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ m1f package uninstalled${NC}"
+    else
+        echo -e "${YELLOW}Warning: Could not uninstall m1f package automatically${NC}"
+        echo -e "${YELLOW}You may need to run: $VENV_DIR/bin/pip uninstall m1f${NC}"
     fi
 fi
 

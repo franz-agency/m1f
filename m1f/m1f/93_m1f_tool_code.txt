@@ -38,19 +38,19 @@ import os
 
 # Use unified colorama module
 try:
-    from tools.shared.colors import Colors, ColoredHelpFormatter, warning, error, info
+    from shared.colors import Colors, ColoredHelpFormatter, warning, error, info
 except ImportError:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from tools.shared.colors import Colors, ColoredHelpFormatter, warning, error, info
+    from shared.colors import Colors, ColoredHelpFormatter, warning, error, info
 
 # Try absolute imports first (for module execution), fall back to relative
 try:
-    from tools.m1f.cli import create_parser, parse_args
-    from tools.m1f.config import Config
-    from tools.m1f.core import FileCombiner
-    from tools.m1f.exceptions import M1FError
-    from tools.m1f.logging import setup_logging, get_logger
-    from tools.m1f.auto_bundle import AutoBundler
+    from m1f.cli import create_parser, parse_args
+    from m1f.config import Config
+    from m1f.core import FileCombiner
+    from m1f.exceptions import M1FError
+    from m1f.logging import setup_logging, get_logger
+    from m1f.auto_bundle import AutoBundler
 except ImportError:
     # Fallback for direct script execution
     from m1f.cli import create_parser, parse_args

@@ -168,7 +168,9 @@ class AutoBundler:
         global_config: Dict[str, Any],
     ) -> List[str]:
         """Build m1f command from bundle configuration."""
-        cmd_parts = [sys.executable, "-m", "tools.m1f"]
+        # Use direct path to m1f.py script
+        m1f_script = self.project_root / "tools" / "m1f.py"
+        cmd_parts = [sys.executable, str(m1f_script)]
 
         # Handle bundle-level include_files
         if "include_files" in bundle_config:

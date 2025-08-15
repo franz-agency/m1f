@@ -111,10 +111,18 @@ class TestResearchWorkflow:
         self, mock_config, mock_llm_provider, research_temp_dir
     ):
         """Test basic research workflow end-to-end"""
+        # Disable query expansion and URL review to make test more predictable
+        if not hasattr(mock_config, "workflow"):
+            from types import SimpleNamespace
+
+            mock_config.workflow = SimpleNamespace()
+        mock_config.workflow.max_queries = 1
+        mock_config.workflow.skip_review = True
+
         # Create orchestrator with mocked LLM
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
-        
+
         # Register orchestrator for cleanup
         research_temp_dir.register_orchestrator(orchestrator)
 
@@ -146,11 +154,11 @@ class TestResearchWorkflow:
                         key_points=["Point 1", "Point 2"],
                         summary="Test summary",
                         content_type="tutorial",
-                        analysis_metadata={}
+                        analysis_metadata={},
                     )
                 )
             return analyzed
-        
+
         orchestrator._analyze_content = mock_analyze_content
 
         # Mock the bundle creation to ensure it creates a file
@@ -199,18 +207,28 @@ Total sources: {len(content)}
         mock_llm_provider.search_web.assert_called_once_with("test query", 5)
         # Analysis is now mocked directly, so query won't be called
         # Just verify the workflow completed successfully
-        
+
         # Explicit cleanup for Windows
         orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_dry_run_mode(self, mock_config, mock_llm_provider, research_temp_dir):
+    async def test_dry_run_mode(
+        self, mock_config, mock_llm_provider, research_temp_dir
+    ):
         """Test dry run mode doesn't perform actual operations"""
         mock_config.dry_run = True
 
+        # Disable query expansion and URL review for consistent testing
+        if not hasattr(mock_config, "workflow"):
+            from types import SimpleNamespace
+
+            mock_config.workflow = SimpleNamespace()
+        mock_config.workflow.max_queries = 1
+        mock_config.workflow.skip_review = True
+
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
-        
+
         # Register orchestrator for cleanup
         research_temp_dir.register_orchestrator(orchestrator)
 
@@ -221,22 +239,33 @@ Total sources: {len(content)}
         mock_llm_provider.search_web.assert_not_called()
         mock_llm_provider.analyze_content.assert_not_called()
 
-        # In dry run mode, bundle path is set to output dir but no bundle file is created
+        # In dry run mode, bundle path is set but no bundle file is created
         assert result.bundle_path is not None
-        assert result.bundle_path.is_dir()  # It's the output directory, not a file
+        assert result.bundle_path.suffix == ".md"  # It should be a .md file path
+        assert not result.bundle_path.exists()  # File doesn't exist in dry run
         assert not result.bundle_created  # Bundle was not actually created
-        
+
         # Explicit cleanup for Windows
         orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_no_analysis_mode(self, mock_config, mock_llm_provider, research_temp_dir):
+    async def test_no_analysis_mode(
+        self, mock_config, mock_llm_provider, research_temp_dir
+    ):
         """Test running without analysis"""
         mock_config.no_analysis = True
 
+        # Disable query expansion and URL review to ensure search_web is called only once
+        if not hasattr(mock_config, "workflow"):
+            from types import SimpleNamespace
+
+            mock_config.workflow = SimpleNamespace()
+        mock_config.workflow.max_queries = 1
+        mock_config.workflow.skip_review = True
+
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
-        
+
         # Register orchestrator for cleanup
         research_temp_dir.register_orchestrator(orchestrator)
 
@@ -262,7 +291,7 @@ Total sources: {len(content)}
 
         # But search should still happen
         mock_llm_provider.search_web.assert_called_once()
-        
+
         # Explicit cleanup for Windows
         orchestrator.cleanup_databases()
 
@@ -273,7 +302,7 @@ Total sources: {len(content)}
         mock_config.analysis.min_content_length = 50  # Lower threshold for test
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
-        
+
         # Register orchestrator for cleanup
         research_temp_dir.register_orchestrator(orchestrator)
 
@@ -318,7 +347,7 @@ Total sources: {len(content)}
         assert len(filtered) == 2
         assert all(item.relevance_score >= 7.0 for item in filtered)
         assert filtered[0].relevance_score == 9.0  # Should be sorted by relevance
-        
+
         # Explicit cleanup for Windows
         orchestrator.cleanup_databases()
 

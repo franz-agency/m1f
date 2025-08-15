@@ -6,6 +6,75 @@ This guide documents security best practices and protective measures implemented
 in the m1f toolkit v3.2. Following these practices ensures safe operation and
 prevents common security vulnerabilities.
 
+## Major Security Enhancements in v3.2+
+
+### Path Traversal Protection
+
+**What's New**: Comprehensive validation of all file paths to prevent directory traversal attacks.
+
+**Impact**: Prevents malicious actors from accessing files outside intended directories.
+
+**Implementation**:
+- New `validate_safe_path()` utility function
+- Applied to all user inputs, preset paths, and configuration files
+- Symlink targets are now validated
+
+### SSRF Protection in Web Scrapers
+
+**What's New**: Blocks access to private IP ranges and cloud metadata endpoints.
+
+**Protected Ranges**:
+- Private networks (10.x.x.x, 172.16.x.x, 192.168.x.x)
+- Localhost (127.0.0.1, ::1)
+- Link-local (169.254.x.x)
+- Cloud metadata (169.254.169.254)
+
+**Applies to**: All web scraping tools (BeautifulSoup, Playwright, Scrapy, Selectolax)
+
+### robots.txt Compliance
+
+**What's New**: All scrapers now automatically respect robots.txt files.
+
+**Features**:
+- Automatic robots.txt fetching and parsing
+- Per-path access validation
+- User-agent specific rule support
+
+### SSL/TLS Certificate Validation
+
+**What's New**: SSL validation is now enabled by default.
+
+**Configuration**:
+- New `--ignore-https-errors` flag for exceptions
+- Per-scraper SSL configuration
+
+**Security**: Prevents man-in-the-middle attacks
+
+### Command Injection Prevention
+
+**What's New**: Proper escaping of all shell commands.
+
+**Implementation**: Uses `shlex.quote()` for all user inputs in commands.
+
+**Affected Tools**: HTTrack scraper, git operations
+
+### JavaScript Execution Safety
+
+**What's New**: Validation of custom JavaScript in Playwright scraper.
+
+**Features**:
+- Detects dangerous patterns (eval, Function constructor)
+- Warns about custom script execution
+- Encourages use of built-in actions
+
+### Custom Processor Validation
+
+**What's New**: Validates processor names to prevent injection attacks.
+
+**Rules**: Only alphanumeric characters and underscores allowed.
+
+**Impact**: Prevents code injection through preset files
+
 ## Path Validation and Traversal Protection
 
 ### Why It Matters
@@ -231,6 +300,18 @@ Stay informed about security updates:
 - Check the CHANGELOG for security-related fixes
 - Update to new versions promptly
 - Review breaking changes that might affect security
+
+## Security Audit Results
+
+v3.2+ addresses all HIGH and MEDIUM priority security issues:
+
+- ✅ Path traversal vulnerabilities fixed
+- ✅ SSRF protection implemented
+- ✅ Command injection prevented
+- ✅ SSL validation enforced
+- ✅ robots.txt compliance added
+- ✅ JavaScript execution validated
+- ✅ Race conditions eliminated
 
 Remember: Security is a shared responsibility. While m1f implements many
 protective measures, proper configuration and usage are essential for

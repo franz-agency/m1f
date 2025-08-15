@@ -26,8 +26,8 @@ research-data/
         └── 23/
             └── abc123_query-name/
                 ├── research.db           # Job-specific database
-                ├── RESEARCH_BUNDLE.md    # Main research bundle
-                ├── EXECUTIVE_SUMMARY.md  # Executive summary
+                ├── research_bundle.md    # Main research bundle
+                ├── research_summary.md   # Research summary
                 └── metadata.json         # Job metadata
 ```
 
@@ -203,8 +203,8 @@ When deleting a job, the system will:
 - Job statistics in the database
 - Entire job directory including:
   - Job-specific database (`research.db`)
-  - Research bundle (`RESEARCH_BUNDLE.md`)
-  - Executive summary (`EXECUTIVE_SUMMARY.md`)
+  - Research bundle (`research_bundle.md`)
+  - Research summary (`research_summary.md`)
   - All scraped content and analysis
   - Any metadata files
 

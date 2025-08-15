@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse, urlunparse
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_read_text,
 )

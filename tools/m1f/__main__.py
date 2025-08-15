@@ -15,7 +15,7 @@ if sys.platform.startswith("win"):
     # This prevents "RuntimeError: Event loop is closed" messages on Windows
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-from tools.m1f import main
+from m1f import main
 
 
 if __name__ == "__main__":

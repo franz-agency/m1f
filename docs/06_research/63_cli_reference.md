@@ -63,12 +63,19 @@ management commands)
 | `--no-analysis`  |       | Skip AI analysis (just scrape)     | False   |
 | `--interactive`  | `-i`  | Start in interactive mode          | False   |
 
+### Query Control Options
+
+| Option                    | Description                              | Default |
+| ------------------------- | ---------------------------------------- | ------- |
+| `--max-queries N`         | Maximum number of query variations (1 = original only) | 5       |
+| `--custom-queries Q1 Q2...` | Provide custom query variations (overrides auto-expansion) | None    |
+| `--interactive-queries`   | Interactively enter custom query variations | False   |
+
 ### Workflow Options
 
 | Option                    | Description                              | Default |
 | ------------------------- | ---------------------------------------- | ------- |
 | `--expand-queries`        | Enable query expansion phase             | True    |
-| `--max-queries N`         | Maximum number of expanded queries       | 5       |
 | `--skip-review`           | Skip URL review phase                    | False   |
 | `--crawl-depth N`         | How many levels deep to crawl links     | 0       |
 | `--max-pages-per-site N`  | Maximum pages to crawl per domain       | 10      |
@@ -234,6 +241,19 @@ m1f-research "python async patterns" --skip-review --max-queries 8
 
 # Detailed analysis with external link following
 m1f-research "AI research 2024" --follow-external --analysis-type detailed
+
+# Control query expansion precisely
+m1f-research "rust ownership" --max-queries 1  # No expansion, original only
+m1f-research "golang channels" --max-queries 10  # More variations
+
+# Provide custom query variations
+m1f-research "react performance" --custom-queries \
+  "react performance optimization 2025" \
+  "react memo and useMemo patterns" \
+  "react virtual DOM optimization"
+
+# Interactive query input for careful research
+m1f-research "database indexing" --interactive-queries
 ```
 
 ## Date Format Examples

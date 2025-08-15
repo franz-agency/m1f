@@ -23,7 +23,7 @@ from datetime import datetime
 import json
 from collections import defaultdict, Counter
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_open,
 )
 

@@ -546,7 +546,8 @@ class TestM1FAdvanced(BaseM1FTest):
     def test_large_file_handling(self, run_m1f, create_test_file, temp_dir):
         """Test handling of files with size limit.
 
-        Tests that files larger than a specified limit are skipped.
+        Tests that files larger than the specified limit are completely excluded
+        from the output (both from file lists and content sections).
         """
         # Create a small file (5KB - below limit)
         small_content = "x" * (5 * 1024)  # 5KB
@@ -581,9 +582,26 @@ class TestM1FAdvanced(BaseM1FTest):
         assert "small_file.txt" in output_content
         assert small_content in output_content
 
-        # Large file should be mentioned in file list but content not included
-        assert "large_file.txt" in output_content  # Should be in file list
+        # Large file should be excluded due to size limit
         assert large_content not in output_content  # Content should not be included
+
+        # Check that large file doesn't appear in any file content sections
+        # Split by separators to get individual file sections
+        content_sections = output_content.split("=======")
+        file_content_sections = [
+            section
+            for section in content_sections
+            if section.strip()
+            and not section.strip().startswith("size_limit_output.log")
+        ]
+
+        # Large file should not appear in any content section
+        large_file_in_content = any(
+            "large_file.txt" in section for section in file_content_sections
+        )
+        assert (
+            not large_file_in_content
+        ), f"large_file.txt found in content sections when it should be excluded due to size limit"
 
     @pytest.mark.unit
     def test_include_binary_files(

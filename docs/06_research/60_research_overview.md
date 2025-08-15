@@ -1,17 +1,47 @@
 # m1f-research
 
-AI-powered research tool that automatically finds, scrapes, and bundles
-information on any topic.
+AI-powered research tool that orchestrates the entire research workflow: from finding sources to creating AI-ready knowledge bundles.
+
+## The Big Picture: Why m1f-research?
+
+The m1f toolkit already provides powerful individual tools:
+- **m1f-scrape**: Scrapes websites and downloads content
+- **m1f-html2md**: Converts HTML to clean Markdown
+- **m1f**: Bundles files for AI consumption
+
+**m1f-research takes this further by automating the entire research workflow:**
+
+1. **AI-Powered Discovery**: Instead of manually finding URLs, m1f-research uses AI (like Claude) to search for relevant sources on any topic
+2. **Human-in-the-Loop**: Review and curate the discovered URLs before scraping
+3. **Automated Pipeline**: Automatically scrapes approved URLs, converts to Markdown, and creates bundles
+4. **AI-Ready Output**: Produces research bundles perfect for uploading to Claude's Project Knowledge or other AI tools
+
+Think of it as your automated research assistant that:
+- Takes a topic (e.g., "microservices best practices")
+- Asks AI to find the best sources
+- Lets you review what it found
+- Downloads and processes everything
+- Creates a knowledge bundle ready for AI analysis
+
+### Key Advantage Over LLM "Research Mode"
+
+**The crucial difference from built-in LLM research modes:** 
+- **You control the sources**: Review and prioritize which URLs to include
+- **Custom curation**: Remove low-quality or irrelevant sources before processing
+- **Add your own sources**: Include specific URLs you trust
+- **Persistent knowledge**: Create reusable knowledge bundles for your projects
+- **No black box**: You see exactly what content goes into your research
 
 ## Overview
 
-m1f-research extends the m1f toolkit with intelligent research capabilities. It
-uses LLMs to:
+m1f-research orchestrates the complete research pipeline by intelligently combining all m1f tools:
 
-- Find relevant URLs for any research topic
-- Scrape and convert web content to clean Markdown
-- Analyze content for relevance and extract key insights
-- Create organized research bundles
+- **Discovers** relevant URLs using AI (instead of manual searching)
+- **Reviews** URLs with optional human curation
+- **Scrapes** approved content using m1f-scrape
+- **Converts** HTML to Markdown using m1f-html2md
+- **Bundles** everything using m1f for AI consumption
+- **Analyzes** content to extract key insights
 
 ### 7-Phase Workflow System
 
@@ -27,14 +57,61 @@ m1f-research implements a sophisticated workflow system that breaks research int
 
 This workflow allows for flexible research strategies, checkpoint resumption, and fine-grained control over each phase.
 
+## Practical Example: Research Workflow
+
+Let's say you want to research "Python async programming best practices":
+
+### Without m1f-research (Manual Process):
+1. Google search for relevant articles
+2. Open each link, evaluate quality
+3. Use `m1f-scrape` on each good URL
+4. Run `m1f-html2md` to convert each file
+5. Use `m1f` to bundle everything
+6. Upload to Claude's Project Knowledge
+
+### With m1f-research (Automated):
+```bash
+# One command does it all!
+m1f-research "Python async programming best practices"
+```
+
+What happens behind the scenes:
+1. **AI searches** for the best sources on Python async programming
+2. **You review** the URLs (optional - can be skipped)
+3. **Automatically scrapes** all approved URLs
+4. **Converts** everything to Markdown
+5. **Creates bundle** ready for Claude: `research_bundle.md`
+6. **Generates summary** with key insights
+
+The result: A complete research bundle you can directly upload to Claude's Project Knowledge!
+
 ## Quick Start
 
 ```bash
-# Basic research
+# Basic research - let AI find sources
 m1f-research "microservices best practices"
 
 # Research with more sources
 m1f-research "react state management" --urls 30 --scrape 15
+
+# Interactive URL review (recommended for important research)
+m1f-research "kubernetes security" --skip-review false
+
+# Control query expansion
+m1f-research "python asyncio" --max-queries 1  # Only use original query
+m1f-research "rust ownership" --max-queries 10  # More query variations
+
+# Provide custom query variations
+m1f-research "react hooks" --custom-queries \
+  "react hooks tutorial 2025" \
+  "useEffect vs useLayoutEffect" \
+  "custom react hooks patterns"
+
+# Interactive query input
+m1f-research "database optimization" --interactive-queries
+
+# Use the research bundle with Claude
+# The output file research_bundle.md can be uploaded directly to Claude's Project Knowledge
 
 # List all research jobs
 m1f-research --list-jobs
@@ -71,15 +148,27 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 ### 🔍 Intelligent Search
 
 - **Query Expansion**: Generate multiple search variations for comprehensive coverage
+  - Control expansion with `--max-queries` (1 = no expansion)
+  - Provide custom queries with `--custom-queries`
+  - Interactive query input with `--interactive-queries`
 - Uses LLMs to find high-quality, relevant URLs
 - Manual URL support via `--urls-file`
 - Focuses on authoritative sources
 - Mixes different content types
 
+### 🎯 URL Review & Prioritization
+
+This is where m1f-research shines compared to automated LLM research:
+
+- **Interactive Review Interface**: See all discovered URLs before scraping
+- **Quality Control**: Remove spam, paywalled, or low-quality sources
+- **Add Custom URLs**: Include your trusted sources or internal documentation
+- **Prioritize Sources**: Decide which sources are most important
+- **Skip if Needed**: Use `--skip-review` for fully automated research
+
 ### 🌐 Advanced Crawling
 
 - **Deep Crawling**: Follow links to specified depth levels
-- **URL Review**: Optional human curation of discovered URLs
 - **Intelligent Filtering**: Domain-based and pattern-based URL filtering
 - **Site Limits**: Control maximum pages per domain
 
@@ -102,10 +191,35 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 ### 📦 Organized Output
 
 - **Hierarchical structure**: YYYY/MM/DD/job_id/
-- Prominent bundle files (📚_RESEARCH_BUNDLE.md)
+- Prominent bundle files (research_bundle.md)
 - Clean Markdown output
 - Symlink to latest research
 - Phase-specific output organization
+
+## Integration with Claude Projects
+
+The research bundles created by m1f-research are perfect for Claude's Project Knowledge feature:
+
+1. **Run Research**:
+   ```bash
+   m1f-research "your research topic"
+   ```
+
+2. **Find Your Bundle**:
+   - Look in `./research-data/latest_research.md` (symlink to latest)
+   - Or navigate to `./research-data/YYYY/MM/DD/job_id/research_bundle.md`
+
+3. **Upload to Claude**:
+   - Open Claude.ai or Claude desktop app
+   - Create or open a project
+   - Add the `research_bundle.md` to Project Knowledge
+   - Claude now has deep knowledge about your research topic!
+
+4. **Benefits**:
+   - Claude can reference specific sources from your research
+   - Knowledge persists across conversations in the project
+   - You know exactly what information Claude is using
+   - Can update research and refresh Claude's knowledge anytime
 
 ## Usage Examples
 
@@ -116,6 +230,7 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 m1f-research "golang error handling"
 
 # Output saved to: ./research-data/golang-error-handling-20240120-143022/
+# Ready for upload to Claude Projects!
 ```
 
 ### Advanced Options
@@ -266,8 +381,8 @@ Research data uses hierarchical date-based organization:
         └── 23/
             └── abc123_topic-name/
                 ├── research.db           # Job-specific database
-                ├── 📚_RESEARCH_BUNDLE.md # Main bundle
-                ├── 📊_EXECUTIVE_SUMMARY.md # Summary
+                ├── research_bundle.md     # Main bundle
+                ├── research_summary.md    # Summary
                 ├── metadata.json         # Job metadata
                 └── search_results.json   # Found URLs
 ```

@@ -21,7 +21,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import json
 
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_open,
 )
 

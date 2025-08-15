@@ -151,11 +151,14 @@ class SelectolaxScraper(WebScraperBase):
 
                         # Check allowed paths (single or multiple)
                         allowed_paths_list = []
-                        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+                        if (
+                            hasattr(self.config, "allowed_paths")
+                            and self.config.allowed_paths
+                        ):
                             allowed_paths_list = self.config.allowed_paths
                         elif self.config.allowed_path:
                             allowed_paths_list = [self.config.allowed_path]
-                        
+
                         if allowed_paths_list:
                             # Parse URLs to check paths
                             current_parsed = urlparse(normalized_url)
@@ -171,7 +174,7 @@ class SelectolaxScraper(WebScraperBase):
                                 canonical_parsed.path.startswith(allowed_path)
                                 for allowed_path in allowed_paths_list
                             )
-                            
+
                             if current_in_allowed and not canonical_in_allowed:
                                 should_skip = False
                                 logger.info(
@@ -186,7 +189,7 @@ class SelectolaxScraper(WebScraperBase):
 
             # 3. Content duplicate check
             if self.config.check_content_duplicates:
-                from ..utils import calculate_content_checksum
+                from scrape_tool.utils import calculate_content_checksum
 
                 content_checksum = calculate_content_checksum(response.text)
 

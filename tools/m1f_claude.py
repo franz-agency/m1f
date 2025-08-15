@@ -51,7 +51,7 @@ try:
 except ImportError:
     # Try direct import if running as script
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from tools.shared.colors import (
+    from shared.colors import (
         Colors,
         ColoredHelpFormatter,
         success,
@@ -82,7 +82,7 @@ try:
         safe_stat,
     )
 except ImportError:
-    from tools.m1f.file_operations import (
+    from m1f.file_operations import (
         safe_exists,
         safe_is_file,
         safe_is_dir,
@@ -609,7 +609,9 @@ Start with Task 1: Project Analysis
         if safe_exists(m1f_dir, logger) and safe_is_dir(m1f_dir, logger):
             bundles = list(m1f_dir.glob("*.txt"))
             if bundles:
-                context_parts.append(f"\n[INFO] Existing m1f bundles: {len(bundles)} found")
+                context_parts.append(
+                    f"\n[INFO] Existing m1f bundles: {len(bundles)} found"
+                )
                 for bundle in bundles[:3]:  # Show first 3
                     context_parts.append(f"  • {bundle.name}")
                 if len(bundles) > 3:
@@ -1692,7 +1694,9 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             if result.returncode == 0:
                 success("Phase 1 complete: Topic-specific bundles added!")
-                info("[INFO] Claude has analyzed your project and updated .m1f.config.yml")
+                info(
+                    "[INFO] Claude has analyzed your project and updated .m1f.config.yml"
+                )
             else:
                 warning(f"Claude exited with code {result.returncode}")
                 info("Please check your .m1f.config.yml manually.")
@@ -2292,7 +2296,7 @@ Tips:
 
 def main():
     """Main entry point for m1f-claude."""
-    
+
     # Import version
     try:
         from _version import __version__
@@ -2356,7 +2360,7 @@ def main():
         "--version",
         action="version",
         version=f"m1f-claude {__version__}",
-        help="Show version information"
+        help="Show version information",
     )
 
     parser.add_argument(

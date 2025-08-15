@@ -78,8 +78,8 @@ When you delete a job, the following items are permanently removed:
 ### Filesystem Data
 - Entire job directory at `research-data/YYYY/MM/DD/job_id_query/`
 - Job-specific database (`research.db`)
-- Research bundle (`RESEARCH_BUNDLE.md`)
-- Executive summary (`EXECUTIVE_SUMMARY.md`)
+- Research bundle (`research_bundle.md`)
+- Research summary (`research_summary.md`)
 - All scraped HTML content
 - All converted Markdown content
 - Analysis results and metadata

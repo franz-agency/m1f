@@ -183,19 +183,21 @@ def run_s1f(monkeypatch, capture_logs):
     import sys
     from pathlib import Path
 
-    # Add tools directory to path to import s1f script
+    # Add tools directory to path to import s1f
     tools_dir = str(Path(__file__).parent.parent.parent / "tools")
-    if tools_dir not in sys.path:
-        sys.path.insert(0, tools_dir)
 
-    # Import from the s1f.py script, not the package
-    import importlib.util
+    # Remove tests/s1f from path if it exists to avoid conflicts
+    test_s1f_dir = str(Path(__file__).parent)
+    if test_s1f_dir in sys.path:
+        sys.path.remove(test_s1f_dir)
 
-    s1f_script_path = Path(__file__).parent.parent.parent / "tools" / "s1f.py"
-    spec = importlib.util.spec_from_file_location("s1f_script", s1f_script_path)
-    s1f_script = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(s1f_script)
-    main = s1f_script.main
+    # Add tools directory to the beginning of the path
+    if tools_dir in sys.path:
+        sys.path.remove(tools_dir)
+    sys.path.insert(0, tools_dir)
+
+    # Import the main function from s1f.cli
+    from s1f.cli import main
 
     def _run_s1f(args: list[str]) -> tuple[int, str]:
         """

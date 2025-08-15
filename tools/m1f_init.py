@@ -43,7 +43,7 @@ except ImportError:
 
 # Use unified colorama module
 try:
-    from tools.shared.colors import (
+    from shared.colors import (
         Colors,
         ColoredHelpFormatter,
         success,
@@ -87,14 +87,14 @@ class M1FInit:
 
         # Import safe operations locally to avoid module loading issues
         try:
-            from tools.m1f.file_operations import (
+            from m1f.file_operations import (
                 safe_open,
                 safe_read_text,
                 safe_write_text,
                 safe_mkdir,
                 safe_exists,
             )
-            from tools.m1f.utils import validate_path_traversal
+            from m1f.utils import validate_path_traversal
 
             self.safe_open = safe_open
             self.safe_read_text = safe_read_text
@@ -819,9 +819,9 @@ def main():
         "--version",
         action="version",
         version=f"m1f-init {__version__}",
-        help="Show version information"
+        help="Show version information",
     )
-    
+
     parser.add_argument(
         "--verbose",
         "-v",

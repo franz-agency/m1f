@@ -18,7 +18,7 @@ Integration tests for m1f-research scraping pipeline
 import pytest
 import asyncio
 import aiohttp
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from datetime import datetime
 import json
 
@@ -167,12 +167,16 @@ class TestScrapingIntegration:
             response.headers = {"Content-Type": "text/html"}
 
             if url in mock_html_responses:
+
                 async def text():
                     return mock_html_responses[url]
+
                 response.text = text
             else:
+
                 async def text():
                     raise aiohttp.ClientError("Not found")
+
                 response.text = text
             return response
 
@@ -244,8 +248,10 @@ class TestScrapingIntegration:
             response = Mock()
             response.status = 200
             response.url = url
+
             async def text():
                 return "<html><body>Test</body></html>"
+
             response.text = text
             return response
 
@@ -322,8 +328,10 @@ class TestScrapingIntegration:
             response = Mock()
             response.status = 200
             response.url = url
+
             async def text():
                 return "<html><body>Test</body></html>"
+
             response.text = text
             return response
 
@@ -373,6 +381,7 @@ class TestScrapingIntegration:
 
                 async def text():
                     return "Forbidden"
+
                 response.text = text
             else:
                 response.status = 200
@@ -441,6 +450,7 @@ class TestScrapingIntegration:
 
             async def text():
                 return test_html
+
             response.text = text
             return response
 
@@ -545,8 +555,10 @@ class TestScrapingIntegration:
             response = Mock()
             response.status = 200
             response.url = url
+
             async def text():
                 return "<html><body>Test</body></html>"
+
             response.text = text
             return response
 
@@ -614,8 +626,10 @@ class TestScrapingIntegration:
                     </body>
                 </html>
             """
+
             async def text():
                 return html_content
+
             response.text = text
             return response
 

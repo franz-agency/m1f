@@ -78,6 +78,9 @@ class PlaywrightScraper(WebScraperBase):
 
         # Browser configuration from scraper config
         self._browser_config = config.__dict__.get("browser_config", {})
+        if not isinstance(self._browser_config, dict):
+            self._browser_config = {}
+
         self._browser_type = self._browser_config.get("browser", "chromium")
         self._headless = self._browser_config.get("headless", True)
         self._viewport = self._browser_config.get(
@@ -387,9 +390,13 @@ class PlaywrightScraper(WebScraperBase):
 
                                 # If current URL is within any allowed_path but canonical is outside all,
                                 # don't skip - the user explicitly wants content from allowed_path
-                                current_in_allowed = self._is_path_allowed(normalized_current, start_url)
-                                canonical_in_allowed = self._is_path_allowed(normalized_canonical, start_url)
-                                
+                                current_in_allowed = self._is_path_allowed(
+                                    normalized_current, start_url
+                                )
+                                canonical_in_allowed = self._is_path_allowed(
+                                    normalized_canonical, start_url
+                                )
+
                                 if current_in_allowed and not canonical_in_allowed:
                                     should_skip = False
                                     logger.info(

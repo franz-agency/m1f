@@ -29,7 +29,7 @@ import anyio
 # Claude SDK removed - using direct subprocess instead
 
 # Import shared Claude utilities
-from ..shared.claude_utils import (
+from shared.claude_utils import (
     ClaudeConfig,
     ClaudeHTTPClient,
     ClaudeSessionManager,
@@ -447,7 +447,7 @@ class ClaudeCodeProvider(LLMProvider):
             pass
 
         # Try known paths
-        from ..shared.claude_utils import ClaudeBinaryFinder
+        from shared.claude_utils import ClaudeBinaryFinder
 
         return ClaudeBinaryFinder.find()
 
@@ -494,7 +494,7 @@ class ClaudeCodeProvider(LLMProvider):
 
                 # Try to import colors for better output
                 try:
-                    from ..shared.colors import info, dim
+                    from shared.colors import info, dim
                 except ImportError:
                     # Fallback if colors not available
                     def info(msg):
@@ -711,13 +711,15 @@ class ClaudeCodeProvider(LLMProvider):
     async def search_web(
         self, query: str, num_results: int = 20
     ) -> List[Dict[str, str]]:
-        """Use Claude direct to generate search URLs"""
-        prompt = f"""List {num_results} URLs of authoritative websites about: {query}
+        """Use Claude with WebSearch tool to find actual URLs"""
+        # Use WebSearch tool to find real URLs (not generate them)
+        prompt = f"""Find {num_results} good URLs about: {query}
 
-Return as JSON array with url, title, description. No comments, no explanation, just the JSON:
+Use the WebSearch tool to find real, current URLs. After searching, extract the URLs from the search results and return them as a JSON array.
 
+Return format (extract URLs from search results):
 [
-  {{"url": "https://example.com", "title": "Site Title", "description": "Brief description"}}
+  {{"url": "https://example.com", "title": "Page Title", "description": "Brief description"}}
 ]"""
 
         response = await self.query(prompt)
@@ -726,65 +728,93 @@ Return as JSON array with url, title, description. No comments, no explanation, 
             raise Exception(f"Claude error: {response.error}")
 
         try:
-            # Extract JSON from response
+            # Extract URLs from the response
             content = response.content.strip()
 
-            # Debug: Log the raw response content
             import logging
+            import re
 
             logger = logging.getLogger(__name__)
             logger.debug(f"Raw Claude response: {content[:500]}...")
 
-            # Try to find JSON array in the content
-            # Handle various formats Claude might return
-            if "```json" in content:
-                # Extract content between ```json and ```
-                start = content.find("```json") + 7
-                end = content.find("```", start)
-                if end != -1:
-                    content = content[start:end].strip()
-            elif "```" in content:
-                # Extract content between ``` and ```
-                start = content.find("```") + 3
-                end = content.find("```", start)
-                if end != -1:
-                    content = content[start:end].strip()
+            # Extract URLs using multiple methods
+            urls_found = []
 
-            # Try to find JSON array brackets if not already present
-            if not content.startswith("["):
-                # Look for JSON array in the content
-                start_idx = content.find("[")
-                if start_idx != -1:
+            # Method 1: Look for explicit URL patterns in the response
+            url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+[^\s<>"{}|\\^`\[\].,;:!?)]'
+            urls_in_text = re.findall(url_pattern, content)
+
+            # Method 2: Look for structured URL mentions (like **URL** format)
+            structured_pattern = r"\*\*(https?://[^*]+)\*\*"
+            structured_urls = re.findall(structured_pattern, content)
+
+            # Method 3: Try to parse as JSON if present
+            try:
+                if "```json" in content:
+                    start = content.find("```json") + 7
+                    end = content.find("```", start)
+                    if end != -1:
+                        json_content = content[start:end].strip()
+                        results = json.loads(json_content)
+                elif "[" in content and "]" in content:
+                    start_idx = content.find("[")
                     end_idx = content.rfind("]") + 1
                     if end_idx > start_idx:
-                        content = content[start_idx:end_idx]
+                        json_content = content[start_idx:end_idx]
+                        results = json.loads(json_content)
+                else:
+                    results = []
 
-            results = json.loads(content)
+                if isinstance(results, list):
+                    for item in results:
+                        if isinstance(item, dict) and "url" in item:
+                            urls_found.append(item)
+            except json.JSONDecodeError:
+                pass
 
-            # Validate the structure
-            if not isinstance(results, list):
-                raise ValueError("Response is not a JSON array")
+            # If no structured results, create them from found URLs
+            if not urls_found:
+                # Combine all found URLs and deduplicate
+                all_urls = list(set(urls_in_text + structured_urls))
 
-            # Ensure each result has required fields
+                for url in all_urls[:num_results]:
+                    # Extract title from URL or use domain
+                    title = url.split("/")[-1] or url.split("/")[2]
+                    urls_found.append(
+                        {
+                            "url": url,
+                            "title": title.replace("-", " ").replace("_", " ").title(),
+                            "description": f"Resource about {query}",
+                        }
+                    )
+
+            # Ensure we have valid results
             valid_results = []
-            for result in results:
-                if isinstance(result, dict) and "url" in result:
-                    # Add default values for missing fields
-                    if "title" not in result:
-                        result["title"] = "Untitled"
-                    if "description" not in result:
-                        result["description"] = ""
-                    valid_results.append(result)
+            for result in urls_found:
+                if isinstance(result, dict):
+                    # Ensure required fields
+                    if "url" not in result and isinstance(result.get("link"), str):
+                        result["url"] = result["link"]
+                    if "url" in result:
+                        if "title" not in result:
+                            result["title"] = result["url"].split("/")[-1] or "Untitled"
+                        if "description" not in result:
+                            result["description"] = ""
+                        valid_results.append(result)
+
+            if not valid_results:
+                logger.warning(f"No URLs found in response. Content: {content[:500]}")
+                return []
 
             return valid_results[:num_results]
 
-        except (json.JSONDecodeError, ValueError) as e:
-            # Log the full response for debugging
+        except Exception as e:
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.error(f"Failed to parse JSON. Response content: {response.content}")
-            raise Exception(f"Failed to parse Claude response as JSON: {str(e)}")
+            logger.error(f"Failed to extract URLs from response: {str(e)}")
+            logger.error(f"Response content: {response.content[:500]}")
+            return []
 
     async def analyze_content(
         self, content: str, analysis_type: str = "relevance"
