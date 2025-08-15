@@ -168,8 +168,16 @@ class AutoBundler:
         global_config: Dict[str, Any],
     ) -> List[str]:
         """Build m1f command from bundle configuration."""
-        # Use direct path to m1f.py script
-        m1f_script = self.project_root / "tools" / "m1f.py"
+        # Find the m1f.py script relative to this module
+        import os
+
+        current_module_path = Path(os.path.dirname(os.path.abspath(__file__)))
+        m1f_script = current_module_path.parent / "m1f.py"
+
+        # Fallback to project_root if not found
+        if not safe_exists(m1f_script):
+            m1f_script = self.project_root / "tools" / "m1f.py"
+
         cmd_parts = [sys.executable, str(m1f_script)]
 
         # Handle bundle-level include_files
