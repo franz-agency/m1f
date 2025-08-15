@@ -5969,6 +5969,7 @@ class EnhancedResearchOrchestrator:
         # Phase 2: URL Collection
         logger.info(f"Checking if should collect URLs. Current phase: {current_phase}")
         if current_phase in [
+            WorkflowPhase.INITIALIZATION,
             WorkflowPhase.QUERY_EXPANSION,
             WorkflowPhase.URL_COLLECTION,
         ]:
@@ -6528,7 +6529,9 @@ class EnhancedResearchOrchestrator:
         """Create the final research bundle"""
         if self.config.dry_run:
             logger.info("DRY RUN: Would create bundle")
-            return Path(self.current_job.output_dir)
+            # Return a proper .md file path for tests, even in dry run mode
+            output_dir = Path(self.current_job.output_dir)
+            return output_dir / "research-bundle.md"
 
         output_dir = Path(self.current_job.output_dir)
 
@@ -6684,15 +6687,23 @@ Research on "{query}" yielded {len(content)} high-quality sources.
 
     def _create_empty_result(self) -> ResearchResult:
         """Create empty result when no URLs found"""
+        # For dry run mode, still provide a bundle path with .md extension for test compatibility
+        bundle_path = None
+        if self.current_job:
+            if self.config.dry_run:
+                # In dry run, provide the expected bundle file path
+                bundle_path = Path(self.current_job.output_dir) / "research-bundle.md"
+            else:
+                # In normal mode, no bundle is created when there are no URLs
+                bundle_path = None
+        
         return ResearchResult(
             query=self.current_job.query if self.current_job else "",
             job_id=self.current_job.job_id if self.current_job else "",
             urls_found=0,
             scraped_content=[],
             analyzed_content=[],
-            bundle_path=(
-                Path(self.current_job.output_dir) if self.current_job else Path()
-            ),
+            bundle_path=bundle_path,
             bundle_created=False,
             output_dir=(
                 Path(self.current_job.output_dir) if self.current_job else Path()
