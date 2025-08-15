@@ -38,6 +38,8 @@ class ResearchJob:
     status: str  # active, completed, failed
     config: Dict[str, Any]
     output_dir: str
+    phase: Optional[str] = None  # Current workflow phase
+    phase_data: Optional[Dict[str, Any]] = None  # Phase-specific data
 
     @classmethod
     def create_new(
@@ -133,7 +135,7 @@ class ResearchDatabase:
             row = cursor.fetchone()
 
             if row:
-                return ResearchJob(
+                job = ResearchJob(
                     job_id=row["job_id"],
                     query=row["query"],
                     created_at=datetime.fromisoformat(row["created_at"]),
@@ -142,6 +144,14 @@ class ResearchDatabase:
                     config=json.loads(row["config"]),
                     output_dir=row["output_dir"],
                 )
+                # Add phase information if available
+                if "phase" in row.keys():
+                    job.phase = row["phase"]
+                if "phase_data" in row.keys():
+                    job.phase_data = (
+                        json.loads(row["phase_data"]) if row["phase_data"] else {}
+                    )
+                return job
 
         return None
 
@@ -347,8 +357,9 @@ class ResearchDatabase:
         try:
             # Force garbage collection to close any remaining connections
             import gc
+
             gc.collect()
-            
+
             # On Windows, sometimes we need to explicitly close the database
             # SQLite doesn't have persistent connections with context managers,
             # but we can force cleanup
@@ -662,8 +673,9 @@ class JobDatabase:
         try:
             # Force garbage collection to close any remaining connections
             import gc
+
             gc.collect()
-            
+
             # On Windows, sometimes we need to explicitly close the database
             # SQLite doesn't have persistent connections with context managers,
             # but we can force cleanup

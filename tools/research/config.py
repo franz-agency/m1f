@@ -316,6 +316,12 @@ class ResearchConfig:
 
         # Scraping settings
         config.scraping.max_concurrent = args.concurrent
+        config.scraping.search_limit = (
+            config.url_count
+        )  # Set search limit from url_count
+        config.scraping.scrape_limit = (
+            config.scrape_count
+        )  # Set scrape limit from scrape_count
 
         # Apply template if specified
         if config.template and config.template in config.templates:

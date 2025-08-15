@@ -226,8 +226,10 @@ class EnhancedResearchOrchestrator:
             current_phase = self.workflow_manager.get_phase(
                 self.current_job.job_id
             ).phase
+            logger.info(f"Current phase after expansion: {current_phase}")
 
         # Phase 2: URL Collection
+        logger.info(f"Checking if should collect URLs. Current phase: {current_phase}")
         if current_phase in [
             WorkflowPhase.QUERY_EXPANSION,
             WorkflowPhase.URL_COLLECTION,
@@ -235,7 +237,9 @@ class EnhancedResearchOrchestrator:
             self.workflow_manager.transition_to(
                 self.current_job.job_id, WorkflowPhase.URL_COLLECTION
             )
+            logger.info(f"Collecting URLs for {len(expanded_queries)} queries")
             urls = await self._collect_urls_phased(expanded_queries, urls_file)
+            logger.info(f"Collected {len(urls)} URLs")
 
             if not urls:
                 logger.warning("No URLs found")
